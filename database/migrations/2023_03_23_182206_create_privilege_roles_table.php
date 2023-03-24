@@ -1,0 +1,33 @@
+<?php
+
+use App\Models\Privilege;
+use App\Models\Role;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('privilege_roles', function (Blueprint $table) {
+            $table->id();
+            $table->timestampsTz();
+            $table->softDeletesTz();
+            $table->foreignIdFor(Privilege::class);
+            $table->foreignIdFor(Role::class);
+            $table->unique(['privilege_id', 'role_id']);
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('privilege_roles');
+    }
+};
