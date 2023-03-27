@@ -22,7 +22,7 @@ return new class extends Migration
             $table->id();
             $table->timestampsTz();
             $table->softDeletesTz();
-            $table->text('key');
+            $table->text('key')->unique();
             $table->comment('Lookup table storing the set of valid values for institution_user.status');
         });
 
