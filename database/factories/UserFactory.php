@@ -2,13 +2,17 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Foundation\Testing\WithFaker;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends Factory<User>
  */
 class UserFactory extends Factory
 {
+    use WithFaker;
+
     /**
      * Define the model's default state.
      *
@@ -17,6 +21,9 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
+            'forename' => $this->faker->firstName(),
+            'surname' => $this->faker->lastName(),
+            'personal_identification_code' => $this->faker->unique()->estonianPIC(),
         ];
     }
 }
