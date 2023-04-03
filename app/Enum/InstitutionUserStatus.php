@@ -2,7 +2,7 @@
 
 namespace App\Enum;
 
-enum InstitutionUserStatusKey: string
+enum InstitutionUserStatus: string
 {
     case Created = 'CREATED';
     case Activated = 'ACTIVATED';

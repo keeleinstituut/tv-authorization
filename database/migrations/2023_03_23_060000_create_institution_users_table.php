@@ -1,10 +1,8 @@
 <?php
 
-use App\Models\Institution;
-use App\Models\InstitutionUserStatus;
-use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -15,14 +13,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('institution_users', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->timestampsTz();
             $table->softDeletesTz();
-            $table->foreignIdFor(Institution::class);
-            $table->foreignIdFor(User::class);
-            $table->foreignIdFor(InstitutionUserStatus::class);
+            $table->foreignUuid('institution_id')->constrained();
+            $table->foreignUuid('user_id')->constrained();
+            $table->string('status', 20);
             $table->unique(['institution_id', 'user_id']);
         });
+
+        DB::statement(
+            'ALTER TABLE institution_users '.
+            'ADD CONSTRAINT institution_users_status_check '.
+            "CHECK (status IN ('CREATED', 'ACTIVATED', 'DEACTIVATED'))"
+        );
     }
 
     /**

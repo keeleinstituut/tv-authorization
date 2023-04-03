@@ -2,9 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Enum\InstitutionUserStatusKey;
+use App\Enum\InstitutionUserStatus;
 use App\Models\Institution;
-use App\Models\InstitutionUserStatus;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -23,8 +22,7 @@ class InstitutionUserFactory extends Factory
         return [
             'institution_id' => Institution::factory(),
             'user_id' => User::factory(),
-            'institution_user_status_id' => fn () => InstitutionUserStatus::where('key', InstitutionUserStatusKey::Created->value)
-                    ->first(),
+            'status' => InstitutionUserStatus::Created,
         ];
     }
 }

@@ -22,13 +22,13 @@ class PrivilegeRoleTest extends TestCase
 
     public function test_role_exists(): void
     {
-        $expectedName = 'privilege-role-test_test-role-exists';
+        $expectedRoleName = 'Translation Manager';
 
-        $createdPrivilegeRole = PrivilegeRole::factory()->forRole(['name' => $expectedName])->create();
+        $createdPrivilegeRole = PrivilegeRole::factory()->forRole(['name' => $expectedRoleName])->create();
         $this->assertModelExists($createdPrivilegeRole->role);
 
         $retrievedRole = Role::findOrFail($createdPrivilegeRole->role->id);
-        $this->assertEquals($expectedName, $retrievedRole->name);
+        $this->assertEquals($expectedRoleName, $retrievedRole->name);
     }
 
     public function test_privilege_exists(): void

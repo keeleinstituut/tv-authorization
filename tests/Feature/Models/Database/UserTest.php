@@ -29,6 +29,6 @@ class UserTest extends TestCase
 
         User::factory()
             ->count(2)
-            ->create(['personal_identification_code' => '39611300828']);
+            ->create(['personal_identification_code' => '47607239590']);
     }
 }

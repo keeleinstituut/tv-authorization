@@ -1,7 +1,5 @@
 <?php
 
-use App\Models\InstitutionUser;
-use App\Models\Role;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -14,11 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('institution_user_roles', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->timestampsTz();
             $table->softDeletesTz();
-            $table->foreignIdFor(InstitutionUser::class);
-            $table->foreignIdFor(Role::class);
+            $table->foreignUuid('institution_user_id')->constrained();
+            $table->foreignUuid('role_id')->constrained();
             $table->unique(['institution_user_id', 'role_id']);
             $table->comment(
                 'Roles are a grouping of privileges. '.

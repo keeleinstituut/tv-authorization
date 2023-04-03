@@ -23,15 +23,16 @@ class InstitutionUserRoleTest extends TestCase
 
     public function test_referenced_rows_exist(): void
     {
-        $expectedName = 'institution-user-role-test_test-institution-exists';
-        $expectedPIC = '39611300828';
+        $expectedInstitutionName = 'Eesti Keele Instituut';
+        $expectedRoleName = 'John Smith';
+        $expectedPIC = '47607239590';
 
-        $referenceInstitution = Institution::factory()->create(['name' => $expectedName]);
+        $referenceInstitution = Institution::factory()->create(['name' => $expectedInstitutionName]);
         $referenceUser = User::factory()
             ->create(['personal_identification_code' => $expectedPIC]);
         $referenceRole = Role::factory()
             ->for($referenceInstitution)
-            ->create(['name' => $expectedName]);
+            ->create(['name' => $expectedRoleName]);
         $referenceInstitutionUser = InstitutionUser::factory()
             ->for($referenceInstitution)
             ->for($referenceUser)
@@ -52,10 +53,10 @@ class InstitutionUserRoleTest extends TestCase
         $this->assertEquals($referenceInstitution->id, $createdInstitutionUserRole->role->institution->id);
 
         $retrievedInstitution = Institution::findOrFail($createdInstitutionUserRole->role->institution->id);
-        $this->assertEquals($expectedName, $retrievedInstitution->name);
+        $this->assertEquals($expectedInstitutionName, $retrievedInstitution->name);
 
         $retrievedRole = Role::findOrFail($createdInstitutionUserRole->role->id);
-        $this->assertEquals($expectedName, $retrievedRole->name);
+        $this->assertEquals($expectedRoleName, $retrievedRole->name);
 
         $retrievedUser = User::findOrFail($createdInstitutionUserRole->institutionUser->user->id);
         $this->assertModelExists($retrievedUser);
