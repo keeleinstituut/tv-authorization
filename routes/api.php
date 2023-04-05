@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\JwtClaimsSupplier;
+use App\Http\Controllers\JwtClaimsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,4 +14,4 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/jwt-claims/{user}', JwtClaimsSupplier::class);
+Route::get('/jwt-claims', [JwtClaimsController::class, 'show']);
