@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use App\Enum\PrivilegeKey;
+use Database\Factories\PrivilegeFactory;
+use Eloquent;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,13 +15,32 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 /**
+ * App\Models\Privilege
+ *
  * @property string $id
- * @property Carbon $deleted_at
- * @property Carbon $created_at
- * @property Carbon $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  * @property PrivilegeKey $key
- * @property string $description
- * @property Collection<PrivilegeRole> $privilegeRoles
+ * @property string|null $description
+ * @property-read Collection<int, PrivilegeRole> $privilegeRoles
+ * @property-read int|null $privilege_roles_count
+ *
+ * @method static PrivilegeFactory factory($count = null, $state = [])
+ * @method static Builder|Privilege newModelQuery()
+ * @method static Builder|Privilege newQuery()
+ * @method static Builder|Privilege onlyTrashed()
+ * @method static Builder|Privilege query()
+ * @method static Builder|Privilege whereCreatedAt($value)
+ * @method static Builder|Privilege whereDeletedAt($value)
+ * @method static Builder|Privilege whereDescription($value)
+ * @method static Builder|Privilege whereId($value)
+ * @method static Builder|Privilege whereKey($value)
+ * @method static Builder|Privilege whereUpdatedAt($value)
+ * @method static Builder|Privilege withTrashed()
+ * @method static Builder|Privilege withoutTrashed()
+ *
+ * @mixin Eloquent
  */
 class Privilege extends Model
 {
