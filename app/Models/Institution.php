@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\InstitutionFactory;
+use Eloquent;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,13 +14,32 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 /**
+ * App\Models\Institution
+ *
  * @property string $id
- * @property Carbon $deleted_at
- * @property Carbon $created_at
- * @property Carbon $updated_at
+ * @property Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property string $name
- * @property Collection<InstitutionUser> $institutionUsers
- * @property Collection<Role> $roles
+ * @property-read Collection<int, InstitutionUser> $institutionUsers
+ * @property-read int|null $institution_users_count
+ * @property-read Collection<int, Role> $roles
+ * @property-read int|null $roles_count
+ *
+ * @method static InstitutionFactory factory($count = null, $state = [])
+ * @method static Builder|Institution newModelQuery()
+ * @method static Builder|Institution newQuery()
+ * @method static Builder|Institution onlyTrashed()
+ * @method static Builder|Institution query()
+ * @method static Builder|Institution whereCreatedAt($value)
+ * @method static Builder|Institution whereDeletedAt($value)
+ * @method static Builder|Institution whereId($value)
+ * @method static Builder|Institution whereName($value)
+ * @method static Builder|Institution whereUpdatedAt($value)
+ * @method static Builder|Institution withTrashed()
+ * @method static Builder|Institution withoutTrashed()
+ *
+ * @mixin Eloquent
  */
 class Institution extends Model
 {
