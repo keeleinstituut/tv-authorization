@@ -49,6 +49,8 @@ class Role extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
 
+    protected $fillable = ['institution_id', 'name'];
+
     public function institutionUserRoles(): HasMany
     {
         return $this->hasMany(InstitutionUserRole::class);

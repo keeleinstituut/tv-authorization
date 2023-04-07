@@ -47,6 +47,8 @@ class User extends Authenticatable
 {
     use HasFactory, SoftDeletes, HasUuids;
 
+    protected $fillable = ['forename', 'surname', 'personal_identification_code', 'email'];
+
     public function institutionUsers(): HasMany
     {
         return $this->hasMany(InstitutionUser::class);

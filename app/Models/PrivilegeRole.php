@@ -44,6 +44,8 @@ class PrivilegeRole extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
 
+    protected $fillable = ['privilege_id', 'role_id'];
+
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);

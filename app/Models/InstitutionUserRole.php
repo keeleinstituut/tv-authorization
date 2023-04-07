@@ -44,6 +44,8 @@ class InstitutionUserRole extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
 
+    protected $fillable = ['institution_user_id', 'role_id'];
+
     public function institutionUser(): BelongsTo
     {
         return $this->belongsTo(InstitutionUser::class);

@@ -51,6 +51,8 @@ class InstitutionUser extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
 
+    protected $fillable = ['institution_id', 'user_id', 'status'];
+
     /**
      * The attributes that should be cast.
      *

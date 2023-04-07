@@ -4,25 +4,18 @@ namespace App\Rules;
 
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Translation\PotentiallyTranslatedString;
 
 class PersonalIdCodeRule implements ValidationRule
 {
     private const PERSONAL_CODE_REGEX = '/^[1-6][0-9]{2}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])[0-9]{4}$/';
 
-    /**
-     *
-     * @param string $attribute
-     * @param mixed $value
-     * @param Closure $fail
-     */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        if (!preg_match(self::PERSONAL_CODE_REGEX, $value)) {
+        if (! preg_match(self::PERSONAL_CODE_REGEX, $value)) {
             $fail('The :attribute is not valid personal ID code.');
         }
 
-        if (!$this->isChecksumValid($value)) {
+        if (! $this->isChecksumValid($value)) {
             $fail('The :attribute checksum is invalid.');
         }
     }

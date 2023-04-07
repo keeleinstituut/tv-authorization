@@ -2,17 +2,19 @@
 
 namespace App\Console\Commands;
 
+use App\Actions\CreateInstitutionWithMainUserAction;
+use App\DataTransferObjects\UserData;
 use App\Rules\PersonalIdCodeRule;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
+use Throwable;
 
-class CreateInstitutionAndMainUser extends Command
+class CreateInstitutionWithMainUser extends Command
 {
     /**
      * @var string
      */
-    protected $signature = 'app:create-institution-and-user
+    protected $signature = 'institution:create-with-main-user
                             {fname? : The forename of the user}
                             {sname? : The surname of the user}
                             {pin? : The personal identification code of the user}
@@ -23,13 +25,17 @@ class CreateInstitutionAndMainUser extends Command
      */
     protected $description = 'Command creates institution and main user for it with corresponding privileges';
 
-    public function handle(): void
+    /**
+     * @throws Throwable
+     */
+    public function handle(CreateInstitutionWithMainUserAction $createInstitutionWithMainUserAction): int
     {
         $argumentsDefinition = [
-            'iname' => fn() => $this->argument('iname') ?: $this->ask('What is the name of the institution?'),
-            'fname' => fn() => $this->argument('fname') ?: $this->ask('What is the forename of the main user?'),
-            'sname' => fn() => $this->argument('sname') ?: $this->ask('What is the surname of the main user?'),
-            'pin' => fn() => $this->argument('pin') ?: $this->ask('What is the personal identification code of the main user?')
+            'iname' => fn () => $this->argument('iname') ?: $this->ask('What is the name of the institution?'),
+            'fname' => fn () => $this->argument('fname') ?: $this->ask('What is the forename of the main user?'),
+            'sname' => fn () => $this->argument('sname') ?: $this->ask('What is the surname of the main user?'),
+            'pin' => fn () => $this->argument('pin') ?: $this->ask('What is the personal identification code of the main user?'),
+            'email' => fn () => $this->argument('pin') ?: $this->ask('What is the email of the main user?'),
         ];
 
         $arguments = $argumentsDefinition;
@@ -43,6 +49,7 @@ class CreateInstitutionAndMainUser extends Command
                 'iname' => ['required', 'min:2'],
                 'fname' => ['required', 'min:2'],
                 'sname' => ['required', 'min:2'],
+                'email' => ['required', 'email'],
                 'pin' => ['required', new PersonalIdCodeRule],
             ]);
 
@@ -55,7 +62,24 @@ class CreateInstitutionAndMainUser extends Command
             }
         } while ($validator->fails());
 
+        try {
+            $createInstitutionWithMainUserAction->execute(
+                $values['iname'],
+                new UserData(
+                    $values['pin'],
+                    $values['email'],
+                    $values['sname'],
+                    $values['fname'],
+                )
+            );
+        } catch (Throwable $e) {
+            $this->error('The institution and main user creation failed! Reason: '.$e->getMessage());
+
+            return self::FAILURE;
+        }
 
         $this->info('The institution and main user were created successful!');
+
+        return self::SUCCESS;
     }
 }
