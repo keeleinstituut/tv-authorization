@@ -20,7 +20,7 @@ class PersonalIdCodeRule implements ValidationRule
         }
     }
 
-    public function isChecksumValid(string $code): bool
+    private function isChecksumValid(string $code): bool
     {
         if (strlen($code) < 11) {
             return false;

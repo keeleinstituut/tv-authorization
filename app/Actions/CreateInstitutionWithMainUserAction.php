@@ -34,7 +34,7 @@ readonly class CreateInstitutionWithMainUserAction
         $this->createInstitutionUserAction->execute(
             $userData,
             $institution->id,
-            $role->id
+            [$role->id]
         );
     }
 }

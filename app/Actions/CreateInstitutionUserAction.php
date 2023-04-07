@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\DataTransferObjects\UserData;
 use App\Enums\InstitutionUserStatus;
+use App\Exceptions\EmptyUserRolesException;
 use App\Models\InstitutionUser;
 use App\Models\InstitutionUserRole;
 use App\Models\User;
@@ -15,9 +16,9 @@ class CreateInstitutionUserAction
     /**
      * @throws Throwable
      */
-    public function execute(UserData $userData, string $institutionId, string $roleId): InstitutionUser
+    public function execute(UserData $userData, string $institutionId, array $roleIds): InstitutionUser
     {
-        return DB::transaction(function () use ($userData, $institutionId, $roleId): InstitutionUser {
+        return DB::transaction(function () use ($userData, $institutionId, $roleIds): InstitutionUser {
             $user = User::firstOrCreate(
                 ['personal_identification_code' => $userData->pin],
                 [
@@ -37,10 +38,16 @@ class CreateInstitutionUserAction
                 ]
             );
 
-            InstitutionUserRole::firstOrCreate([
-                'institution_user_id' => $institutionUser->id,
-                'role_id' => $roleId,
-            ]);
+            if (empty($roleIds)) {
+                throw new EmptyUserRolesException("Couldn't create institution user without roles");
+            }
+
+            foreach ($roleIds as $roleId) {
+                InstitutionUserRole::firstOrCreate([
+                    'institution_user_id' => $institutionUser->id,
+                    'role_id' => $roleId,
+                ]);
+            }
 
             return $institutionUser;
         });
