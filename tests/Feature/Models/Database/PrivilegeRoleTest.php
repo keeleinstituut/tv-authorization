@@ -2,7 +2,7 @@
 
 namespace Feature\Models\Database;
 
-use App\Enum\PrivilegeKey;
+use App\Enums\PrivilegeKey;
 use App\Models\Privilege;
 use App\Models\PrivilegeRole;
 use App\Models\Role;

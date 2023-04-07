@@ -2,7 +2,7 @@
 
 namespace App\DataTransferObjects;
 
-use App\Enum\PrivilegeKey;
+use App\Enums\PrivilegeKey;
 
 readonly class InstitutionRoleData
 {

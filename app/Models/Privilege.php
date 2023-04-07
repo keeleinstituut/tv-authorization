@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Enum\PrivilegeKey;
+use App\Enums\PrivilegeKey;
 use Database\Factories\PrivilegeFactory;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;

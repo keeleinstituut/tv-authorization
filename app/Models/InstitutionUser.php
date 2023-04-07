@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Enum\InstitutionUserStatus;
+use App\Enums\InstitutionUserStatus;
 use Database\Factories\InstitutionUserFactory;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;

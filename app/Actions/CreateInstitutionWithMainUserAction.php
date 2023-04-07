@@ -4,7 +4,7 @@ namespace App\Actions;
 
 use App\DataTransferObjects\InstitutionRoleData;
 use App\DataTransferObjects\UserData;
-use App\Enum\DefaultRole;
+use App\Enums\DefaultRole;
 use Throwable;
 
 readonly class CreateInstitutionWithMainUserAction

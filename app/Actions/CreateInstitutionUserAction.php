@@ -3,7 +3,7 @@
 namespace App\Actions;
 
 use App\DataTransferObjects\UserData;
-use App\Enum\InstitutionUserStatus;
+use App\Enums\InstitutionUserStatus;
 use App\Models\InstitutionUser;
 use App\Models\InstitutionUserRole;
 use App\Models\User;

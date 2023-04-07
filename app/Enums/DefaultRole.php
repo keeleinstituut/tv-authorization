@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Enum;
+namespace App\Enums;
 
 enum DefaultRole: string
 {
@@ -21,6 +21,8 @@ enum DefaultRole: string
                 PrivilegeKey::ActivateUser,
                 PrivilegeKey::DeactivateUser,
                 PrivilegeKey::ArchiveUser,
+                PrivilegeKey::SetUserWorkTime,
+                PrivilegeKey::SetUserVacation,
             ],
             default => []
         };
