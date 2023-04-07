@@ -1,11 +1,10 @@
 <?php
 
-
 use Database\Helpers\InsertPrivilegesMigration;
 
 return new class extends InsertPrivilegesMigration
 {
-    function getPrivilegesKeys(): array
+    public function getPrivilegesKeys(): array
     {
         return [
             'ADD_ROLE',

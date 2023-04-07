@@ -4,7 +4,7 @@ use Database\Helpers\InsertPrivilegesMigration;
 
 return new class extends InsertPrivilegesMigration
 {
-    function getPrivilegesKeys(): array
+    public function getPrivilegesKeys(): array
     {
         return [
             'SET_USER_WORKTIME',

@@ -32,5 +32,5 @@ abstract class InsertPrivilegesMigration extends Migration
     /**
      * @return string[]
      */
-    abstract function getPrivilegesKeys(): array;
+    abstract public function getPrivilegesKeys(): array;
 }
