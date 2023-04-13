@@ -16,7 +16,7 @@ RUN docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql && \
                                 sodium \
                                 pcntl
 
-COPY ./application ${APP_ROOT}
+COPY --chown=www-data:www-data ./application ${APP_ROOT}
 WORKDIR $APP_ROOT
 
 RUN rm -rf ${WEB_ROOT} && \
@@ -35,8 +35,6 @@ RUN sed -i 's/^\(\[supervisord\]\)$/\1\nnodaemon=true/' /etc/supervisord.conf &&
     sed -i 's/;emergency_restart_threshold = 0/emergency_restart_threshold = 10/g' /usr/local/etc/php-fpm.conf && \
     sed -i 's/;emergency_restart_interval = 0/emergency_restart_interval = 1m/g' /usr/local/etc/php-fpm.conf && \
     sed -i 's/;process_control_timeout = 0/process_control_timeout = 10s/g' /usr/local/etc/php-fpm.conf
-#     sed -i 's/;access\.log = log\/\$pool\.access\.log/access\.log = \/proc\/self\/fd\/2/g' /usr/local/etc/php-fpm.d/www.conf && \
-#     sed -i 's/;error_log = log\/php-fpm\.log/error_log = \/proc\/self\/fd\/2/g' /usr/local/etc/php-fpm.conf && \
 
 # Set custom php.ini settings
 RUN echo 'post_max_size = 512M' >> /usr/local/etc/php/conf.d/my-php.ini && \
@@ -44,30 +42,6 @@ RUN echo 'post_max_size = 512M' >> /usr/local/etc/php/conf.d/my-php.ini && \
     echo 'memory_limit = 512M' >> /usr/local/etc/php/conf.d/my-php.ini
 
 RUN <<EOF cat > /etc/nginx/http.d/default.conf
-# error_log stderr info;
-# access_log /dev/stdout;
-# 
-# server {
-#     listen 80 deferred;
-# 
-#     root   ${WEB_ROOT};
-#     index  index.html index.htm index.php;
-# 
-#     # include h5bp/basic.conf;
-# 
-#     location ~ \.php$ {
-#         fastcgi_pass   127.0.0.1:9000;
-#         fastcgi_index  index.php;
-#         fastcgi_param  REQUEST_METHOD \$request_method;
-#         fastcgi_param  SCRIPT_FILENAME  \$document_root\$fastcgi_script_name;
-#         fastcgi_param  HTTP_X_FORWARDED_FOR \$http_x_forwarded_for;
-#         include        fastcgi_params;
-#     }
-# 
-#     location / {
-#         try_files $uri $uri/ /index.php?$args;
-#     }
-# }
 server {
     listen 80;
     index index.php index.html;
@@ -138,6 +112,5 @@ stderr_logfile=/dev/stderr
 stderr_logfile_maxbytes=0
 EOF
 
-# CMD sleep infinity
 CMD supervisord -c /etc/supervisord.conf
 EXPOSE 80
