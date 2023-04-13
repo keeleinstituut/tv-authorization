@@ -81,3 +81,17 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+## @param extraEnvVars Extra environment variables to be set on container
+## Example:
+## extraEnvVars:
+##   - name: FOO
+##     value: "bar"
+##
+extraEnvVars: []
+## @param extraEnvVarsCM Name of existing ConfigMap containing extra env vars
+##
+extraEnvVarsCM: ""
+## @param extraEnvVarsSecret Name of existing Secret containing extra env vars
+##
+extraEnvVarsSecret: ""
