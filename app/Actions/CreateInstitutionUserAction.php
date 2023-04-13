@@ -20,7 +20,7 @@ class CreateInstitutionUserAction
     {
         return DB::transaction(function () use ($userData, $institutionId, $roleIds): InstitutionUser {
             $user = User::firstOrCreate(
-                ['personal_identification_code' => $userData->pin],
+                ['personal_identification_code' => $userData->pic],
                 [
                     'forename' => $userData->forename,
                     'surname' => $userData->surname,

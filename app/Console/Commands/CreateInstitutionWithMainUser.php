@@ -34,8 +34,8 @@ class CreateInstitutionWithMainUser extends Command
             'iname' => fn () => $this->argument('iname') ?: $this->ask('What is the name of the institution?'),
             'fname' => fn () => $this->argument('fname') ?: $this->ask('What is the forename of the main user?'),
             'sname' => fn () => $this->argument('sname') ?: $this->ask('What is the surname of the main user?'),
-            'pin' => fn () => $this->argument('pin') ?: $this->ask('What is the personal identification code of the main user?'),
-            'email' => fn () => $this->argument('pin') ?: $this->ask('What is the email of the main user?'),
+            'pic' => fn () => $this->argument('pic') ?: $this->ask('What is the personal identification code of the main user?'),
+            'email' => fn () => $this->argument('email') ?: $this->ask('What is the email of the main user?'),
         ];
 
         $arguments = $argumentsDefinition;
@@ -50,7 +50,7 @@ class CreateInstitutionWithMainUser extends Command
                 'fname' => ['required', 'min:2'],
                 'sname' => ['required', 'min:2'],
                 'email' => ['required', 'email'],
-                'pin' => ['required', new PersonalIdCodeRule],
+                'pic' => ['required', new PersonalIdCodeRule],
             ]);
 
             $arguments = [];
@@ -66,7 +66,7 @@ class CreateInstitutionWithMainUser extends Command
             $createInstitutionWithMainUserAction->execute(
                 $values['iname'],
                 new UserData(
-                    $values['pin'],
+                    $values['pic'],
                     $values['email'],
                     $values['sname'],
                     $values['fname'],
