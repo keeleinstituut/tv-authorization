@@ -23,7 +23,6 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $deleted_at
  * @property string $institution_id
  * @property string $name
- *
  * @property-read Institution $institution
  * @property-read Collection<int, InstitutionUserRole> $institutionUserRoles
  * @property-read int|null $institution_user_roles_count

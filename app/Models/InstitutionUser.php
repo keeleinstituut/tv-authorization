@@ -27,7 +27,6 @@ use Illuminate\Support\Carbon;
  * @property string $email
  * @property InstitutionUserStatus $status
  * @property-read Institution $institution
- *
  * @property-read Collection<int, InstitutionUserRole> $institutionUserRoles
  * @property-read int|null $institution_user_roles_count
  * @property-read User $user

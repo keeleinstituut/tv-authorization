@@ -11,7 +11,7 @@ class CreateInstitutionAction
     {
         return Institution::create([
             'name' => $institutionData->name,
-            'logo_url' => $institutionData->logoUrl
+            'logo_url' => $institutionData->logoUrl,
         ]);
     }
 }
