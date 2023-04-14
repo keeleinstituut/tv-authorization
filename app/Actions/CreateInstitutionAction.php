@@ -2,14 +2,16 @@
 
 namespace App\Actions;
 
+use App\DataTransferObjects\InstitutionData;
 use App\Models\Institution;
 
 class CreateInstitutionAction
 {
-    public function execute(string $name): Institution
+    public function execute(InstitutionData $institutionData): Institution
     {
         return Institution::create([
-            'name' => $name,
+            'name' => $institutionData->name,
+            'logo_url' => $institutionData->logoUrl
         ]);
     }
 }

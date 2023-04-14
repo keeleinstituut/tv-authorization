@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\DataTransferObjects\InstitutionData;
 use App\DataTransferObjects\InstitutionRoleData;
 use App\DataTransferObjects\UserData;
 use App\Enums\DefaultRole;
@@ -19,9 +20,9 @@ readonly class CreateInstitutionWithMainUserAction
     /**
      * @throws Throwable
      */
-    public function execute(string $institutionName, UserData $userData): void
+    public function execute(InstitutionData $institutionData, UserData $userData): void
     {
-        $institution = $this->createInstitutionAction->execute($institutionName);
+        $institution = $this->createInstitutionAction->execute($institutionData);
 
         $role = $this->createRoleAction->execute(
             new InstitutionRoleData(

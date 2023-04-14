@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Actions\CreateInstitutionWithMainUserAction;
+use App\DataTransferObjects\InstitutionData;
 use App\DataTransferObjects\UserData;
 use App\Rules\PersonalIdCodeRule;
 use Illuminate\Console\Command;
@@ -32,6 +33,7 @@ class CreateInstitutionWithMainUser extends Command
     {
         $argumentsDefinition = [
             'iname' => fn () => $this->argument('iname') ?: $this->ask('What is the name of the institution?'),
+            'logo' => fn () => $this->argument('logo') ?: $this->ask('What is the logo of the institution?'),
             'fname' => fn () => $this->argument('fname') ?: $this->ask('What is the forename of the main user?'),
             'sname' => fn () => $this->argument('sname') ?: $this->ask('What is the surname of the main user?'),
             'pic' => fn () => $this->argument('pic') ?: $this->ask('What is the personal identification code of the main user?'),
@@ -50,6 +52,7 @@ class CreateInstitutionWithMainUser extends Command
                 'fname' => ['required', 'min:2'],
                 'sname' => ['required', 'min:2'],
                 'email' => ['required', 'email'],
+                'logo' => ['nullable', 'url'],
                 'pic' => ['required', new PersonalIdCodeRule],
             ]);
 
@@ -64,7 +67,10 @@ class CreateInstitutionWithMainUser extends Command
 
         try {
             $createInstitutionWithMainUserAction->execute(
-                $values['iname'],
+                new InstitutionData(
+                    $values['name'],
+                    $values['logo']
+                ),
                 new UserData(
                     $values['pic'],
                     $values['email'],

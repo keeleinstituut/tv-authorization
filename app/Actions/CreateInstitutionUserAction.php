@@ -24,7 +24,6 @@ class CreateInstitutionUserAction
                 [
                     'forename' => $userData->forename,
                     'surname' => $userData->surname,
-                    'email' => $userData->email,
                 ]
             );
 
@@ -35,6 +34,7 @@ class CreateInstitutionUserAction
                 ],
                 [
                     'status' => InstitutionUserStatus::Activated,
+                    'email' => $userData->email,
                 ]
             );
 

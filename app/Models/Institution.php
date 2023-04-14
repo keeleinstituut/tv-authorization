@@ -21,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property string $name
+ * @property string|null $logo_url
  * @property-read Collection<int, InstitutionUser> $institutionUsers
  * @property-read int|null $institution_users_count
  * @property-read Collection<int, Role> $roles
@@ -45,7 +46,7 @@ class Institution extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
 
-    protected $fillable = ['name'];
+    protected $fillable = ['name', 'logo_url'];
 
     public function institutionUsers(): HasMany
     {

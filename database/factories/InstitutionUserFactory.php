@@ -23,6 +23,7 @@ class InstitutionUserFactory extends Factory
             'institution_id' => Institution::factory(),
             'user_id' => User::factory(),
             'status' => InstitutionUserStatus::Created,
+            'email' => $this->faker->email
         ];
     }
 }

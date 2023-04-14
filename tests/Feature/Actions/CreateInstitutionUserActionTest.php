@@ -19,13 +19,15 @@ class CreateInstitutionUserActionTest extends TestCase
     {
         $institution = Institution::factory()->createOne();
         $role = Role::factory()->createOne();
+        $userData = new UserData(
+            '46304255763',
+            'some@email.com',
+            'some surname',
+            'some forename'
+        );
+
         $institutionUser = (new CreateInstitutionUserAction)->execute(
-            new UserData(
-                '46304255763',
-                'some@email.com',
-                'some surname',
-                'some forename'
-            ),
+            $userData,
             $institution->id,
             [$role->id]
         );
@@ -33,6 +35,7 @@ class CreateInstitutionUserActionTest extends TestCase
         $this->assertModelExists($institutionUser);
         $this->assertModelExists($institutionUser->user);
         $this->assertEquals($institution->id, $institutionUser->institution_id);
+        $this->assertEquals($userData->email, $institutionUser->email);
         $this->assertEquals(
             [$role->id],
             $institutionUser->institutionUserRoles
@@ -44,8 +47,6 @@ class CreateInstitutionUserActionTest extends TestCase
     public function test_creation_of_institution_user_without_roles(): void
     {
         $institution = Institution::factory()->createOne();
-        $role = Role::factory()->createOne();
-
         $this->expectException(EmptyUserRolesException::class);
         (new CreateInstitutionUserAction)->execute(
             new UserData(
