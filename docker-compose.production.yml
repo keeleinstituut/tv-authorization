@@ -5,15 +5,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    depends_on:
+      - postgres
+      - redis
     ports:
       - 8000:80
     environment:
       - APP_NAME=tv-authorization-service
       - APP_ENV=local
-      - APP_KEY=
+      - APP_KEY=base64:0xPWU7myp18Jd4RHZ115ke3iMG8UWbAPk5d5tfEdMoo=
       - APP_DEBUG=true
       - APP_URL=http://localhost:8000
-      # - LOG_CHANNEL=stack
       - LOG_CHANNEL=stderr
       - LOG_DEPRECATIONS_CHANNEL=null
       - LOG_LEVEL=debug

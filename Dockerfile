@@ -7,6 +7,7 @@ COPY --from=composer /usr/bin/composer /usr/bin/composer
 
 ENV APP_ROOT /app
 ENV WEB_ROOT /var/www/html
+ENV ENTRYPOINT /entrypoint.sh
 
 RUN apk add libpq-dev libsodium-dev
 RUN docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql && \
@@ -112,5 +113,23 @@ stderr_logfile=/dev/stderr
 stderr_logfile_maxbytes=0
 EOF
 
-CMD supervisord -c /etc/supervisord.conf
+RUN <<EOF cat > ${ENTRYPOINT}
+#!/bin/sh
+set -e
+
+echo "Optimize for loading in runtime variables"
+php artisan optimize
+
+echo "Running migrations"
+php artisan migrate --force
+
+echo "Start application processes using supervisord..."
+exec "\$@"
+EOF
+
+RUN chmod +x ${ENTRYPOINT}
+
+CMD ["supervisord", "-c", "/etc/supervisord.conf"]
 EXPOSE 80
+
+ENTRYPOINT ["/entrypoint.sh"]
