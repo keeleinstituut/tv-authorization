@@ -2,12 +2,12 @@
 
 namespace App\Actions;
 
-use App\DataTransferObjects\UserData;
 use App\Enums\InstitutionUserStatus;
 use App\Exceptions\EmptyUserRolesException;
 use App\Models\InstitutionUser;
 use App\Models\InstitutionUserRole;
 use App\Models\User;
+use App\DataTransferObjects\UserData;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 

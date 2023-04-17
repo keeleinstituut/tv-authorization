@@ -2,12 +2,12 @@
 
 namespace Feature\Actions;
 
-use App\Actions\CreateInstitutionUserAction;
-use App\DataTransferObjects\UserData;
 use App\Exceptions\EmptyUserRolesException;
 use App\Models\Institution;
 use App\Models\InstitutionUserRole;
 use App\Models\Role;
+use App\Actions\CreateInstitutionUserAction;
+use App\DataTransferObjects\UserData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

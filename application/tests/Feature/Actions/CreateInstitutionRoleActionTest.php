@@ -2,12 +2,12 @@
 
 namespace Feature\Actions;
 
-use App\Actions\CreateInstitutionRoleAction;
-use App\DataTransferObjects\InstitutionRoleData;
 use App\Enums\PrivilegeKey;
 use App\Exceptions\EmptyRoleNameException;
 use App\Exceptions\EmptyRolePrivilegesException;
 use App\Models\Institution;
+use App\Actions\CreateInstitutionRoleAction;
+use App\DataTransferObjects\InstitutionRoleData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
