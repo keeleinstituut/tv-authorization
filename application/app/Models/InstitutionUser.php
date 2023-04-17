@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use App\Enums\InstitutionUserStatus;
+use Barryvdh\LaravelIdeHelper\Eloquent;
 use Database\Factories\InstitutionUserFactory;
-use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
