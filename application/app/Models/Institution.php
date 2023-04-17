@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
+use Barryvdh\LaravelIdeHelper\Eloquent;
 use Database\Factories\InstitutionFactory;
-use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -21,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property string $name
+ * @property string|null $logo_url
  * @property-read Collection<int, InstitutionUser> $institutionUsers
  * @property-read int|null $institution_users_count
  * @property-read Collection<int, Role> $roles
@@ -44,6 +45,8 @@ use Illuminate\Support\Carbon;
 class Institution extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
+
+    protected $fillable = ['name', 'logo_url'];
 
     public function institutionUsers(): HasMany
     {

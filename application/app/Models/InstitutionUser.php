@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use App\Enum\InstitutionUserStatus;
+use App\Enums\InstitutionUserStatus;
+use Barryvdh\LaravelIdeHelper\Eloquent;
 use Database\Factories\InstitutionUserFactory;
-use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $deleted_at
  * @property string $institution_id
  * @property string $user_id
+ * @property string $email
  * @property InstitutionUserStatus $status
  * @property-read Institution $institution
  * @property-read Collection<int, InstitutionUserRole> $institutionUserRoles
@@ -50,6 +51,8 @@ use Illuminate\Support\Carbon;
 class InstitutionUser extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
+
+    protected $fillable = ['institution_id', 'user_id', 'status', 'email'];
 
     /**
      * The attributes that should be cast.

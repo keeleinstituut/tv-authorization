@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Enum;
+namespace App\Enums;
 
 enum PrivilegeKey: string
 {
@@ -15,4 +15,6 @@ enum PrivilegeKey: string
     case ActivateUser = 'ACTIVATE_USER';
     case DeactivateUser = 'DEACTIVATE_USER';
     case ArchiveUser = 'ARCHIVE_USER';
+    case SetUserWorkTime = 'SET_USER_WORKTIME';
+    case SetUserVacation = 'SET_USER_VACATION';
 }

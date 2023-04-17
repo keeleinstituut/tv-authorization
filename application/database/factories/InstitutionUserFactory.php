@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Enum\InstitutionUserStatus;
+use App\Enums\InstitutionUserStatus;
 use App\Models\Institution;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -23,6 +23,7 @@ class InstitutionUserFactory extends Factory
             'institution_id' => Institution::factory(),
             'user_id' => User::factory(),
             'status' => InstitutionUserStatus::Created,
+            'email' => $this->faker->email,
         ];
     }
 }
