@@ -22,7 +22,7 @@ class PrivilegeRoleFactory extends Factory
     {
         return [
             'role_id' => Role::factory(),
-            'privilege_id' => fn () => Privilege::where('key', PrivilegeKey::AddUser->value)->first(),
+            'privilege_id' => fake()->unique()->randomElement(Privilege::all()->pluck('id')),
         ];
     }
 }
