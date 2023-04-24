@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
+use Barryvdh\LaravelIdeHelper\Eloquent;
 use Database\Factories\InstitutionUserRoleFactory;
-use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -43,6 +43,8 @@ use Illuminate\Support\Carbon;
 class InstitutionUserRole extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
+
+    protected $fillable = ['institution_user_id', 'role_id'];
 
     public function institutionUser(): BelongsTo
     {

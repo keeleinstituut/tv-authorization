@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
+use Barryvdh\LaravelIdeHelper\Eloquent;
 use Database\Factories\UserFactory;
-use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -46,6 +46,8 @@ use Illuminate\Support\Carbon;
 class User extends Authenticatable
 {
     use HasFactory, SoftDeletes, HasUuids;
+
+    protected $fillable = ['forename', 'surname', 'personal_identification_code'];
 
     public function institutionUsers(): HasMany
     {
