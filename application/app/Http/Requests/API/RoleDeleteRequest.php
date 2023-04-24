@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests\API;
 
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Foundation\Http\FormRequest;
 use App\Models\Role;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 
 class RoleDeleteRequest extends FormRequest
 {
@@ -17,7 +17,7 @@ class RoleDeleteRequest extends FormRequest
 
         return $role
             && $role->institution_id == Auth::user()->institutionId
-            && Auth::hasPrivilege("DELETE_ROLE");
+            && Auth::hasPrivilege('DELETE_ROLE');
     }
 
     /**

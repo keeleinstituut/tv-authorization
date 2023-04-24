@@ -2,12 +2,9 @@
 
 namespace Tests\Feature\Integration;
 
-use Tests\TestCase;
-use App\Enum\PrivilegeKey;
 use App\Models\Privilege;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
-use Illuminate\Support\Arr;
+use Tests\TestCase;
 
 class PrivilegeControllerTest extends TestCase
 {
@@ -21,7 +18,7 @@ class PrivilegeControllerTest extends TestCase
         $accessToken = $this->generateAccessToken([
             'privileges' => [
                 'VIEW_PRIVILEGE',
-            ]
+            ],
         ]);
 
         $response = $this->withHeaders([
@@ -40,10 +37,11 @@ class PrivilegeControllerTest extends TestCase
             ]);
     }
 
-    public function test_unauthorized(): void {
+    public function test_unauthorized(): void
+    {
         $accessToken = $this->generateAccessToken([
             'privileges' => [
-            ]
+            ],
         ]);
 
         $response = $this->withHeaders([
@@ -54,9 +52,10 @@ class PrivilegeControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    private function constructRoleRepresentation(Privilege $privilege) {
+    private function constructRoleRepresentation(Privilege $privilege)
+    {
         return [
-            "key" => $privilege->key->value,
+            'key' => $privilege->key->value,
         ];
     }
 }

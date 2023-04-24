@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests\API;
 
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Foundation\Http\FormRequest;
 use App\Models\Role;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 
 class RoleShowRequest extends FormRequest
 {
@@ -17,7 +17,7 @@ class RoleShowRequest extends FormRequest
 
         return $role
             && $role->institution_id == Auth::user()->institutionId
-            && Auth::hasPrivilege("VIEW_ROLE");
+            && Auth::hasPrivilege('VIEW_ROLE');
     }
 
     /**

@@ -2,14 +2,13 @@
 
 namespace Tests\Feature\Integration;
 
-use App\Models\Role;
 use App\Models\Institution;
 use App\Models\PrivilegeRole;
-use Illuminate\Support\Str;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
-use Tests\TestCase;
+use App\Models\Role;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
+use Tests\TestCase;
 
 class RoleControllerTest extends TestCase
 {
@@ -17,7 +16,8 @@ class RoleControllerTest extends TestCase
 
     private $testNow;
 
-    public function setUp(): void {
+    public function setUp(): void
+    {
         parent::setup();
 
         $this->testNow = Carbon::create(2001, 5, 21, 12);
@@ -41,7 +41,7 @@ class RoleControllerTest extends TestCase
             ],
             'privileges' => [
                 'VIEW_ROLE',
-            ]
+            ],
         ]);
 
         $response = $this->withHeaders([
@@ -54,7 +54,7 @@ class RoleControllerTest extends TestCase
             ->assertJsonFragment([
                 'data' => [
                     $this->constructRoleRepresentation($role),
-                ]
+                ],
             ]);
     }
 
@@ -72,7 +72,7 @@ class RoleControllerTest extends TestCase
             ],
             'privileges' => [
                 'VIEW_ROLE',
-            ]
+            ],
         ]);
 
         $response = $this->withHeaders([
@@ -96,7 +96,7 @@ class RoleControllerTest extends TestCase
             ],
             'privileges' => [
                 'ADD_ROLE',
-            ]
+            ],
         ]);
 
         $payload = json_decode(<<<EOT
@@ -112,7 +112,7 @@ class RoleControllerTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
             'Accept' => 'application/json',
-        ])->postJson("/api/roles", $payload);
+        ])->postJson('/api/roles', $payload);
 
         $savedRole = Role::first();
 
@@ -133,7 +133,7 @@ class RoleControllerTest extends TestCase
             ],
             'privileges' => [
                 'EDIT_ROLE',
-            ]
+            ],
         ]);
 
         $payload = json_decode(<<<EOT
@@ -170,7 +170,7 @@ class RoleControllerTest extends TestCase
             ],
             'privileges' => [
                 'DELETE_ROLE',
-            ]
+            ],
         ]);
 
         $response = $this->withHeaders([
@@ -189,8 +189,8 @@ class RoleControllerTest extends TestCase
         $this->assertNull($savedRole);
     }
 
-
-    public function test_unauthorized_institution(): void {
+    public function test_unauthorized_institution(): void
+    {
         // Populate some roles
         $roles = Role::factory(3)->create();
 
@@ -204,7 +204,7 @@ class RoleControllerTest extends TestCase
                 'ADD_ROLE',
                 'EDIT_ROLE',
                 'DELETE_ROLE',
-            ]
+            ],
         ]);
 
         $roleId = $roles[0]->id;
@@ -214,7 +214,7 @@ class RoleControllerTest extends TestCase
                 'Authorization' => "Bearer $accessToken",
                 'Accept' => 'application/json',
             ])
-            ->getJson("/api/roles")
+            ->getJson('/api/roles')
             ->assertStatus(403);
 
         $this
@@ -222,7 +222,7 @@ class RoleControllerTest extends TestCase
                 'Authorization' => "Bearer $accessToken",
                 'Accept' => 'application/json',
             ])
-            ->postJson("/api/roles")
+            ->postJson('/api/roles')
             ->assertStatus(403);
 
         $this
@@ -250,18 +250,17 @@ class RoleControllerTest extends TestCase
             ->assertStatus(403);
     }
 
-
-    private function constructRoleRepresentation(Role $role) {
+    private function constructRoleRepresentation(Role $role)
+    {
         return [
             'id' => $role->id,
             'name' => $role->name,
             'institution_id' => $role->institution_id,
             'privileges' => collect($role->privileges)->map(fn ($privilege) => [
-                "key" => $privilege->key->value,
+                'key' => $privilege->key->value,
             ])->toArray(),
             'created_at' => $role->created_at->toIsoString(),
             'updated_at' => $role->updated_at->toIsoString(),
         ];
     }
-
 }

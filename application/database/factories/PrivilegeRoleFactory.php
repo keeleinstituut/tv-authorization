@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Enums\PrivilegeKey;
 use App\Models\Privilege;
 use App\Models\PrivilegeRole;
 use App\Models\Role;

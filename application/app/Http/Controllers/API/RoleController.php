@@ -10,11 +10,9 @@ use App\Http\Requests\API\RoleShowRequest;
 use App\Http\Requests\API\RoleUpdateRequest;
 use App\Http\Resources\API\RoleResource;
 use App\Models\Privilege;
-use App\Models\PrivilegeRole;
 use App\Models\Role;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class RoleController extends Controller
 {
@@ -117,7 +115,8 @@ class RoleController extends Controller
         });
     }
 
-    public function getBaseQuery() {
+    public function getBaseQuery()
+    {
         return Role::getModel()
             // Just a safe check, validations already verify user's permissions to queried objects
             ->where('institution_id', Auth::user()->institutionId);

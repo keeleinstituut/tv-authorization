@@ -15,7 +15,7 @@ return new class extends Migration
             $table->dropUnique(['institution_id', 'name']);
         });
 
-        DB::statement(<<<EOT
+        DB::statement(<<<'EOT'
             CREATE UNIQUE INDEX roles_name_unique ON roles (name, institution_id)
             WHERE deleted_at IS NULL
         EOT);
@@ -27,7 +27,7 @@ return new class extends Migration
     public function down(): void
     {
             // ALTER TABLE roles DROP CONSTRAINT roles_name_unique
-        DB::statement(<<<EOT
+        DB::statement(<<<'EOT'
             DROP INDEX roles_name_unique;
         EOT);
 

@@ -15,6 +15,7 @@ class PrivilegeController extends Controller
     public function index(PrivilegeListRequest $request)
     {
         $data = Privilege::getModel()->get();
+
         return PrivilegeResource::collection($data);
     }
 }

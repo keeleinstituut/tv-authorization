@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests\API;
 
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Foundation\Http\FormRequest;
 use App\Models\Institution;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class RoleListRequest extends FormRequest
@@ -15,7 +15,7 @@ class RoleListRequest extends FormRequest
     public function authorize(): bool
     {
         return $this->get('institution_id') == Auth::user()->institutionId
-            && Auth::hasPrivilege("VIEW_ROLE");
+            && Auth::hasPrivilege('VIEW_ROLE');
     }
 
     /**
@@ -26,8 +26,8 @@ class RoleListRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "institution_id" => [
-                "required",
+            'institution_id' => [
+                'required',
                 'uuid',
                 Rule::exists(app(Institution::class)->getTable(), 'id'),
             ],

@@ -2,10 +2,10 @@
 
 namespace App\Actions;
 
-use App\Enums\DefaultRole;
 use App\DataTransferObjects\InstitutionData;
 use App\DataTransferObjects\InstitutionRoleData;
 use App\DataTransferObjects\UserData;
+use App\Enums\DefaultRole;
 use Throwable;
 
 readonly class CreateInstitutionWithMainUserAction

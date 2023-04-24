@@ -18,6 +18,7 @@ class PrivilegeFactory extends Factory
     public function definition(): array
     {
         $availablePrivileges = collect(PrivilegeKey::cases())->pluck('value');
+
         return [
             'key' => fake()->randomElement($availablePrivileges),
         ];

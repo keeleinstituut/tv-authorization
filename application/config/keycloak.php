@@ -1,4 +1,5 @@
 <?php
+
 return [
     /*
      * Keycloak Url. The param is used for fetching realm public key.
@@ -67,5 +68,5 @@ return [
      * By default this package **always** will look at first for a `Bearer` token.
      * Additionally, if this option is enabled, then it will try to get a token from this custom request param.
      */
-    'input_key' => env('KEYCLOAK_TOKEN_INPUT_KEY', null)
+    'input_key' => env('KEYCLOAK_TOKEN_INPUT_KEY', null),
 ];

@@ -22,8 +22,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::get('/privileges', [PrivilegeController::class, 'index']);
 
-Route::get(   '/roles',           [RoleController::class, 'index']);
-Route::post(  '/roles',           [RoleController::class, 'store']);
-Route::get(   '/roles/{role_id}', [RoleController::class, 'show'])->whereUuid('role_id');
-Route::put(   '/roles/{role_id}', [RoleController::class, 'update'])->whereUuid('role_id');
+Route::get('/roles', [RoleController::class, 'index']);
+Route::post('/roles', [RoleController::class, 'store']);
+Route::get('/roles/{role_id}', [RoleController::class, 'show'])->whereUuid('role_id');
+Route::put('/roles/{role_id}', [RoleController::class, 'update'])->whereUuid('role_id');
 Route::delete('/roles/{role_id}', [RoleController::class, 'destroy'])->whereUuid('role_id');

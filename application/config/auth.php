@@ -72,7 +72,7 @@ return [
         'jwt-users' => [
             'driver' => 'jwt-payload-users',
             'model' => KeycloakAuthGuard\Models\JwtPayloadUser::class,
-        ]
+        ],
 
         // 'users' => [
         //     'driver' => 'database',
