@@ -126,6 +126,9 @@ class RoleControllerTest extends TestCase
     public function test_api_roles_update_endpoint(): void
     {
         $role = Role::factory()->create();
+        PrivilegeRole::factory(3)->create([
+            'role_id' => $role->id,
+        ]);
 
         $accessToken = $this->generateAccessToken([
             'selectedInstitution' => [
@@ -252,13 +255,16 @@ class RoleControllerTest extends TestCase
 
     private function constructRoleRepresentation(Role $role)
     {
+        $role->load('privilegeRoles.privilege');
         return [
             'id' => $role->id,
             'name' => $role->name,
             'institution_id' => $role->institution_id,
-            'privileges' => collect($role->privileges)->map(fn ($privilege) => [
-                'key' => $privilege->key->value,
-            ])->toArray(),
+            'privileges' => collect($role->privilegeRoles)
+                ->filter(fn ($privilegeRole) => $privilegeRole->deleted_at == null && $privilegeRole->privilege->deleted_at == null)
+                ->map(fn ($privilegeRole) => [
+                    'key' => $privilegeRole->privilege->key->value,
+                ])->toArray(),
             'created_at' => $role->created_at->toIsoString(),
             'updated_at' => $role->updated_at->toIsoString(),
         ];

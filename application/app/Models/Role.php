@@ -69,6 +69,7 @@ class Role extends Model
     {
         return $this->belongsToMany(Privilege::class, app(PrivilegeRole::class)->getTable(), 'role_id', 'privilege_id')
             ->using(PrivilegeRole::class)
+            ->wherePivot('deleted_at', null)
             ->withTimestamps();
     }
 
