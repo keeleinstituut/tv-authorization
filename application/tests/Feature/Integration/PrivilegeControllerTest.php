@@ -27,7 +27,7 @@ class PrivilegeControllerTest extends TestCase
         ])->getJson('/api/privileges');
 
         $privileges = collect(Privilege::all())
-            ->map(fn ($privilege) => $this->constructRoleRepresentation($privilege))
+            ->map(fn ($privilege) => $this->constructPrivilegeRepresentation($privilege))
             ->toArray();
 
         $response
@@ -52,7 +52,7 @@ class PrivilegeControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    private function constructRoleRepresentation(Privilege $privilege)
+    private function constructPrivilegeRepresentation(Privilege $privilege)
     {
         return [
             'key' => $privilege->key->value,

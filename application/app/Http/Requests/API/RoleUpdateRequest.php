@@ -36,7 +36,7 @@ class RoleUpdateRequest extends FormRequest
             'institution_id' => [
                 'uuid',
                 Rule::exists(app(Institution::class)->getTable(), 'id'),
-                RUle::in([Auth::user()->institutionId]),
+                Rule::in([Auth::user()->institutionId]),
             ],
             'privileges' => 'array|min:1',
             'privileges.*' => Rule::exists(app(Privilege::class)->getTable(), 'key'),

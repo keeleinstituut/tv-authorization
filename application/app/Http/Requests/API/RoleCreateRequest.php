@@ -34,7 +34,7 @@ class RoleCreateRequest extends FormRequest
                 'required',
                 'uuid',
                 Rule::exists(app(Institution::class)->getTable(), 'id'),
-                RUle::in([Auth::user()->institutionId]),
+                Rule::in([Auth::user()->institutionId]),
             ],
             'privileges' => 'required|array|min:1',
             'privileges.*' => Rule::exists(app(Privilege::class)->getTable(), 'key'),
