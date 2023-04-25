@@ -3,6 +3,7 @@
 namespace App\Http\Requests\API;
 
 use App\Models\Institution;
+use App\Enums\PrivilegeKey;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -15,7 +16,7 @@ class RoleListRequest extends FormRequest
     public function authorize(): bool
     {
         return $this->get('institution_id') == Auth::user()->institutionId
-            && Auth::hasPrivilege('VIEW_ROLE');
+            && Auth::hasPrivilege(PrivilegeKey::ViewRole->value);
     }
 
     /**

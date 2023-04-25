@@ -17,7 +17,7 @@ class PrivilegeControllerTest extends TestCase
     {
         $accessToken = $this->generateAccessToken([
             'privileges' => [
-                'VIEW_PRIVILEGE',
+                'VIEW_ROLE',
             ],
         ]);
 

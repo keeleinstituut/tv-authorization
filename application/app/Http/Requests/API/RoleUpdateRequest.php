@@ -5,6 +5,7 @@ namespace App\Http\Requests\API;
 use App\Models\Institution;
 use App\Models\Privilege;
 use App\Models\Role;
+use App\Enums\PrivilegeKey;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +23,7 @@ class RoleUpdateRequest extends FormRequest
 
         return $role
             && $role->institution_id == Auth::user()->institutionId
-            && Auth::hasPrivilege('EDIT_ROLE');
+            && Auth::hasPrivilege(PrivilegeKey::EditRole->value);
     }
 
     /**

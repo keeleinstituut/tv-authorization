@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\API;
 
+use App\Enums\PrivilegeKey;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 
@@ -12,7 +13,7 @@ class PrivilegeListRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return Auth::hasPrivilege('VIEW_PRIVILEGE');
+        return Auth::hasPrivilege(PrivilegeKey::ViewRole->value);
     }
 
     /**
