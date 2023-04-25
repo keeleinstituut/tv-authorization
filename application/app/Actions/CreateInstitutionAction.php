@@ -2,8 +2,8 @@
 
 namespace App\Actions;
 
-use App\Models\Institution;
 use App\DataTransferObjects\InstitutionData;
+use App\Models\Institution;
 
 class CreateInstitutionAction
 {

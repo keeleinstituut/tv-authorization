@@ -82,9 +82,6 @@ class JwtClaimsTest extends TestCase
             ));
     }
 
-    /**
-     * @throws Throwable
-     */
     public function test_no_privileges_returned_after_deleting_privilege_roles(): void
     {
         $institution = $this->createInstitution();
@@ -99,6 +96,67 @@ class JwtClaimsTest extends TestCase
             $institution->id
         )->assertStatus(Response::HTTP_OK)
             ->assertExactJson($this->buildExpectedResponse($institutionUser, []));
+    }
+
+    public function test_request_with_invalid_azp_claim_in_token_returns_403(): void
+    {
+        $institution = $this->createInstitution();
+        $institutionUser = $this->createInstitutionUserWithRoles(
+            $institution,
+            $this->createRoleWithPrivileges($institution, self::PRIVILEGES_A)
+        );
+
+        $accessToken = $this->generateAccessToken(
+            generalPayload: ['azp' => 'mr. hacker']
+        );
+
+        $this->withHeaders([
+            'Authorization' => "Bearer $accessToken",
+        ])->getJson(action(
+            [JwtClaimsController::class, 'show'],
+            [
+                'personal_identification_code' => $institutionUser->user->personal_identification_code,
+                'institution_id' => $institution->id,
+            ]
+        ))->assertStatus(Response::HTTP_FORBIDDEN);
+    }
+
+    public function test_request_with_missing_azp_claim_in_token_returns_403(): void
+    {
+        $institution = $this->createInstitution();
+        $institutionUser = $this->createInstitutionUserWithRoles(
+            $institution,
+            $this->createRoleWithPrivileges($institution, self::PRIVILEGES_A)
+        );
+
+        $accessToken = $this->generateAccessToken();
+
+        $this->withHeaders([
+            'Authorization' => "Bearer $accessToken",
+        ])->getJson(action(
+            [JwtClaimsController::class, 'show'],
+            [
+                'personal_identification_code' => $institutionUser->user->personal_identification_code,
+                'institution_id' => $institution->id,
+            ]
+        ))->assertStatus(Response::HTTP_FORBIDDEN);
+    }
+
+    public function test_request_with_missing_token_returns_403(): void
+    {
+        $institution = $this->createInstitution();
+        $institutionUser = $this->createInstitutionUserWithRoles(
+            $institution,
+            $this->createRoleWithPrivileges($institution, self::PRIVILEGES_A)
+        );
+
+        $this->getJson(action(
+            [JwtClaimsController::class, 'show'],
+            [
+                'personal_identification_code' => $institutionUser->user->personal_identification_code,
+                'institution_id' => $institution->id,
+            ]
+        ))->assertStatus(Response::HTTP_FORBIDDEN);
     }
 
     public function test_request_with_nonexistent_pic_returns_404(): void
@@ -191,11 +249,15 @@ class JwtClaimsTest extends TestCase
             ->create();
     }
 
-    private function queryJwtClaims(?string $pic, ?string $institution_id): TestResponse
+    private function queryJwtClaims(?string $pic, ?string $institutionId): TestResponse
     {
-        return $this->getJson(action(
+        $accessToken = $this->generateInternalClientAccessToken();
+
+        return $this->withHeaders([
+            'Authorization' => "Bearer $accessToken",
+        ])->getJson(action(
             [JwtClaimsController::class, 'show'],
-            ['personal_identification_code' => $pic, 'institution_id' => $institution_id]
+            ['personal_identification_code' => $pic, 'institution_id' => $institutionId]
         ));
     }
 
@@ -219,5 +281,12 @@ class JwtClaimsTest extends TestCase
                 ->unique()
                 ->toArray(),
         ];
+    }
+
+    public function generateInternalClientAccessToken(): string
+    {
+        return $this->generateAccessToken(
+            generalPayload: ['azp' => config('api.sso_internal_client_id')]
+        );
     }
 }
