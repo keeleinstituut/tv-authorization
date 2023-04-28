@@ -2,12 +2,12 @@
 
 namespace App\Actions;
 
+use App\DataTransferObjects\InstitutionRoleData;
 use App\Exceptions\EmptyRoleNameException;
 use App\Exceptions\EmptyRolePrivilegesException;
 use App\Models\Privilege;
 use App\Models\PrivilegeRole;
 use App\Models\Role;
-use App\DataTransferObjects\InstitutionRoleData;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
