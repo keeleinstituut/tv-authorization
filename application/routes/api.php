@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\JwtClaimsController;
+use App\Http\Controllers\UsersImportController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,3 +16,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/jwt-claims', [JwtClaimsController::class, 'show']);
+
+Route::middleware(['auth:api'])->group(function () {
+    Route::post('/import-users', [UsersImportController::class, 'store']);
+});
