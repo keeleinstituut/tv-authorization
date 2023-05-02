@@ -18,5 +18,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/jwt-claims', [JwtClaimsController::class, 'show']);
 
 Route::middleware(['auth:api'])->group(function () {
-    Route::post('/import-users', [UsersImportController::class, 'store']);
+    Route::post('/users/validate-import-file', [UsersImportController::class, 'validateFile']);
+    Route::post('/users/validate-import-file-row', [UsersImportController::class, 'validateRow']);
+    Route::post('/users/import', [UsersImportController::class, 'import']);
 });

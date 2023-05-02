@@ -25,6 +25,7 @@ use Illuminate\Support\Carbon;
  * @property string $institution_id
  * @property string $user_id
  * @property string $email
+ * @property string|null $phone
  * @property InstitutionUserStatus $status
  * @property-read Institution $institution
  * @property-read Collection<int, InstitutionUserRole> $institutionUserRoles
@@ -52,7 +53,7 @@ class InstitutionUser extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
 
-    protected $fillable = ['institution_id', 'user_id', 'status', 'email'];
+    protected $fillable = ['institution_id', 'user_id', 'status', 'email', 'phone'];
 
     /**
      * The attributes that should be cast.
