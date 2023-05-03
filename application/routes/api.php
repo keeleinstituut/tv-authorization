@@ -1,8 +1,8 @@
 <?php
 
 use App\Http\Controllers\InstitutionUserController;
+use App\Http\Controllers\InstitutionUserImportController;
 use App\Http\Controllers\JwtClaimsController;
-use App\Http\Controllers\UsersImportController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -19,8 +19,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/jwt-claims', [JwtClaimsController::class, 'show']);
 
 Route::middleware(['auth:api'])->group(function () {
-    Route::post('/institution-users/validate-import-file', [UsersImportController::class, 'validateFile']);
-    Route::post('/institution-users/validate-import-file-row', [UsersImportController::class, 'validateRow']);
-    Route::post('/institution-users/import', [UsersImportController::class, 'import']);
+    Route::post('/institution-users/validate-import-file', [InstitutionUserImportController::class, 'validateFile']);
+    Route::post('/institution-users/validate-import-file-row', [InstitutionUserImportController::class, 'validateRow']);
+    Route::post('/institution-users/import', [InstitutionUserImportController::class, 'import']);
     Route::get('/institution-users', [InstitutionUserController::class, 'index']);
 });

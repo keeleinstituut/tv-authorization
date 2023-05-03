@@ -1,9 +1,9 @@
 <?php
 
-namespace Feature\Routes\UsersImport;
+namespace Feature\Routes\InstitutionUserImport;
 
 use App\Enums\PrivilegeKey;
-use App\Http\Controllers\UsersImportController;
+use App\Http\Controllers\InstitutionUserImportController;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Testing\TestResponse;
@@ -24,41 +24,35 @@ class FileValidationTest extends TestCase
             PrivilegeKey::ActivateUser,
         ]);
 
-        $response = $this->sendImportFileValidationRequest(
+        $this->sendImportFileValidationRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $this->getValidCsvRow($role->name),
             ]),
             $this->getAccessToken([PrivilegeKey::AddUser], $institution->id)
-        );
-
-        $response->assertStatus(Response::HTTP_OK);
-        $response->assertExactJson(['errors' => []]);
+        )->assertStatus(Response::HTTP_OK)
+            ->assertExactJson(['errors' => []]);
     }
 
     public function test_validation_without_auth_token_returned_403()
     {
-        $response = $this->sendImportFileValidationRequest(
+        $this->sendImportFileValidationRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $this->getValidCsvRow('some-name'),
             ]),
-        );
-
-        $response->assertStatus(Response::HTTP_UNAUTHORIZED);
+        )->assertStatus(Response::HTTP_UNAUTHORIZED);
     }
 
     public function test_validation_without_corresponding_privilege_returned_403()
     {
-        $response = $this->sendImportFileValidationRequest(
+        $this->sendImportFileValidationRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $this->getValidCsvRow('some-name'),
             ]),
             $this->getAccessToken([PrivilegeKey::ActivateUser])
-        );
-
-        $response->assertStatus(Response::HTTP_FORBIDDEN);
+        )->assertStatus(Response::HTTP_FORBIDDEN);
     }
 
     public function test_validation_with_file_that_has_invalid_headers_returned_400()
@@ -69,15 +63,13 @@ class FileValidationTest extends TestCase
             PrivilegeKey::ActivateUser,
         ]);
 
-        $response = $this->sendImportFileValidationRequest(
+        $this->sendImportFileValidationRequest(
             $this->composeContent([
                 ['nimi', 'meiliaadress', 'sikukood', 'telefoninumber', 'üksus', 'roll', 'teostaja'],
                 $this->getValidCsvRow($role->name),
             ]),
             $this->getAccessToken([PrivilegeKey::AddUser], $institution->id)
-        );
-
-        $response->assertStatus(Response::HTTP_BAD_REQUEST);
+        )->assertStatus(Response::HTTP_BAD_REQUEST);
     }
 
     public function test_validation_with_file_that_has_wrong_columns_count_returned_400()
@@ -91,15 +83,13 @@ class FileValidationTest extends TestCase
         $invalidCsvRow = $this->getValidCsvRow($role->name);
         $invalidCsvRow[] = 'some value';
 
-        $response = $this->sendImportFileValidationRequest(
+        $this->sendImportFileValidationRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $invalidCsvRow,
             ]),
             $this->getAccessToken([PrivilegeKey::AddUser], $institution->id)
-        );
-
-        $response->assertStatus(Response::HTTP_BAD_REQUEST);
+        )->assertStatus(Response::HTTP_BAD_REQUEST);
     }
 
     public function test_validation_with_file_that_has_wrong_email_column_value_stored_errors()
@@ -113,15 +103,13 @@ class FileValidationTest extends TestCase
         $csvRow = $this->getValidCsvRow($role->name);
         $csvRow[2] = 'wrongemail.com';
 
-        $response = $this->sendImportFileValidationRequest(
+        $this->sendImportFileValidationRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $csvRow,
             ]),
             $this->getAccessToken([PrivilegeKey::AddUser], $institution->id)
-        );
-
-        $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+        )->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
             ->assertJson([
                 'errors' => [
                     [
@@ -145,23 +133,23 @@ class FileValidationTest extends TestCase
         $csvRow = $this->getValidCsvRow($role->name);
         $csvRow[3] = '1234455678899';
 
-        $response = $this->sendImportFileValidationRequest(
+        $this->sendImportFileValidationRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $csvRow,
             ]),
             $this->getAccessToken([PrivilegeKey::AddUser], $institution->id)
-        );
-        $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)->assertJson([
-            'errors' => [
-                [
-                    'row' => 0,
-                    'errors' => [
-                        'phone' => [],
+        )->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+            ->assertJson([
+                'errors' => [
+                    [
+                        'row' => 0,
+                        'errors' => [
+                            'phone' => [],
+                        ],
                     ],
                 ],
-            ],
-        ]);
+            ]);
     }
 
     public function test_validation_with_file_that_has_wrong_name_column_value_stored_errors()
@@ -175,46 +163,45 @@ class FileValidationTest extends TestCase
         $csvRow = $this->getValidCsvRow($role->name);
         $csvRow[1] = 'Wrong Username23';
 
-        $response = $this->sendImportFileValidationRequest(
+        $this->sendImportFileValidationRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $csvRow,
             ]),
             $this->getAccessToken([PrivilegeKey::AddUser], $institution->id)
-        );
-        $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)->assertJson([
-            'errors' => [
-                [
-                    'row' => 0,
-                    'errors' => [
-                        'name' => [],
+        )->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+            ->assertJson([
+                'errors' => [
+                    [
+                        'row' => 0,
+                        'errors' => [
+                            'name' => [],
+                        ],
                     ],
                 ],
-            ],
-        ]);
+            ]);
     }
 
     public function test_validation_with_file_that_has_wrong_role_column_value_stored_errors()
     {
         $csvRow = $this->getValidCsvRow('role-name');
-        $response = $this->sendImportFileValidationRequest(
+        $this->sendImportFileValidationRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $csvRow,
             ]),
             $this->getAccessToken([PrivilegeKey::AddUser])
-        );
-
-        $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)->assertJson([
-            'errors' => [
-                [
-                    'row' => 0,
-                    'errors' => [
-                        'role' => [],
+        )->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+            ->assertJson([
+                'errors' => [
+                    [
+                        'row' => 0,
+                        'errors' => [
+                            'role' => [],
+                        ],
                     ],
                 ],
-            ],
-        ]);
+            ]);
     }
 
     public function test_validation_with_file_that_has_multiple_roles_value()
@@ -231,15 +218,13 @@ class FileValidationTest extends TestCase
         ]);
 
         $roleColumnValue = implode(', ', [$role1->name, $role2->name]);
-        $response = $this->sendImportFileValidationRequest(
+        $this->sendImportFileValidationRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $this->getValidCsvRow($roleColumnValue),
             ]),
             $this->getAccessToken([PrivilegeKey::AddUser], $institution->id)
-        );
-
-        $response->assertStatus(Response::HTTP_OK);
+        )->assertStatus(Response::HTTP_OK);
     }
 
     public function test_validation_with_file_that_has_role_from_another_institution_returned_422()
@@ -250,24 +235,23 @@ class FileValidationTest extends TestCase
         ]);
 
         $institution = $this->createInstitution();
-        $response = $this->sendImportFileValidationRequest(
+        $this->sendImportFileValidationRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $this->getValidCsvRow($roleFromAnotherInstitution->name),
             ]),
             $this->getAccessToken([PrivilegeKey::AddUser], $institution->id)
-        );
-
-        $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)->assertJson([
-            'errors' => [
-                [
-                    'row' => 0,
-                    'errors' => [
-                        'role' => [],
+        )->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+            ->assertJson([
+                'errors' => [
+                    [
+                        'row' => 0,
+                        'errors' => [
+                            'role' => [],
+                        ],
                     ],
                 ],
-            ],
-        ]);
+            ]);
     }
 
     private function composeContent($rows): string
@@ -290,7 +274,7 @@ class FileValidationTest extends TestCase
         }
 
         return $this->postJson(
-            action([UsersImportController::class, 'validateFile']),
+            action([InstitutionUserImportController::class, 'validateFile']),
             [
                 'file' => UploadedFile::fake()->createWithContent(
                     'filename.csv',
@@ -314,7 +298,7 @@ class FileValidationTest extends TestCase
 
     private function getValidCsvRow(string $roleName): array
     {
-        return ['39511267470', 'user name', 'some@email.com', '+37256789566', '', $roleName, false];
+        return ['39511267470', 'user name', 'some@email.com', '+372 56789566', '', $roleName, false];
     }
 
     private function getValidCsvHeader(): array

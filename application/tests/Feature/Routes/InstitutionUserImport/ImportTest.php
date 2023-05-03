@@ -1,9 +1,9 @@
 <?php
 
-namespace Feature\Routes\UsersImport;
+namespace Feature\Routes\InstitutionUserImport;
 
 use App\Enums\PrivilegeKey;
-use App\Http\Controllers\UsersImportController;
+use App\Http\Controllers\InstitutionUserImportController;
 use App\Models\Institution;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,15 +30,14 @@ class ImportTest extends TestCase
         ]);
 
         $csvRow = $this->getValidCsvRow(implode(', ', [$role1->name, $role2->name]));
-        $response = $this->sendImportFileRequest(
+        $this->sendImportFileRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $csvRow,
             ]),
             $this->getAccessToken([PrivilegeKey::AddUser], $institution)
-        );
+        )->assertStatus(Response::HTTP_OK);
 
-        $response->assertStatus(Response::HTTP_OK);
         $user = User::where('personal_identification_code', $csvRow[0])->first();
         $this->assertNotEmpty($user);
         $this->assertEquals($csvRow[1], implode(' ', [$user->forename, $user->surname]));
@@ -70,22 +69,21 @@ class ImportTest extends TestCase
             $user->personal_identification_code,
             implode(' ', ["prefix$user->surname", $user->forename]),
             "prefix$institutionUser->email",
-            '+37256789566',
+            '+372 56789566',
             '',
             $newRole->name,
-            false,
+            'false',
         ];
-        $response = $this->sendImportFileRequest(
+
+        $this->sendImportFileRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $csvRow,
             ]),
             $this->getAccessToken([PrivilegeKey::AddUser], $institution)
-        );
+        )->assertStatus(Response::HTTP_OK);
 
-        $response->assertStatus(Response::HTTP_OK);
         $importedUser = User::where('personal_identification_code', $csvRow[0])->first();
-
         $this->assertNotEmpty($importedUser);
         $this->assertEquals($user->id, $importedUser->id);
         $this->assertEquals($user->surname, $importedUser->surname);
@@ -122,10 +120,10 @@ class ImportTest extends TestCase
             $alreadyExistingUser->personal_identification_code,
             implode(' ', ["new$alreadyExistingUser->surname", $alreadyExistingUser->forename]),
             "new$alreadyExistingInstitutionUser->email",
-            '+37256789566',
+            '+372 56789566',
             '',
             $role->name,
-            false,
+            'false',
         ];
 
         $response = $this->sendImportFileRequest(
@@ -137,6 +135,7 @@ class ImportTest extends TestCase
         );
 
         $response->assertStatus(Response::HTTP_OK);
+
         $users = User::where('personal_identification_code', $csvRow[0])->get();
         $this->assertCount(1, $users);
 
@@ -150,40 +149,34 @@ class ImportTest extends TestCase
 
     public function test_import_file_with_errors(): void
     {
-        $response = $this->sendImportFileRequest(
+        $this->sendImportFileRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $this->getValidCsvRow('wrong-role'),
             ]),
             $this->getAccessToken([PrivilegeKey::AddUser])
-        );
-
-        $response->assertStatus(Response::HTTP_BAD_REQUEST);
+        )->assertStatus(Response::HTTP_BAD_REQUEST);
     }
 
     public function test_import_without_auth_token_returned_403(): void
     {
-        $response = $this->sendImportFileRequest(
+        $this->sendImportFileRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $this->getValidCsvRow('some-name'),
             ]),
-        );
-
-        $response->assertStatus(Response::HTTP_UNAUTHORIZED);
+        )->assertStatus(Response::HTTP_UNAUTHORIZED);
     }
 
     public function test_import_without_corresponding_privilege_returned_403()
     {
-        $response = $this->sendImportFileRequest(
+        $this->sendImportFileRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $this->getValidCsvRow('some-name'),
             ]),
             $this->getAccessToken([PrivilegeKey::ActivateUser])
-        );
-
-        $response->assertStatus(Response::HTTP_FORBIDDEN);
+        )->assertStatus(Response::HTTP_FORBIDDEN);
     }
 
     private function sendImportFileRequest(string $fileContent, string $accessToken = ''): TestResponse
@@ -196,7 +189,7 @@ class ImportTest extends TestCase
         }
 
         return $this->postJson(
-            action([UsersImportController::class, 'import']),
+            action([InstitutionUserImportController::class, 'import']),
             [
                 'file' => UploadedFile::fake()->createWithContent(
                     'filename.csv',
@@ -235,7 +228,7 @@ class ImportTest extends TestCase
 
     private function getValidCsvRow(string $roleName): array
     {
-        return ['39511267470', 'user name', 'some@email.com', '+37256789566', '', $roleName, false];
+        return ['39511267470', 'user name', 'some@email.com', '+372 56789566', '', $roleName, false];
     }
 
     private function getValidCsvHeader(): array

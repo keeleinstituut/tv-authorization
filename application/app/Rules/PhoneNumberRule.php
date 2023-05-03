@@ -7,7 +7,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 
 class PhoneNumberRule implements ValidationRule
 {
-    private const ESTONIAN_PHONE_REGEX = '/^\+372\d{7,8}$/';
+    private const ESTONIAN_PHONE_REGEX = '/^\+372 5\d{6,7}$/';
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {

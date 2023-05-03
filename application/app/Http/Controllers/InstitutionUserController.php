@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\InstitutionUserListRequest;
 use App\Http\Resources\InstitutionUserResource;
 use App\Models\InstitutionUser;
-use App\Models\User;
 use App\Policies\Scopes\InstitutionUserScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,7 +17,7 @@ class InstitutionUserController extends Controller
      */
     public function index(InstitutionUserListRequest $request): AnonymousResourceCollection
     {
-        $this->authorize('import', User::class);
+        $this->authorize('viewList', InstitutionUser::class);
 
         $institutionUsersQuery = InstitutionUser::query()->with([
             'user',

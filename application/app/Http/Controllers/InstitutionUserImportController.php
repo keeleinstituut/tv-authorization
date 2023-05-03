@@ -21,14 +21,14 @@ use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 use UnexpectedValueException;
 
-class UsersImportController extends Controller
+class InstitutionUserImportController extends Controller
 {
     /**
      * @throws Throwable
      */
     public function validateFile(ImportUsersCsvRequest $request): JsonResponse
     {
-        $this->authorize('import', User::class);
+        $this->authorize('import', InstitutionUser::class);
 
         $validator = $this->getFileValidator($request->file('file'));
         try {
@@ -64,7 +64,7 @@ class UsersImportController extends Controller
      */
     public function import(ImportUsersCsvRequest $request): JsonResponse
     {
-        $this->authorize('import', User::class);
+        $this->authorize('import', InstitutionUser::class);
 
         /** @var JwtPayloadUser $activeUser */
         $activeUser = Auth::user();
@@ -135,7 +135,7 @@ class UsersImportController extends Controller
      */
     public function validateRow(ImportUsersCsvRowValidationRequest $request): JsonResponse
     {
-        $this->authorize('import', User::class);
+        $this->authorize('import', InstitutionUser::class);
 
         return response()->json([
             'data' => $request->validated(),
