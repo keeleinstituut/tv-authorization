@@ -29,7 +29,7 @@ class ImportTest extends TestCase
             PrivilegeKey::ActivateUser,
         ]);
 
-        $csvRow = $this->getValidCsvRow(join(', ', [$role1->name, $role2->name]));
+        $csvRow = $this->getValidCsvRow(implode(', ', [$role1->name, $role2->name]));
         $response = $this->sendImportFileRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
@@ -41,7 +41,7 @@ class ImportTest extends TestCase
         $response->assertStatus(Response::HTTP_OK);
         $user = User::where('personal_identification_code', $csvRow[0])->first();
         $this->assertNotEmpty($user);
-        $this->assertEquals($csvRow[1], join(' ', [$user->forename, $user->surname]));
+        $this->assertEquals($csvRow[1], implode(' ', [$user->forename, $user->surname]));
 
         $this->assertCount(1, $user->institutionUsers);
         $institutionUser = $user->institutionUsers->first();
@@ -68,17 +68,17 @@ class ImportTest extends TestCase
         $user = $institutionUser->user;
         $csvRow = [
             $user->personal_identification_code,
-            join(' ', ["prefix$user->surname", $user->forename]),
+            implode(' ', ["prefix$user->surname", $user->forename]),
             "prefix$institutionUser->email",
             '+37256789566',
             '',
             $newRole->name,
-            false
+            false,
         ];
         $response = $this->sendImportFileRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
-                $csvRow
+                $csvRow,
             ]),
             $this->getAccessToken([PrivilegeKey::AddUser], $institution)
         );
@@ -120,18 +120,18 @@ class ImportTest extends TestCase
         $alreadyExistingUser = $alreadyExistingInstitutionUser->user;
         $csvRow = [
             $alreadyExistingUser->personal_identification_code,
-            join(' ', ["new$alreadyExistingUser->surname", $alreadyExistingUser->forename]),
+            implode(' ', ["new$alreadyExistingUser->surname", $alreadyExistingUser->forename]),
             "new$alreadyExistingInstitutionUser->email",
             '+37256789566',
             '',
             $role->name,
-            false
+            false,
         ];
 
         $response = $this->sendImportFileRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
-                $csvRow
+                $csvRow,
             ]),
             $this->getAccessToken([PrivilegeKey::AddUser], $institution)
         );
@@ -153,7 +153,7 @@ class ImportTest extends TestCase
         $response = $this->sendImportFileRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
-                $this->getValidCsvRow('wrong-role')
+                $this->getValidCsvRow('wrong-role'),
             ]),
             $this->getAccessToken([PrivilegeKey::AddUser])
         );
@@ -188,7 +188,7 @@ class ImportTest extends TestCase
 
     private function sendImportFileRequest(string $fileContent, string $accessToken = ''): TestResponse
     {
-        if (!empty($accessToken)) {
+        if (! empty($accessToken)) {
             $this->withHeaders([
                 'Authorization' => "Bearer $accessToken",
                 'Accept' => 'application/json',
@@ -210,7 +210,7 @@ class ImportTest extends TestCase
     {
         $content = '';
         foreach ($rows as $row) {
-            $content .= implode(';', $row) . PHP_EOL;
+            $content .= implode(';', $row).PHP_EOL;
         }
 
         return $content;
@@ -229,7 +229,7 @@ class ImportTest extends TestCase
                 'id' => $institution->id,
             ],
             'institutionUserId' => $institutionUser->id,
-            'privileges' => array_map(fn(PrivilegeKey $key) => $key->value, $privileges),
+            'privileges' => array_map(fn (PrivilegeKey $key) => $key->value, $privileges),
         ]);
     }
 

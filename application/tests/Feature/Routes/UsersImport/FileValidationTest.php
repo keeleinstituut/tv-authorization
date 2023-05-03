@@ -127,10 +127,10 @@ class FileValidationTest extends TestCase
                     [
                         'row' => 0,
                         'errors' => [
-                            'email' => []
-                        ]
-                    ]
-                ]
+                            'email' => [],
+                        ],
+                    ],
+                ],
             ]);
     }
 
@@ -157,10 +157,10 @@ class FileValidationTest extends TestCase
                 [
                     'row' => 0,
                     'errors' => [
-                        'phone' => []
-                    ]
-                ]
-            ]
+                        'phone' => [],
+                    ],
+                ],
+            ],
         ]);
     }
 
@@ -187,10 +187,10 @@ class FileValidationTest extends TestCase
                 [
                     'row' => 0,
                     'errors' => [
-                        'name' => []
-                    ]
-                ]
-            ]
+                        'name' => [],
+                    ],
+                ],
+            ],
         ]);
     }
 
@@ -210,10 +210,10 @@ class FileValidationTest extends TestCase
                 [
                     'row' => 0,
                     'errors' => [
-                        'role' => []
-                    ]
-                ]
-            ]
+                        'role' => [],
+                    ],
+                ],
+            ],
         ]);
     }
 
@@ -263,10 +263,10 @@ class FileValidationTest extends TestCase
                 [
                     'row' => 0,
                     'errors' => [
-                        'role' => []
-                    ]
-                ]
-            ]
+                        'role' => [],
+                    ],
+                ],
+            ],
         ]);
     }
 
@@ -274,7 +274,7 @@ class FileValidationTest extends TestCase
     {
         $content = '';
         foreach ($rows as $row) {
-            $content .= implode(';', $row) . PHP_EOL;
+            $content .= implode(';', $row).PHP_EOL;
         }
 
         return $content;
@@ -282,7 +282,7 @@ class FileValidationTest extends TestCase
 
     private function sendImportFileValidationRequest(string $fileContent, string $accessToken = ''): TestResponse
     {
-        if (!empty($accessToken)) {
+        if (! empty($accessToken)) {
             $this->withHeaders([
                 'Authorization' => "Bearer $accessToken",
                 'Accept' => 'application/json',
@@ -303,11 +303,12 @@ class FileValidationTest extends TestCase
     private function getAccessToken(array $privileges, ?string $institutionId = null): string
     {
         $institutionId = $institutionId ?: Str::orderedUuid();
+
         return $this->generateAccessToken([
             'selectedInstitution' => [
                 'id' => $institutionId,
             ],
-            'privileges' => array_map(fn(PrivilegeKey $key) => $key->value, $privileges),
+            'privileges' => array_map(fn (PrivilegeKey $key) => $key->value, $privileges),
         ]);
     }
 

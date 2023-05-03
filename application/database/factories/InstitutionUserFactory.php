@@ -24,7 +24,7 @@ class InstitutionUserFactory extends Factory
             'user_id' => User::factory(),
             'status' => InstitutionUserStatus::Created,
             'email' => $this->faker->email,
-            'phone' => $this->faker->numerify('+3725#######')
+            'phone' => $this->faker->numerify('+3725#######'),
         ];
     }
 }

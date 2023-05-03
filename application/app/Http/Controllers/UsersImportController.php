@@ -34,10 +34,10 @@ class UsersImportController extends Controller
         try {
             $rowsWithErrors = [];
             foreach ($validator->validatedRows() as $idx => $attributes) {
-                if (!empty($attributes['errors'])) {
+                if (! empty($attributes['errors'])) {
                     $rowsWithErrors[] = [
                         'row' => $idx,
-                        'errors' => $attributes['errors']
+                        'errors' => $attributes['errors'],
                     ];
                 }
             }
@@ -48,14 +48,14 @@ class UsersImportController extends Controller
             );
         }
 
-        if (!empty($rowsWithErrors)) {
+        if (! empty($rowsWithErrors)) {
             return response()->json([
-                'errors' => $rowsWithErrors
+                'errors' => $rowsWithErrors,
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         return response()->json([
-            'errors' => []
+            'errors' => [],
         ], Response::HTTP_OK);
     }
 
@@ -75,13 +75,13 @@ class UsersImportController extends Controller
                 ->toArray();
 
             foreach ($validator->validatedRows() as $attributes) {
-                if (!empty($attributes['errors'])) {
+                if (! empty($attributes['errors'])) {
                     throw new UnexpectedValueException('File contains errors');
                 }
 
                 $nameParts = explode(' ', $attributes['name']);
                 $user = User::firstOrCreate([
-                    'personal_identification_code' => $attributes['personal_identification_code']
+                    'personal_identification_code' => $attributes['personal_identification_code'],
                 ], [
                     'forename' => $nameParts[0],
                     'surname' => $nameParts[1] ?? '',
@@ -96,7 +96,7 @@ class UsersImportController extends Controller
                     'status' => InstitutionUserStatus::Created,
                 ]);
 
-                if (!$institutionUser->wasRecentlyCreated) {
+                if (! $institutionUser->wasRecentlyCreated) {
                     continue;
                 }
 
@@ -105,12 +105,12 @@ class UsersImportController extends Controller
                     $roleId = $rolesMap[trim($roleName)] ?? null;
 
                     if (empty($roleId)) {
-                        throw new RuntimeException("Role not found");
+                        throw new RuntimeException('Role not found');
                     }
 
                     InstitutionUserRole::firstOrCreate([
                         'institution_user_id' => $institutionUser->id,
-                        'role_id' => $roleId
+                        'role_id' => $roleId,
                     ]);
                 }
 
@@ -126,7 +126,7 @@ class UsersImportController extends Controller
         }
 
         return response()->json([
-            'data' => []
+            'data' => [],
         ], Response::HTTP_OK);
     }
 

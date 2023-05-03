@@ -11,8 +11,11 @@ use Validator;
 class CsvContentValidator
 {
     private array $rules;
+
     private array $attributesNames;
+
     private array $headers;
+
     private CsvReader $reader;
 
     public function __construct(string $csvPath, string $separator = ';')
@@ -71,6 +74,7 @@ class CsvContentValidator
     private function getValidationErrors(array $attributes): array
     {
         $validator = Validator::make($attributes, $this->rules);
+
         return $validator->errors()->toArray();
     }
 }

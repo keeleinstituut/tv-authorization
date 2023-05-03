@@ -38,7 +38,7 @@ class ImportUsersCsvRowValidationRequest extends FormRequest
                             ->where('name', $name)
                             ->exists();
 
-                        if (!$exists) {
+                        if (! $exists) {
                             $fail("The role with the name '$name' does not exist.");
                         }
                     }
