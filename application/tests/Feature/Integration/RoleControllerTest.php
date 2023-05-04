@@ -3,6 +3,7 @@
 namespace Tests\Feature\Integration;
 
 use App\Models\Institution;
+use App\Models\Privilege;
 use App\Models\PrivilegeRole;
 use App\Models\Role;
 use Carbon\Carbon;
@@ -153,6 +154,66 @@ class RoleControllerTest extends TestCase
             'Authorization' => "Bearer $accessToken",
             'Accept' => 'application/json',
         ])->putJson("/api/roles/$role->id", $payload);
+
+        $savedRole = Role::find($role->id);
+
+        $response
+            ->assertStatus(200)
+            ->assertJson([
+                'data' => $this->constructRoleRepresentation($savedRole),
+            ]);
+    }
+
+    public function test_api_roles_update_endpoint_removing_and_adding_privilege(): void
+    {
+        $role = Role::factory()->create();
+        PrivilegeRole::factory()->create([
+            'role_id' => $role->id,
+            'privilege_id' => Privilege::where('key', 'ADD_ROLE')->first()->id,
+        ]);
+
+        $accessToken = $this->generateAccessToken([
+            'selectedInstitution' => [
+                'id' => $role->institution_id,
+            ],
+            'privileges' => [
+                'EDIT_ROLE',
+            ],
+        ]);
+
+        $response = $this
+            ->withHeaders([
+                'Authorization' => "Bearer $accessToken",
+                'Accept' => 'application/json',
+            ])
+            ->putJson("/api/roles/$role->id", json_decode(<<<EOT
+                {
+                    "name": "Test Role",
+                    "institution_id": "$role->institution_id",
+                    "privileges": [
+                        "VIEW_ROLE"
+                    ]
+                }
+                EOT, true)
+            );
+        $response->assertStatus(200);
+
+
+        $response = $this
+            ->withHeaders([
+                'Authorization' => "Bearer $accessToken",
+                'Accept' => 'application/json',
+            ])
+            ->putJson("/api/roles/$role->id", json_decode(<<<EOT
+                {
+                    "name": "Test Role",
+                    "institution_id": "$role->institution_id",
+                    "privileges": [
+                        "ADD_ROLE"
+                    ]
+                }
+                EOT, true)
+            );
 
         $savedRole = Role::find($role->id);
 

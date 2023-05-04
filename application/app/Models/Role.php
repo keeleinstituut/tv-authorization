@@ -68,9 +68,7 @@ class Role extends Model
     public function privileges(): BelongsToMany
     {
         return $this->belongsToMany(Privilege::class, app(PrivilegeRole::class)->getTable(), 'role_id', 'privilege_id')
-            ->using(PrivilegeRole::class)
-            ->wherePivot('deleted_at', null)
-            ->withTimestamps();
+            ->using(PrivilegeRole::class);
     }
 
     public function institution(): BelongsTo

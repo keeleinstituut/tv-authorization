@@ -48,6 +48,7 @@ class RoleController extends Controller
             $privilegeIds = $privileges->pluck('id');
             $role->privileges()->sync($privilegeIds);
 
+            $role->refresh();
             $role->load('privileges');
 
             // TODO: add auditlog creation
@@ -76,7 +77,6 @@ class RoleController extends Controller
     {
         $id = $request->route('role_id');
         $role = $this->getBaseQuery()
-            ->with('privileges')
             ->find($id) ?? abort(404);
 
         $params = $request->validated();
@@ -88,8 +88,10 @@ class RoleController extends Controller
             $privilegeKeys = $params['privileges'];
             $privileges = Privilege::whereIn('key', $privilegeKeys)->get();
             $privilegeIds = $privileges->pluck('id');
+
             $role->privileges()->sync($privilegeIds);
 
+            $role->refresh();
             $role->load('privileges');
 
             // TODO: add auditlog creation

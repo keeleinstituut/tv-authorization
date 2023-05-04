@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Barryvdh\LaravelIdeHelper\Eloquent;
 use Database\Factories\PrivilegeRoleFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -42,9 +43,15 @@ use Illuminate\Support\Carbon;
  */
 class PrivilegeRole extends Pivot
 {
-    use HasFactory, SoftDeletes, HasUuids;
+    use HasFactory, HasUuids;
 
     protected $table = 'privilege_roles';
+
+    public $timestamps = false;
+
+    protected $touches = [
+        'role',
+    ];
 
     protected $fillable = [
         'role_id',
