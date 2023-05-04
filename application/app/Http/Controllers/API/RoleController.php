@@ -11,6 +11,7 @@ use App\Http\Requests\API\RoleUpdateRequest;
 use App\Http\Resources\API\RoleResource;
 use App\Models\Privilege;
 use App\Models\Role;
+use App\Policies\RolePolicy;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -23,10 +24,14 @@ class RoleController extends Controller
     {
         $params = $request->validated();
 
-        $data = $this->getBaseQuery()
-            ->where('institution_id', $params['institution_id'])
-            ->with('privileges')
-            ->get();
+        $query = $this->getBaseQuery()
+            ->with('privileges');
+
+        if ($institutionId = $params['institution_id']) {
+            $query = $query->where('institution_id', $institutionId);
+        }
+
+        $data = $query->get();
 
         return RoleResource::collection($data);
     }
@@ -119,8 +124,6 @@ class RoleController extends Controller
 
     public function getBaseQuery()
     {
-        return Role::getModel()
-            // Just a safe check, validations already verify user's permissions to queried objects
-            ->where('institution_id', Auth::user()->institutionId);
+        return Role::getModel()->withGlobalScope('policy', RolePolicy::scope());
     }
 }
