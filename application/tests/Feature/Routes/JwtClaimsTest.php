@@ -142,7 +142,7 @@ class JwtClaimsTest extends TestCase
         ))->assertStatus(Response::HTTP_FORBIDDEN);
     }
 
-    public function test_request_with_missing_token_returns_403(): void
+    public function test_request_with_missing_token_returns_401(): void
     {
         $institution = $this->createInstitution();
         $institutionUser = $this->createInstitutionUserWithRoles(
@@ -156,7 +156,7 @@ class JwtClaimsTest extends TestCase
                 'personal_identification_code' => $institutionUser->user->personal_identification_code,
                 'institution_id' => $institution->id,
             ]
-        ))->assertStatus(Response::HTTP_FORBIDDEN);
+        ))->assertStatus(Response::HTTP_UNAUTHORIZED);
     }
 
     public function test_request_with_nonexistent_pic_returns_404(): void

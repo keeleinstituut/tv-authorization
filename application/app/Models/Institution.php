@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Barryvdh\LaravelIdeHelper\Eloquent;
 use Database\Factories\InstitutionFactory;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -26,6 +26,8 @@ use Illuminate\Support\Carbon;
  * @property-read int|null $institution_users_count
  * @property-read Collection<int, Role> $roles
  * @property-read int|null $roles_count
+ * @property-read Collection<int, Department> $departments
+ * @property-read int|null $departments_count
  *
  * @method static InstitutionFactory factory($count = null, $state = [])
  * @method static Builder|Institution newModelQuery()
@@ -39,6 +41,7 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Institution whereUpdatedAt($value)
  * @method static Builder|Institution withTrashed()
  * @method static Builder|Institution withoutTrashed()
+ * @method static Builder|Institution whereLogoUrl($value)
  *
  * @mixin Eloquent
  */
@@ -56,5 +59,10 @@ class Institution extends Model
     public function roles(): HasMany
     {
         return $this->hasMany(Role::class);
+    }
+
+    public function departments(): HasMany
+    {
+        return $this->hasMany(Department::class);
     }
 }

@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-use Barryvdh\LaravelIdeHelper\Eloquent;
 use Database\Factories\InstitutionUserRoleFactory;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
@@ -40,9 +40,11 @@ use Illuminate\Support\Carbon;
  *
  * @mixin Eloquent
  */
-class InstitutionUserRole extends Model
+class InstitutionUserRole extends Pivot
 {
     use HasFactory, SoftDeletes, HasUuids;
+
+    protected $table = 'institution_user_roles';
 
     protected $fillable = ['institution_user_id', 'role_id'];
 

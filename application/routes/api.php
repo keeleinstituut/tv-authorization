@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\InstitutionUserController;
 use App\Http\Controllers\JwtClaimsController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,3 +16,13 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/jwt-claims', [JwtClaimsController::class, 'show']);
+
+Route::get(
+    '/institution-users/{institutionUserId}',
+    [InstitutionUserController::class, 'show']
+)->whereUuid('institutionUserId');
+
+Route::put(
+    '/institution-users/{institutionUserId}',
+    [InstitutionUserController::class, 'update']
+)->whereUuid('institutionUserId');

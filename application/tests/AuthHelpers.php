@@ -2,7 +2,9 @@
 
 namespace Tests;
 
+use App\Enums\PrivilegeKey;
 use Firebase\JWT\JWT;
+use Illuminate\Support\Arr;
 
 trait AuthHelpers
 {
@@ -37,5 +39,21 @@ trait AuthHelpers
         return "-----BEGIN PRIVATE KEY-----\n".
             wordwrap($key, 64, "\n", true).
             "\n-----END PRIVATE KEY-----";
+    }
+
+    /**
+     * @param  array<PrivilegeKey>  $privileges
+     */
+    public function createJsonHeaderWithTokenParams(string $institutionId, array $privileges): array
+    {
+        $defaultToken = $this->generateAccessToken([
+            'selectedInstitution' => ['id' => $institutionId],
+            'privileges' => Arr::map($privileges, fn ($privilege) => $privilege->value),
+        ]);
+
+        return [
+            'Authorization' => "Bearer $defaultToken",
+            'Accept' => 'application/json',
+        ];
     }
 }
