@@ -107,7 +107,7 @@ class JwtClaimsTest extends TestCase
         );
 
         $accessToken = $this->generateAccessToken(
-            generalPayload: ['azp' => 'mr. hacker']
+            azp: 'mr. hacker'
         );
 
         $this->withHeaders([
@@ -286,7 +286,7 @@ class JwtClaimsTest extends TestCase
     public function generateInternalClientAccessToken(): string
     {
         return $this->generateAccessToken(
-            generalPayload: ['azp' => config('api.sso_internal_client_id')]
+            azp: config('api.sso_internal_client_id')
         );
     }
 }

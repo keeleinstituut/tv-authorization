@@ -14,7 +14,7 @@ readonly class JwtClaimsGate
     public function allows(): bool
     {
         return $this->isAuthorizedPartySsoInternalClient(
-            $this->jwtDecoder->getDecodedJwt()
+            $this->jwtDecoder->getDecodedJwtWithSpecifiedValidation(false, true)
         );
     }
 
