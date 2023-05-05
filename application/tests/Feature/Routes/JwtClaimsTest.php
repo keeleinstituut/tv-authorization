@@ -106,8 +106,13 @@ class JwtClaimsTest extends TestCase
             $this->createRoleWithPrivileges($institution, self::PRIVILEGES_A)
         );
 
+        $normallyAcceptedAzp = Str::of(config('keycloak.accepted_authorized_parties'))
+            ->explode(',')
+            ->firstOrFail();
+        $this->assertNotEquals($normallyAcceptedAzp, config('api.sso_internal_client_id'));
+
         $accessToken = $this->generateAccessToken(
-            generalPayload: ['azp' => 'mr. hacker']
+            azp: $normallyAcceptedAzp
         );
 
         $this->withHeaders([
@@ -286,7 +291,7 @@ class JwtClaimsTest extends TestCase
     public function generateInternalClientAccessToken(): string
     {
         return $this->generateAccessToken(
-            generalPayload: ['azp' => config('api.sso_internal_client_id')]
+            azp: config('api.sso_internal_client_id')
         );
     }
 }

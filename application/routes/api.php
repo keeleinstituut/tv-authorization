@@ -15,7 +15,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/jwt-claims', [JwtClaimsController::class, 'show']);
+Route::get('/jwt-claims', [JwtClaimsController::class, 'show'])
+    ->withoutMiddleware('auth:api');
 
 Route::get(
     '/institution-users/{institutionUserId}',
