@@ -198,7 +198,6 @@ class RoleControllerTest extends TestCase
             );
         $response->assertStatus(200);
 
-
         $response = $this
             ->withHeaders([
                 'Authorization' => "Bearer $accessToken",
@@ -342,6 +341,7 @@ class RoleControllerTest extends TestCase
     private function constructRoleRepresentation(Role $role)
     {
         $role->load('privilegeRoles.privilege');
+
         return [
             'id' => $role->id,
             'name' => $role->name,

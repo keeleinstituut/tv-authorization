@@ -12,7 +12,6 @@ use App\Http\Resources\API\RoleResource;
 use App\Models\Privilege;
 use App\Models\Role;
 use App\Policies\RolePolicy;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class RoleController extends Controller
@@ -44,7 +43,6 @@ class RoleController extends Controller
     public function store(RoleCreateRequest $request)
     {
         $params = $request->validated();
-
 
         return DB::transaction(function () use ($params) {
             $role = new Role();
