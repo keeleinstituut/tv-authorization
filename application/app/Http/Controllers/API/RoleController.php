@@ -22,12 +22,14 @@ class RoleController extends Controller
      */
     public function index(RoleListRequest $request)
     {
-        $params = $request->validated();
+        $params = collect($request->validated());
+
+        $this->authorize('viewAny', Role::class);
 
         $query = $this->getBaseQuery()
             ->with('privileges');
 
-        if ($institutionId = $params['institution_id']) {
+        if ($institutionId = $params->get('institution_id')) {
             $query = $query->where('institution_id', $institutionId);
         }
 
@@ -43,9 +45,12 @@ class RoleController extends Controller
     {
         $params = $request->validated();
 
+
         return DB::transaction(function () use ($params) {
             $role = new Role();
             $role->fill($params);
+            $this->authorize('create', $role);
+
             $role->save();
 
             $privilegeKeys = $params['privileges'];
@@ -72,6 +77,8 @@ class RoleController extends Controller
             ->with('privileges')
             ->find($id) ?? abort(404);
 
+        $this->authorize('view', $role);
+
         return new RoleResource($role);
     }
 
@@ -83,6 +90,8 @@ class RoleController extends Controller
         $id = $request->route('role_id');
         $role = $this->getBaseQuery()
             ->find($id) ?? abort(404);
+
+        $this->authorize('update', $role);
 
         $params = $request->validated();
 
@@ -113,6 +122,8 @@ class RoleController extends Controller
         $role = $this->getBaseQuery()
             ->with('privileges')
             ->find($id) ?? abort(404);
+
+        $this->authorize('delete', $role);
 
         return DB::transaction(function () use ($role) {
             $role->delete();

@@ -1,27 +1,27 @@
 <?php
 
-namespace {{ namespace }};
+namespace App\Policies;
 
 use App\Enums\PrivilegeKey;
+use App\Models\Privilege;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Auth;
-use {{ namespacedModel }};
-use {{ namespacedUserModel }};
+use KeycloakAuthGuard\Models\JwtPayloadUser;
 
-class {{ class }}
+class PrivilegePolicy
 {
     /**
      * Determine whether the user can view any models.
      */
-    public function viewAny({{ user }} $user): bool
+    public function viewAny(JwtPayloadUser $jwtPayloadUser): bool
     {
-        //
+        return Auth::hasPrivilege(PrivilegeKey::ViewRole->value);
     }
 
     /**
      * Determine whether the user can view the model.
      */
-    public function view({{ user }} $user, {{ model }} ${{ modelVariable }}): bool
+    public function view(JwtPayloadUser $jwtPayloadUser, Privilege $privilege): bool
     {
         //
     }
@@ -29,7 +29,7 @@ class {{ class }}
     /**
      * Determine whether the user can create models.
      */
-    public function create({{ user }} $user): bool
+    public function create(JwtPayloadUser $jwtPayloadUser): bool
     {
         //
     }
@@ -37,7 +37,7 @@ class {{ class }}
     /**
      * Determine whether the user can update the model.
      */
-    public function update({{ user }} $user, {{ model }} ${{ modelVariable }}): bool
+    public function update(JwtPayloadUser $jwtPayloadUser, Privilege $privilege): bool
     {
         //
     }
@@ -45,7 +45,7 @@ class {{ class }}
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete({{ user }} $user, {{ model }} ${{ modelVariable }}): bool
+    public function delete(JwtPayloadUser $jwtPayloadUser, Privilege $privilege): bool
     {
         //
     }
@@ -53,7 +53,7 @@ class {{ class }}
     /**
      * Determine whether the user can restore the model.
      */
-    public function restore({{ user }} $user, {{ model }} ${{ modelVariable }}): bool
+    public function restore(JwtPayloadUser $jwtPayloadUser, Privilege $privilege): bool
     {
         //
     }
@@ -61,7 +61,7 @@ class {{ class }}
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete({{ user }} $user, {{ model }} ${{ modelVariable }}): bool
+    public function forceDelete(JwtPayloadUser $jwtPayloadUser, Privilege $privilege): bool
     {
         //
     }
@@ -81,7 +81,7 @@ class {{ class }}
     // we can use this method that's provided by Laravel and used internally.
     //
     public static function scope() {
-        return new Scope\{{ model }}Scope();
+        return new Scope\PrivilegeScope();
     }
 }
 
@@ -93,12 +93,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope as IScope;
 
-class {{ model }}Scope implements IScope {
+class PrivilegeScope implements IScope {
     /**
     * Apply the scope to a given Eloquent query builder.
     */
     public function apply(Builder $builder, Model $model): void
     {
-        // $builder->where('institution_id', Auth::user()->institutionId);
+        // Allow all
     }
 }

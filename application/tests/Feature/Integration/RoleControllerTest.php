@@ -271,22 +271,36 @@ class RoleControllerTest extends TestCase
             ],
         ]);
 
-        $roleId = $roles[0]->id;
+        $role = $roles[0];
+        $roleId = $role->id;
 
+        // Returns empty array since institution doesn't exist and roles as well
         $this
             ->withHeaders([
                 'Authorization' => "Bearer $accessToken",
                 'Accept' => 'application/json',
             ])
             ->getJson('/api/roles')
-            ->assertStatus(403);
+            ->assertStatus(200)
+            ->assertJson([
+                'data' => [],
+            ]);
 
         $this
             ->withHeaders([
                 'Authorization' => "Bearer $accessToken",
                 'Accept' => 'application/json',
             ])
-            ->postJson('/api/roles')
+            ->postJson('/api/roles', json_decode(<<<EOT
+                {
+                    "name": "Test Role",
+                    "institution_id": "$role->institution_id",
+                    "privileges": [
+                        "ADD_ROLE"
+                    ]
+                }
+                EOT, true)
+            )
             ->assertStatus(403);
 
         $this
@@ -295,15 +309,26 @@ class RoleControllerTest extends TestCase
                 'Accept' => 'application/json',
             ])
             ->getJson("/api/roles/$roleId")
-            ->assertStatus(403);
+            ->assertStatus(404);
 
         $this
             ->withHeaders([
                 'Authorization' => "Bearer $accessToken",
                 'Accept' => 'application/json',
             ])
-            ->putJson("/api/roles/$roleId")
-            ->assertStatus(403);
+            ->putJson("/api/roles/$roleId", json_decode(<<<EOT
+                {
+                    "name": "Test Role",
+                    "institution_id": "$role->institution_id",
+                    "privileges": [
+                        "ADD_ROLE",
+                        "VIEW_ROLE",
+                        "EDIT_ROLE"
+                    ]
+                }
+                EOT, true)
+            )
+            ->assertStatus(404);
 
         $this
             ->withHeaders([
@@ -311,7 +336,7 @@ class RoleControllerTest extends TestCase
                 'Accept' => 'application/json',
             ])
             ->deleteJson("/api/roles/$roleId")
-            ->assertStatus(403);
+            ->assertStatus(404);
     }
 
     private function constructRoleRepresentation(Role $role)

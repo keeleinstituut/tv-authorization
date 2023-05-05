@@ -15,8 +15,7 @@ class RoleListRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->get('institution_id') == Auth::user()->institutionId
-            && Auth::hasPrivilege(PrivilegeKey::ViewRole->value);
+        return true;
     }
 
     /**
@@ -28,7 +27,6 @@ class RoleListRequest extends FormRequest
     {
         return [
             'institution_id' => [
-                'required',
                 'uuid',
                 Rule::exists(app(Institution::class)->getTable(), 'id'),
             ],

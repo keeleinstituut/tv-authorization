@@ -19,8 +19,7 @@ class RoleCreateRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->get('institution_id') == Auth::user()->institutionId
-            && Auth::hasPrivilege(PrivilegeKey::AddRole->value);
+        return true;
     }
 
     /**
@@ -35,7 +34,6 @@ class RoleCreateRequest extends FormRequest
                 'required',
                 'uuid',
                 Rule::exists(app(Institution::class)->getTable(), 'id'),
-                Rule::in([Auth::user()->institutionId]),
             ],
             'privileges' => 'required|array|min:1',
             'privileges.*' => Rule::exists(app(Privilege::class)->getTable(), 'key'),

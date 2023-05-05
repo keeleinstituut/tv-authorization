@@ -19,11 +19,7 @@ class RoleUpdateRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        $role = Role::find($this->route('role_id'));
-
-        return $role
-            && $role->institution_id == Auth::user()->institutionId
-            && Auth::hasPrivilege(PrivilegeKey::EditRole->value);
+        return true;
     }
 
     /**
@@ -37,7 +33,6 @@ class RoleUpdateRequest extends FormRequest
             'institution_id' => [
                 'uuid',
                 Rule::exists(app(Institution::class)->getTable(), 'id'),
-                Rule::in([Auth::user()->institutionId]),
             ],
             'privileges' => 'array|min:1',
             'privileges.*' => Rule::exists(app(Privilege::class)->getTable(), 'key'),

@@ -14,11 +14,7 @@ class RoleDeleteRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        $role = Role::find($this->route('role_id'));
-
-        return $role
-            && $role->institution_id == Auth::user()->institutionId
-            && Auth::hasPrivilege(PrivilegeKey::DeleteRole->value);
+        return true;
     }
 
     /**

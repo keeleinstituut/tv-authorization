@@ -2,8 +2,10 @@
 
 namespace App\Policies;
 
+use App\Enums\PrivilegeKey;
 use App\Models\Role;
 use Illuminate\Auth\Access\Response;
+use Illuminate\Support\Facades\Auth;
 use KeycloakAuthGuard\Models\JwtPayloadUser;
 
 class RolePolicy
@@ -13,7 +15,7 @@ class RolePolicy
      */
     public function viewAny(JwtPayloadUser $jwtPayloadUser): bool
     {
-        //
+        return Auth::hasPrivilege(PrivilegeKey::ViewRole->value);
     }
 
     /**
@@ -21,15 +23,20 @@ class RolePolicy
      */
     public function view(JwtPayloadUser $jwtPayloadUser, Role $role): bool
     {
-        //
+        return $role
+            && $role->institution_id == $jwtPayloadUser->institutionId
+            && Auth::hasPrivilege(PrivilegeKey::ViewRole->value);
     }
 
     /**
      * Determine whether the user can create models.
      */
-    public function create(JwtPayloadUser $jwtPayloadUser): bool
+    public function create(JwtPayloadUser $jwtPayloadUser, Role $role): bool
     {
-        //
+        // return Auth::hasPrivilege(PrivilegeKey::AddRole->value);
+        return $role
+            && $role->institution_id == $jwtPayloadUser->institutionId
+            && Auth::hasPrivilege(PrivilegeKey::AddRole->value);
     }
 
     /**
@@ -37,7 +44,9 @@ class RolePolicy
      */
     public function update(JwtPayloadUser $jwtPayloadUser, Role $role): bool
     {
-        //
+        return $role
+            && $role->institution_id == $jwtPayloadUser->institutionId
+            && Auth::hasPrivilege(PrivilegeKey::EditRole->value);
     }
 
     /**
@@ -45,7 +54,9 @@ class RolePolicy
      */
     public function delete(JwtPayloadUser $jwtPayloadUser, Role $role): bool
     {
-        //
+        return $role
+            && $role->institution_id == $jwtPayloadUser->institutionId
+            && Auth::hasPrivilege(PrivilegeKey::DeleteRole->value);
     }
 
     /**
