@@ -63,7 +63,7 @@ class RolePolicy
      */
     public function restore(JwtPayloadUser $jwtPayloadUser, Role $role): bool
     {
-        //
+        return false;
     }
 
     /**
@@ -71,7 +71,7 @@ class RolePolicy
      */
     public function forceDelete(JwtPayloadUser $jwtPayloadUser, Role $role): bool
     {
-        //
+        return false;
     }
 
     // Should serve as an query enhancement to Eloquent queries

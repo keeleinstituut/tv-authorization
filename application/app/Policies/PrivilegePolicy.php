@@ -17,54 +17,6 @@ class PrivilegePolicy
         return Auth::hasPrivilege(PrivilegeKey::ViewRole->value);
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(JwtPayloadUser $jwtPayloadUser, Privilege $privilege): bool
-    {
-        //
-    }
-
-    /**
-     * Determine whether the user can create models.
-     */
-    public function create(JwtPayloadUser $jwtPayloadUser): bool
-    {
-        //
-    }
-
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(JwtPayloadUser $jwtPayloadUser, Privilege $privilege): bool
-    {
-        //
-    }
-
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(JwtPayloadUser $jwtPayloadUser, Privilege $privilege): bool
-    {
-        //
-    }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(JwtPayloadUser $jwtPayloadUser, Privilege $privilege): bool
-    {
-        //
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(JwtPayloadUser $jwtPayloadUser, Privilege $privilege): bool
-    {
-        //
-    }
-
     // Should serve as an query enhancement to Eloquent queries
     // to filter out objects that the user does not have permissions to.
     //
