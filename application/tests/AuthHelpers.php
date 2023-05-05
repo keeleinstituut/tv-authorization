@@ -17,7 +17,7 @@ trait AuthHelpers
             'azp' => $azp ?? Str::of(config('keycloak.accepted_authorized_parties'))
                 ->explode(',')
                 ->first(),
-            'iss' => config('keycloak.base_url') . '/realms/' . config('keycloak.realm'),
+            'iss' => config('keycloak.base_url').'/realms/'.config('keycloak.realm'),
             'tolkevarav' => collect([
                 'userId' => 1,
                 'personalIdentityCode' => '11111111111',
