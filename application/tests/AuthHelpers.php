@@ -17,8 +17,8 @@ trait AuthHelpers
                 'userId' => 1,
                 'personalIdentityCode' => '11111111111',
                 'privileges' => [],
-            ])->mergeRecursive($tolkevaravPayload)->toArray(),
-        ])->mergeRecursive($generalPayload);
+            ])->merge($tolkevaravPayload)->toArray(),
+        ])->merge($generalPayload);
 
         return static::createJwt($payload->toArray());
     }
