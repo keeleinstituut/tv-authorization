@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 readonly class ModelBelongsToInstitutionRule implements ValidationRule
 {
-    public function __construct(private string $modelClassName, private string $expectedInstitutionId)
+    public function __construct(private string $modelClassName, private ?string $expectedInstitutionId)
     {
     }
 

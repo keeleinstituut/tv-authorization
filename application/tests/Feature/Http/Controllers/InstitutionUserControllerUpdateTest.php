@@ -223,8 +223,8 @@ class InstitutionUserControllerUpdateTest extends TestCase
                 InstitutionUser::whereInstitutionId($createdInstitutionWithUser->id)->get()->pluck('id')->toArray()
             );
 
-        // And request response should indicate action is forbidden
-        $response->assertForbidden();
+        // And response should indicate resource is not found
+        $response->assertNotFound();
     }
 
     public function test_updating_user_without_privilege(): void

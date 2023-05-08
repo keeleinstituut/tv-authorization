@@ -2,13 +2,11 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\PrivilegeKey;
 use App\Models\Department;
 use App\Models\InstitutionUser;
 use App\Models\Role;
 use App\Rules\ModelBelongsToInstitutionRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
 
 /**
  * @property string forename
@@ -21,16 +19,6 @@ use Illuminate\Support\Facades\Auth;
  */
 class UpdateInstitutionUserRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        abort_unless(InstitutionUser::whereId($this->getInstitutionUserId())->exists(), 404);
-
-        return filled($targetInstitutionId = $this->findInstitutionUserInstitutionId())
-            && filled($tokenInstitutionId = Auth::user()?->institutionId)
-            && Auth::hasPrivilege(PrivilegeKey::EditUser->value)
-            && $tokenInstitutionId === $targetInstitutionId;
-    }
-
     public function rules(): array
     {
         return [

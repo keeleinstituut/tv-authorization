@@ -102,8 +102,8 @@ class InstitutionUserControllerShowTest extends TestCase
             $createdInstitutionWithoutUsers->id
         );
 
-        // THEN response should indicate action is forbidden
-        $response->assertForbidden();
+        // THEN response should indicate resource is not found
+        $response->assertNotFound();
     }
 
     public function test_requesting_user_without_privilege(): void

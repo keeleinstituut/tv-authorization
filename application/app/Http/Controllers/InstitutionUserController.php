@@ -1,30 +1,41 @@
 <?php
 
-/** @noinspection PhpUnhandledExceptionInspection */
-
 namespace App\Http\Controllers;
 
 use App\Http\Requests\GetInstitutionUserRequest;
 use App\Http\Requests\UpdateInstitutionUserRequest;
 use App\Http\Resources\InstitutionUserResource;
 use App\Models\InstitutionUser;
-use Auth;
+use App\Policies\InstitutionUserPolicy;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class InstitutionUserController extends Controller
 {
+    /**
+     * @throws AuthorizationException
+     */
     public function show(GetInstitutionUserRequest $request): InstitutionUserResource
     {
-        return new InstitutionUserResource(
-            $this->getBaseQuery()->findOrFail($request->getInstitutionUserId())
-        );
+        $institutionUser = $this->getBaseQuery()->findOrFail($request->getInstitutionUserId());
+
+        $this->authorize('view', $institutionUser);
+
+        return new InstitutionUserResource($institutionUser);
     }
 
+    /**
+     * @throws AuthenticationException|Throwable
+     */
     public function update(UpdateInstitutionUserRequest $request): InstitutionUserResource
     {
         return DB::transaction(function () use ($request) {
             $institutionUser = $this->getBaseQuery()->findOrFail($request->getInstitutionUserId());
+
+            $this->authorize('update', $institutionUser);
 
             $institutionUser->fill($request->safe(['email', 'phone']));
 
@@ -47,6 +58,6 @@ class InstitutionUserController extends Controller
 
     public function getBaseQuery(): Builder
     {
-        return InstitutionUser::getModel()->where('institution_id', Auth::user()->institutionId);
+        return InstitutionUser::getModel()->withGlobalScope('policy', InstitutionUserPolicy::scope());
     }
 }
