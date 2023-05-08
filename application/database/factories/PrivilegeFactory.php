@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enum\PrivilegeKey;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -16,8 +17,10 @@ class PrivilegeFactory extends Factory
      */
     public function definition(): array
     {
+        $availablePrivileges = collect(PrivilegeKey::cases())->pluck('value');
+
         return [
-            //
+            'key' => fake()->randomElement($availablePrivileges),
         ];
     }
 }

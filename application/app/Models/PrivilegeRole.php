@@ -7,9 +7,8 @@ use Database\Factories\PrivilegeRoleFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Carbon;
 
 /**
@@ -40,11 +39,22 @@ use Illuminate\Support\Carbon;
  *
  * @mixin Eloquent
  */
-class PrivilegeRole extends Model
+class PrivilegeRole extends Pivot
 {
-    use HasFactory, SoftDeletes, HasUuids;
+    use HasFactory, HasUuids;
 
-    protected $fillable = ['privilege_id', 'role_id'];
+    protected $table = 'privilege_roles';
+
+    public $timestamps = false;
+
+    protected $touches = [
+        'role',
+    ];
+
+    protected $fillable = [
+        'role_id',
+        'privilege_id',
+    ];
 
     public function role(): BelongsTo
     {

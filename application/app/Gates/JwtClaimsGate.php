@@ -13,15 +13,16 @@ readonly class JwtClaimsGate
 
     public function allows(): bool
     {
-        return $this->isAuthorizedPartySsoInternalClient(
-            $this->jwtDecoder->getDecodedJwtWithSpecifiedValidation(false, true)
-        );
+        $decodedJwt = $this->jwtDecoder->getDecodedJwtWithSpecifiedValidation(false, true);
+
+        abort_if(empty($decodedJwt), 401);
+
+        return $this->isAuthorizedPartySsoInternalClient($decodedJwt);
     }
 
     public function isAuthorizedPartySsoInternalClient(?stdClass $decodedJwt): bool
     {
-        return filled($decodedJwt)
-            && property_exists($decodedJwt, 'azp')
+        return property_exists($decodedJwt, 'azp')
             && filled($tokenAuthorizedParty = $decodedJwt->azp)
             && filled($expectedSsoInternalClientId = config('api.sso_internal_client_id'))
             && $tokenAuthorizedParty === $expectedSsoInternalClientId;

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -49,7 +50,10 @@ class Role extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
 
-    protected $fillable = ['institution_id', 'name'];
+    protected $fillable = [
+        'name',
+        'institution_id',
+    ];
 
     public function institutionUserRoles(): HasMany
     {
@@ -59,6 +63,12 @@ class Role extends Model
     public function privilegeRoles(): HasMany
     {
         return $this->hasMany(PrivilegeRole::class);
+    }
+
+    public function privileges(): BelongsToMany
+    {
+        return $this->belongsToMany(Privilege::class, app(PrivilegeRole::class)->getTable(), 'role_id', 'privilege_id')
+            ->using(PrivilegeRole::class);
     }
 
     public function institution(): BelongsTo

@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Enums\PrivilegeKey;
 use App\Models\Privilege;
 use App\Models\PrivilegeRole;
 use App\Models\Role;
@@ -22,7 +21,7 @@ class PrivilegeRoleFactory extends Factory
     {
         return [
             'role_id' => Role::factory(),
-            'privilege_id' => fn () => Privilege::where('key', PrivilegeKey::AddUser->value)->first(),
+            'privilege_id' => fake()->unique()->randomElement(Privilege::all()->pluck('id')),
         ];
     }
 }
