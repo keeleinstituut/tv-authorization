@@ -3,7 +3,6 @@
 namespace App\Policies;
 
 use App\Enums\PrivilegeKey;
-use App\Models\Privilege;
 use Illuminate\Support\Facades\Auth;
 use KeycloakAuthGuard\Models\JwtPayloadUser;
 

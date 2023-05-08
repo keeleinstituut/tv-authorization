@@ -39,8 +39,8 @@ class RoleUpdateRequest extends FormRequest
                 'name' => [
                     Rule::unique(app(Role::class)->getTable(), 'name')
                         ->where(fn (Builder $query) => $query
-                                ->where('institution_id', $params->get('institution_id'))
-                                ->whereNull('deleted_at')
+                            ->where('institution_id', $params->get('institution_id'))
+                            ->whereNull('deleted_at')
                         )
                         ->ignore($this->route('role_id')),
                 ],

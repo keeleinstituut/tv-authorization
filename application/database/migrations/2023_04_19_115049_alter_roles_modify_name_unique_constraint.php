@@ -26,7 +26,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-            // ALTER TABLE roles DROP CONSTRAINT roles_name_unique
+        // ALTER TABLE roles DROP CONSTRAINT roles_name_unique
         DB::statement(<<<'EOT'
             DROP INDEX roles_name_unique;
         EOT);
