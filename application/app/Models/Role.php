@@ -52,7 +52,10 @@ class Role extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
 
-    protected $fillable = ['institution_id', 'name'];
+    protected $fillable = [
+        'name',
+        'institution_id',
+    ];
 
     public function institutionUserRoles(): HasMany
     {
@@ -64,15 +67,13 @@ class Role extends Model
         return $this->hasMany(PrivilegeRole::class);
     }
 
+    public function privileges(): BelongsToMany
+    {
+        return $this->belongsToMany(Privilege::class, PrivilegeRole::class);
+    }
+
     public function institution(): BelongsTo
     {
         return $this->belongsTo(Institution::class);
-    }
-
-    public function privileges(): BelongsToMany
-    {
-        return $this->belongsToMany(Privilege::class, PrivilegeRole::class)
-            ->wherePivot('deleted_at', null)
-            ->withTimestamps();
     }
 }

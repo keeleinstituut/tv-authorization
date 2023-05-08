@@ -2,10 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Enums\PrivilegeKey;
+use App\Models\Privilege;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Privilege>
+ * @extends Factory<Privilege>
  */
 class PrivilegeFactory extends Factory
 {
@@ -16,8 +18,10 @@ class PrivilegeFactory extends Factory
      */
     public function definition(): array
     {
+        $availablePrivileges = collect(PrivilegeKey::cases())->pluck('value');
+
         return [
-            //
+            'key' => fake()->randomElement($availablePrivileges),
         ];
     }
 }

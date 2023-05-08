@@ -70,8 +70,6 @@ class Privilege extends Model
 
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(Role::class, PrivilegeRole::class)
-            ->wherePivot('deleted_at', null)
-            ->withTimestamps();
+        return $this->belongsToMany(Role::class, PrivilegeRole::class);
     }
 }

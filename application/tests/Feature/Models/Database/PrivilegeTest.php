@@ -1,7 +1,5 @@
 <?php
 
-/** @noinspection PhpUnhandledExceptionInspection */
-
 namespace Feature\Models\Database;
 
 use App\Enums\PrivilegeKey;
@@ -74,30 +72,5 @@ class PrivilegeTest extends TestCase
             'privilege_id' => $privilege->id,
             'role_id' => $secondRole->id,
         ]));
-    }
-
-    public function test_soft_deleting_role_pivots(): void
-    {
-        $privilege = Privilege::firstWhere('key', PrivilegeKey::AddUser->value);
-        $firstRole = Role::factory()->for(Institution::factory()->create())->hasAttached($privilege)->create();
-        $secondRole = Role::factory()->for(Institution::factory()->create())->hasAttached($privilege)->create();
-
-        $firstRolePivot = PrivilegeRole::firstWhere([
-            'privilege_id' => $privilege->id,
-            'role_id' => $firstRole->id,
-        ]);
-        $secondRolePivot = PrivilegeRole::firstWhere([
-            'privilege_id' => $privilege->id,
-            'role_id' => $secondRole->id,
-        ]);
-
-        $countOfRolesBeforeDeletion = $privilege->roles->count(); // can’t assume db is empty
-
-        $firstRolePivot->deleteOrFail();
-        $secondRolePivot->deleteOrFail();
-
-        $this->assertCount($countOfRolesBeforeDeletion - 2, $privilege->refresh()->roles);
-        $this->assertSoftDeleted($firstRolePivot);
-        $this->assertSoftDeleted($secondRolePivot);
     }
 }
