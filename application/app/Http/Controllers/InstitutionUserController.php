@@ -8,9 +8,12 @@ use App\Http\Resources\InstitutionUserResource;
 use App\Models\InstitutionUser;
 use App\Policies\InstitutionUserPolicy;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use League\Csv\CannotInsertRecord;
+use League\Csv\Exception;
+use League\Csv\Writer;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class InstitutionUserController extends Controller
@@ -28,7 +31,7 @@ class InstitutionUserController extends Controller
     }
 
     /**
-     * @throws AuthenticationException|Throwable
+     * @throws AuthorizationException|Throwable
      */
     public function update(UpdateInstitutionUserRequest $request): InstitutionUserResource
     {
@@ -54,6 +57,40 @@ class InstitutionUserController extends Controller
 
             return new InstitutionUserResource($institutionUser->refresh());
         });
+    }
+
+    /**
+     * @throws AuthorizationException|CannotInsertRecord|Exception
+     */
+    public function exportCsv(): StreamedResponse
+    {
+        $this->authorize('export', InstitutionUser::class);
+
+        $csvDocument = Writer::createFromString();
+
+        $csvDocument->insertOne([
+            'Isikukood', 'Nimi', 'Meiliaadress', 'Telefoninumber', 'Üksus', 'Roll', 'Teostaja',
+        ]);
+        $csvDocument->insertAll(
+            $this->getBaseQuery()
+                ->with(['user', 'department', 'roles'])
+                ->get()
+                ->map(fn (InstitutionUser $institutionUser) => [
+                    $institutionUser->user->personal_identification_code,
+                    "{$institutionUser->user->forename} {$institutionUser->user->surname}",
+                    $institutionUser->email,
+                    $institutionUser->phone,
+                    $institutionUser->department?->name,
+                    $institutionUser->roles->map->name->join(', '),
+                    'Ei', // TODO: Add teostaja to this service
+                ])
+        );
+
+        return response()->streamDownload(
+            $csvDocument->output(...),
+            'exported_users.csv',
+            ['Content-Type' => 'text/csv']
+        );
     }
 
     public function getBaseQuery(): Builder

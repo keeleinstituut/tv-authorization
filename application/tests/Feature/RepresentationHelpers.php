@@ -71,4 +71,17 @@ class RepresentationHelpers
             ['id', 'name', 'logo_url', 'updated_at', 'created_at']
         );
     }
+
+    public static function createInstitutionUserCsvRepresentation(InstitutionUser $institutionUser): array
+    {
+        return [
+            $institutionUser->user->personal_identification_code, // Isikukood
+            "{$institutionUser->user->forename} {$institutionUser->user->surname}", // Nimi
+            $institutionUser->email ?? '', // Meiliaadress
+            $institutionUser->phone ?? '', // Telefoninumber
+            $institutionUser->department?->name ?? '', // Üksus
+            $institutionUser->roles->map->name->join(', ') ?? '', // Roll
+            'Ei', // TODO? // Teostaja
+        ];
+    }
 }

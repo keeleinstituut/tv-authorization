@@ -72,14 +72,53 @@ class InstitutionUserControllerShowTest extends TestCase
         $this->assertResponseJsonDataIsEqualTo($expectedResponseData, $response);
     }
 
-    public function test_requesting_nonexistant_user(): void
+    public function test_requesting_nonexistent_user(): void
     {
         // GIVEN institution has no users
         $createdInstitution = Institution::factory()->create();
 
-        // WHEN request targets nonexistant insitution user
+        // WHEN request targets nonexistent institution user
         $response = $this->sendGetRequest(
             Str::uuid(),
+            $createdInstitution->id
+        );
+
+        // THEN response status should indicate resource was not found
+        $response->assertNotFound();
+    }
+
+    public function test_requesting_soft_deleted_institution_user(): void
+    {
+        // GIVEN a soft-deleted institution user is in the created institution
+        [
+            'institution' => $createdInstitution,
+            'institutionUser' => $createdInstitutionUser,
+        ] = $this->createBasicModels();
+        $createdInstitutionUser->delete();
+
+        // WHEN request targets the soft-deleted institution user
+        $response = $this->sendGetRequest(
+            $createdInstitutionUser,
+            $createdInstitution->id
+        );
+
+        // THEN response status should indicate resource was not found
+        $response->assertNotFound();
+    }
+
+    public function test_requesting_institution_user_when_user_soft_deleted(): void
+    {
+        // GIVEN a soft-deleted institution user is in the created institution
+        [
+            'institution' => $createdInstitution,
+            'user' => $createdUser,
+            'institutionUser' => $createdInstitutionUser,
+        ] = $this->createBasicModels();
+        $createdUser->delete();
+
+        // WHEN request targets the institution user with a soft-deleted user relation*
+        $response = $this->sendGetRequest(
+            $createdInstitutionUser,
             $createdInstitution->id
         );
 
