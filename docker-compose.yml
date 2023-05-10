@@ -9,9 +9,9 @@ services:
     image: postgres:latest
     command: ["postgres", "-c", "log_statement=all"]
     ports:
-      - 5432:5432
+      - 5434:5432
     environment:
-      - POSTGRES_DB=postgres
+      - POSTGRES_DB=tv-authorization
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=pass
     volumes:
@@ -20,4 +20,4 @@ services:
   redis:
     image: redis:latest
     ports:
-      - 6379:6379
+      - 6378:6379
