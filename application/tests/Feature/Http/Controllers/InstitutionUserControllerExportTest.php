@@ -62,7 +62,6 @@ class InstitutionUserControllerExportTest extends TestCase
                 'Telefoninumber' => $institutionUser->phone ?? '',
                 'Üksus' => $institutionUser->department?->name ?? '',
                 'Roll' => $institutionUser->roles->map->name->join(', ') ?? '',
-                'Teostaja' => 'Ei', // TODO? // Teostaja
             ]);
         $actualResponseCsvDocument = Reader::createFromString($response->streamedContent())->setHeaderOffset(0);
 
@@ -115,7 +114,6 @@ class InstitutionUserControllerExportTest extends TestCase
             'Telefoninumber' => $singleInstitutionUser->phone ?? '',
             'Üksus' => $singleInstitutionUser->department?->name ?? '',
             'Roll' => $singleInstitutionUser->roles->map->name->join(', ') ?? '',
-            'Teostaja' => 'Ei', // TODO? // Teostaja
         ]];
         $actualResponseCsvDocument = Reader::createFromString($response->streamedContent())->setHeaderOffset(0);
 

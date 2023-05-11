@@ -69,7 +69,7 @@ class InstitutionUserController extends Controller
         $csvDocument = Writer::createFromString();
 
         $csvDocument->insertOne([
-            'Isikukood', 'Nimi', 'Meiliaadress', 'Telefoninumber', 'Üksus', 'Roll', 'Teostaja',
+            'Isikukood', 'Nimi', 'Meiliaadress', 'Telefoninumber', 'Üksus', 'Roll',
         ]);
         $csvDocument->insertAll(
             $this->getBaseQuery()
@@ -82,9 +82,10 @@ class InstitutionUserController extends Controller
                     $institutionUser->phone,
                     $institutionUser->department?->name,
                     $institutionUser->roles->map->name->join(', '),
-                    'Ei', // TODO: Add teostaja to this service
                 ])
         );
+
+        // TODO: audit log
 
         return response()->streamDownload(
             $csvDocument->output(...),
