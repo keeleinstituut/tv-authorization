@@ -33,6 +33,7 @@ class InstitutionUserController extends Controller
     public function update(UpdateInstitutionUserRequest $request): InstitutionUserResource
     {
         return DB::transaction(function () use ($request) {
+            /** @var $institutionUser InstitutionUser */
             $institutionUser = $this->getBaseQuery()->findOrFail($request->getInstitutionUserId());
 
             $this->authorize('update', $institutionUser);

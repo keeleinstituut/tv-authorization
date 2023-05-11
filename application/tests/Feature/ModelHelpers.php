@@ -26,7 +26,7 @@ trait ModelHelpers
      * @throws Throwable
      */
     public function createBasicModels(string $email = 'fake@email.ee',
-        ?string $phone = null,
+        string $phone = '+372 55555555',
         string $pic = '47103125760',
         string $forename = 'Testo',
         string $surname = 'Testorino',
@@ -65,7 +65,7 @@ trait ModelHelpers
     public function createInstitutionUser(Institution $institution,
         User $user,
         string $email,
-        ?string $phone = null,
+        string $phone = '+372 66666666',
         ?Department $department = null,
         Role ...$roles): InstitutionUser
     {

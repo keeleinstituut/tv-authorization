@@ -39,10 +39,10 @@ class InstitutionUserControllerUpdateTest extends TestCase
             'institutionUser' => $createdInstitutionUser,
             'roles' => [$addUserRole, $editUserRole]
         ] = $this->createBasicModels(
-            email: 'test123@test.dev',
+            email: $expectedEmail = 'test123@test.dev',
             pic: '50608024740',
             forename: 'Testjana',
-            surname: 'Testjovka',
+            surname: $expectedSurname = 'Testjovka',
             attachInstitutionUserToDepartment: false,
             privileges: [PrivilegeKey::AddUser, PrivilegeKey::EditUser]
         );
@@ -54,9 +54,9 @@ class InstitutionUserControllerUpdateTest extends TestCase
             $createdInstitution->id,
             [
                 'user' => [
-                    'forename' => 'Testander',
+                    'forename' => $expectedForename = 'Testander',
                 ],
-                'phone' => '+372 1234 5678',
+                'phone' => $expectedPhoneNumber = '+372 5678901',
                 'roles' => [$editUserRole->id, $viewUserRole->id],
                 'department_id' => $createdDepartment->id,
             ]
@@ -67,16 +67,16 @@ class InstitutionUserControllerUpdateTest extends TestCase
             InstitutionUser::findOrFail($createdInstitutionUser->id)
         );
         $expectedFragment = [
-            'phone' => '+372 1234 5678',
-            'email' => 'test123@test.dev',
+            'phone' => $expectedPhoneNumber,
+            'email' => $expectedEmail,
             'roles' => Arr::map(
                 [$editUserRole, $viewUserRole],
                 RepresentationHelpers::createRoleNestedRepresentation(...)
             ),
             'user' => [
                 ...RepresentationHelpers::createUserFlatRepresentation($createdUser),
-                'forename' => 'Testander',
-                'surname' => 'Testjovka',
+                'forename' => $expectedForename,
+                'surname' => $expectedSurname,
             ],
         ];
         $this->assertArrayHasSpecifiedFragment($expectedFragment, $actualState);
@@ -148,7 +148,7 @@ class InstitutionUserControllerUpdateTest extends TestCase
             'institutionUser' => $createdInstitutionUser,
         ] = $this->createBasicModels(
             email: ($expectedEmail = 'testarok@email.tv'),
-            phone: ($expectedPhone = '+372 1234 5678'),
+            phone: ($expectedPhone = '+372 34567890'),
         );
 
         // WHEN invalid payload is sent to endpoint
@@ -157,7 +157,7 @@ class InstitutionUserControllerUpdateTest extends TestCase
             $createdInstitution->id,
             [
                 'email' => 'someother@email.com',
-                'phone' => '+372 9876 5432',
+                'phone' => '+372 45678901',
                 ...$invalidPayload,
             ]
         );
@@ -170,12 +170,42 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $response->assertUnprocessable();
     }
 
-    public function test_updating_nonexistant_user(): void
+    /**
+     * @dataProvider provideValidPhoneNumbers
+     */
+    public function test_valid_phone_numbers(string $validPhoneNumber): void
+    {
+        // GIVEN the following data is in database
+        [
+            'institution' => $createdInstitution,
+            'institutionUser' => $createdInstitutionUser,
+        ] = $this->createBasicModels(
+            phone: '+372 50000000'
+        );
+
+        // WHEN request sent to endpoint
+        $response = $this->sendPutRequest(
+            $createdInstitutionUser->id,
+            $createdInstitution->id,
+            ['phone' => $validPhoneNumber]
+        );
+
+        // THEN the database state should have updated phone number
+        $actualState = RepresentationHelpers::createInstitutionUserNestedRepresentation(
+            InstitutionUser::findOrFail($createdInstitutionUser->id)
+        );
+        $this->assertArrayHasSpecifiedFragment(['phone' => $validPhoneNumber], $actualState);
+
+        // And request response should correspond to the actual state
+        $this->assertResponseJsonDataIsEqualTo($actualState, $response);
+    }
+
+    public function test_updating_nonexistent_user(): void
     {
         // GIVEN institution has no users
         $createdInstitution = Institution::factory()->create();
 
-        // WHEN request targets nonexistant insitution user
+        // WHEN request targets nonexistent institution user
         $response = $this->sendPutRequest(
             ($randomUuid = Str::uuid()),
             $createdInstitution->id,
@@ -326,7 +356,7 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $response->assertUnprocessable();
     }
 
-    public function test_adding_nonexistant_department(): void
+    public function test_adding_nonexistent_department(): void
     {
         // GIVEN the following data is in database
         [
@@ -337,7 +367,7 @@ class InstitutionUserControllerUpdateTest extends TestCase
             email: ($expectedEmail = 'test321@ike.ee'),
         );
 
-        // WHEN request input has nonexistant department
+        // WHEN request input has nonexistent department
         $response = $this->sendPutRequest(
             $createdInstitutionUser->id,
             $createdInstitution->id,
@@ -362,7 +392,7 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $response->assertUnprocessable();
     }
 
-    public function test_adding_nonexistant_role(): void
+    public function test_adding_nonexistent_role(): void
     {
         // GIVEN the following data is in database
         [
@@ -374,7 +404,7 @@ class InstitutionUserControllerUpdateTest extends TestCase
             privileges: [PrivilegeKey::ViewUser]
         );
 
-        // WHEN request input has nonexistant role
+        // WHEN request input has nonexistent role
         $response = $this->sendPutRequest(
             $createdInstitutionUser->id,
             $createdInstitution->id,
@@ -449,6 +479,42 @@ class InstitutionUserControllerUpdateTest extends TestCase
             ['phone' => ''],
             ['phone' => '-1'],
             ['phone' => 'abc'],
+            ['phone' => '5123456'],
+            ['phone' => '5123 456'],
+            ['phone' => '51234567'],
+            ['phone' => '5123 4567'],
+            ['phone' => '37251234567'],
+            ['phone' => '372 5123 4567'],
+            ['phone' => '372 5123 456'],
+            ['phone' => '0037251234567'],
+            ['phone' => '003725123456'],
+            ['phone' => '00 372 5123 4567'],
+            ['phone' => '00 372 5123 456'],
+            ['phone' => '123'],
+            ['phone' => '1234567'],
+            ['phone' => '1234 567'],
+            ['phone' => '12345678'],
+            ['phone' => '1234 5678'],
+            ['phone' => '+37201234567'],
+            ['phone' => '+372 0123 4567'],
+            ['phone' => '+37212345678'],
+            ['phone' => '+372 1234 5678'],
+            ['phone' => '+37223456789'],
+            ['phone' => '+372 2345 6789'],
+            ['phone' => '+37289012345'],
+            ['phone' => '+372 8901 2345'],
+            ['phone' => '+37290123456'],
+            ['phone' => '+372 9012 3456'],
+            ['phone' => '+372567890'],
+            ['phone' => '+372 5678 90'],
+            ['phone' => '+372 5678 901'],
+            ['phone' => '+372 5678 9012'],
+            ['phone' => '+372567890123'],
+            ['phone' => '372 5678 9012 3'],
+            ['phone' => '+372 5 6 7 8 9 0'],
+            ['phone' => '+3 7 2 5 6 7 8 9 0'],
+            ['phone' => '+ 372 567890'],
+            ['phone' => ' +372 567890'],
             ['roles' => null],
             ['roles' => ''],
             ['roles' => [null]],
@@ -468,6 +534,38 @@ class InstitutionUserControllerUpdateTest extends TestCase
             ->mapWithKeys(fn ($payload) => [json_encode($payload) => $payload]) // for test reports - otherwise only param index is reported
             ->map(Arr::undot(...))
             ->map(fn ($payload) => [$payload])
+            ->toArray();
+    }
+
+    /**
+     * @return array<array<array>>
+     */
+    public static function provideValidPhoneNumbers(): array
+    {
+        return collect([
+            '+37234567890',
+            '+372 34567890',
+            '+37245678901',
+            '+372 45678901',
+            '+37256789012',
+            '+372 56789012',
+            '+37267890123',
+            '+372 67890123',
+            '+37278901234',
+            '+372 78901234',
+            '+3723456789',
+            '+372 3456789',
+            '+3724567890',
+            '+372 4567890',
+            '+3725678901',
+            '+372 5678901',
+            '+3726789012',
+            '+372 6789012',
+            '+3727890123',
+            '+372 7890123',
+        ])
+            ->mapWithKeys(fn ($phone) => [$phone => $phone]) // for test reports - otherwise only param index is reported
+            ->map(fn ($phone) => [$phone])
             ->toArray();
     }
 }

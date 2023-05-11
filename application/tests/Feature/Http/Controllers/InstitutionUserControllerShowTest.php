@@ -37,7 +37,7 @@ class InstitutionUserControllerShowTest extends TestCase
             'roles' => $expectedRoles
         ] = $this->createBasicModels(
             email: $expectedEmail = 'test123@test.dev',
-            phone: $expectedPhone = null,
+            phone: $expectedPhone = '+372 7777777',
             pic: $expectedPic = '50608024740',
             forename: $expectedForename = 'Testjana',
             surname: $expectedSurname = 'Testjovka',
@@ -72,12 +72,12 @@ class InstitutionUserControllerShowTest extends TestCase
         $this->assertResponseJsonDataIsEqualTo($expectedResponseData, $response);
     }
 
-    public function test_requesting_nonexistant_user(): void
+    public function test_requesting_nonexistent_user(): void
     {
         // GIVEN institution has no users
         $createdInstitution = Institution::factory()->create();
 
-        // WHEN request targets nonexistant insitution user
+        // WHEN request targets nonexistent institution user
         $response = $this->sendGetRequest(
             Str::uuid(),
             $createdInstitution->id

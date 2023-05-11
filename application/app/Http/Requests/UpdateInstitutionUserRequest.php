@@ -6,6 +6,7 @@ use App\Models\Department;
 use App\Models\InstitutionUser;
 use App\Models\Role;
 use App\Rules\ModelBelongsToInstitutionRule;
+use App\Rules\PhoneNumberRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -26,7 +27,7 @@ class UpdateInstitutionUserRequest extends FormRequest
             'user.forename' => 'filled',
             'user.surname' => 'filled',
             'email' => 'email',
-            'phone' => 'regex:/\+?[\s\d]+\d/',
+            'phone' => new PhoneNumberRule,
             'roles' => 'array',
             'roles.*' => [
                 'bail', 'uuid', $this->existsRoleInSameInstitution(),
