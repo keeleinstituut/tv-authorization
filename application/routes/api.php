@@ -33,7 +33,7 @@ Route::delete('/roles/{role_id}', [RoleController::class, 'destroy'])->whereUuid
 Route::get('/jwt-claims', [JwtClaimsController::class, 'show'])->withoutMiddleware('auth:api');
 
 
-Route::delete('/sync/institutions', [InstitutionSyncController::class, 'index'])->withoutMiddleware('auth:api');
-Route::delete('/sync/institutions/{id}', [InstitutionSyncController::class, 'show'])->whereUuid('id')->withoutMiddleware('auth:api');
-Route::delete('/sync/institution-users', [InstitutionUserSyncController::class, 'index'])->withoutMiddleware('auth:api');
-Route::delete('/sync/institution-users/{id}', [InstitutionUserSyncController::class, 'show'])->whereUuid('id')->withoutMiddleware('auth:api');
+Route::get('/sync/institutions', [InstitutionSyncController::class, 'index'])->withoutMiddleware('auth:api');
+Route::get('/sync/institutions/{id}', [InstitutionSyncController::class, 'show'])->whereUuid('id')->withoutMiddleware('auth:api');
+Route::get('/sync/institution-users', [InstitutionUserSyncController::class, 'index'])->withoutMiddleware('auth:api');
+Route::get('/sync/institution-users/{id}', [InstitutionUserSyncController::class, 'show'])->whereUuid('id')->withoutMiddleware('auth:api');

@@ -18,4 +18,11 @@ class InstitutionSyncController extends Controller
             Institution::all()
         );
     }
+
+    public function show(Request $request): InstitutionResource
+    {
+        return new InstitutionResource(
+            Institution::whereId($request->route('id'))->firstOrFail()
+        );
+    }
 }
