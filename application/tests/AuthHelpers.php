@@ -20,7 +20,7 @@ trait AuthHelpers
             'iss' => config('keycloak.base_url').'/realms/'.config('keycloak.realm'),
             'tolkevarav' => collect([
                 'userId' => 1,
-                'personalIdentityCode' => '11111111111',
+                'personalIdentificationCode' => '11111111111',
                 'privileges' => [],
             ])->merge($tolkevaravPayload)->toArray(),
         ]);

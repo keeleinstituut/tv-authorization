@@ -23,7 +23,7 @@ class JwtClaims extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'personalIdentityCode' => $this->user->personal_identification_code,
+            'personalIdentificationCode' => $this->user->personal_identification_code,
             'userId' => $this->user->id,
             'institutionUserId' => $this->id,
             'forename' => $this->user->forename,

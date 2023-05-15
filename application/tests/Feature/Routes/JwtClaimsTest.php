@@ -272,7 +272,7 @@ class JwtClaimsTest extends TestCase
     public function buildExpectedResponse(InstitutionUser $expectedInstitutionUser, array $expectedPrivileges): array
     {
         return [
-            'personalIdentityCode' => $expectedInstitutionUser->user->personal_identification_code,
+            'personalIdentificationCode' => $expectedInstitutionUser->user->personal_identification_code,
             'userId' => $expectedInstitutionUser->user->id,
             'institutionUserId' => $expectedInstitutionUser->id,
             'forename' => $expectedInstitutionUser->user->forename,
