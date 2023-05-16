@@ -66,9 +66,15 @@ class RepresentationHelpers
 
     public static function createInstitutionFlatRepresentation(Institution $institution): array
     {
-        return Arr::only(
-            $institution->toArray(),
-            ['id', 'name', 'logo_url', 'updated_at', 'created_at']
-        );
+        return Arr::only($institution->toArray(), [
+            'id',
+            'name',
+            'logo_url',
+            'updated_at',
+            'created_at',
+            'short_name',
+            'phone',
+            'email',
+        ]);
     }
 }

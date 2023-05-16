@@ -17,6 +17,9 @@ use Illuminate\Support\Carbon;
  * App\Models\Institution
  *
  * @property string $id
+ * @property string|null $short_name
+ * @property string|null $email
+ * @property string|null $phone
  * @property Carbon|null $deleted_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -37,11 +40,14 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Institution whereCreatedAt($value)
  * @method static Builder|Institution whereDeletedAt($value)
  * @method static Builder|Institution whereId($value)
+ * @method static Builder|Institution whereShortName($value)
+ * @method static Builder|Institution whereLogoUrl($value)
+ * @method static Builder|Institution whereEmail($value)
+ * @method static Builder|Institution wherePhone($value)
  * @method static Builder|Institution whereName($value)
  * @method static Builder|Institution whereUpdatedAt($value)
  * @method static Builder|Institution withTrashed()
  * @method static Builder|Institution withoutTrashed()
- * @method static Builder|Institution whereLogoUrl($value)
  *
  * @mixin Eloquent
  */
@@ -49,7 +55,7 @@ class Institution extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
 
-    protected $fillable = ['name', 'logo_url'];
+    protected $fillable = ['name', 'logo_url', 'short_name', 'email', 'phone'];
 
     public function institutionUsers(): HasMany
     {
@@ -64,5 +70,19 @@ class Institution extends Model
     public function departments(): HasMany
     {
         return $this->hasMany(Department::class);
+    }
+
+    public static function queryByUserPersonalIdentificationCode(string $personalIdentificationCode): Builder
+    {
+        return static::whereHas(
+            'institutionUsers',
+            fn (Builder $institutionUserQuery) => $institutionUserQuery->whereHas(
+                'user',
+                fn (Builder $userQuery) => $userQuery->where(
+                    'personal_identification_code',
+                    $personalIdentificationCode
+                )
+            )
+        );
     }
 }

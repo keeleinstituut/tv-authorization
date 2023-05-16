@@ -56,7 +56,7 @@ return [
      * The property from JWT token that contains the user identifier.
      * This will be confronted against `user_provider_credential` attribute, while authenticating.
      */
-    'token_principal_attribute' => env('KEYCLOAK_TOKEN_PRINCIPAL_ATTRIBUTE', 'tolkevarav.personalIdentityCode'),
+    'token_principal_attribute' => env('KEYCLOAK_TOKEN_PRINCIPAL_ATTRIBUTE', 'tolkevarav.personalIdentificationCode'),
 
     /*
      * You can add a leeway to account for when there is a clock skew times between the signing and verifying servers.
