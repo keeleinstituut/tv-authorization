@@ -96,6 +96,8 @@ class InstitutionUserController extends Controller
 
     public function getBaseQuery(): Builder
     {
-        return InstitutionUser::getModel()->withGlobalScope('policy', InstitutionUserPolicy::scope());
+        return InstitutionUser::getModel()
+            ->withGlobalScope('policy', InstitutionUserPolicy::scope())
+            ->whereHas('user');
     }
 }

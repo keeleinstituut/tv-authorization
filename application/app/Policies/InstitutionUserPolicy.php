@@ -104,6 +104,6 @@ class InstitutionUserScope implements IScope
             abort(401);
         }
 
-        $builder->where('institution_id', $currentUserInstitutionId)->whereHas('user');
+        $builder->where('institution_id', $currentUserInstitutionId);
     }
 }
