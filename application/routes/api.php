@@ -29,14 +29,15 @@ Route::post('/roles', [RoleController::class, 'store']);
 Route::get('/roles/{role_id}', [RoleController::class, 'show'])->whereUuid('role_id');
 Route::put('/roles/{role_id}', [RoleController::class, 'update'])->whereUuid('role_id');
 Route::delete('/roles/{role_id}', [RoleController::class, 'destroy'])->whereUuid('role_id');
+
 Route::get('/jwt-claims', [JwtClaimsController::class, 'show'])->withoutMiddleware('auth:api');
 
 Route::get(
     '/institution-users/{institutionUserId}',
     [InstitutionUserController::class, 'show']
 )->whereUuid('institutionUserId');
-
 Route::put(
     '/institution-users/{institutionUserId}',
     [InstitutionUserController::class, 'update']
 )->whereUuid('institutionUserId');
+Route::get('/institution-users/export-csv', [InstitutionUserController::class, 'exportCsv']);

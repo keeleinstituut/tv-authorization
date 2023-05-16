@@ -50,6 +50,11 @@ class InstitutionUserPolicy
         throw new BadMethodCallException();
     }
 
+    public function export(): bool
+    {
+        return Auth::hasPrivilege(PrivilegeKey::ExportUser->value);
+    }
+
     public function isCurrentUser(InstitutionUser $institutionUser): bool
     {
         return filled($currentUserId = Auth::user()?->id)
@@ -62,7 +67,7 @@ class InstitutionUserPolicy
             && $currentInstitutionId === $institutionUser->institution_id;
     }
 
-    // Should serve as an query enhancement to Eloquent queries
+    // Should serve as a query enhancement to Eloquent queries
     // to filter out objects that the user does not have permissions to.
     //
     // Example usage in query:
