@@ -1,9 +1,13 @@
 <?php
 
+/** @noinspection PhpUnhandledExceptionInspection */
+
 namespace Feature\Models\Database;
 
 use App\Models\Institution;
 use App\Models\InstitutionUser;
+use App\Models\InstitutionUserRole;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -70,5 +74,84 @@ class InstitutionUserTest extends TestCase
             'user_id' => $referenceUser->id,
             'status' => '!!!',
         ]);
+    }
+
+    public function test_adding_role_pivots(): void
+    {
+        $institution = Institution::factory()->create();
+        $firstRole = Role::factory()->for($institution)->create();
+        $secondRole = Role::factory()->for($institution)->create();
+        $institutionUser = InstitutionUser::factory()->for($institution)->create();
+
+        $institutionUser->roles()->sync([$firstRole->id, $secondRole->id]);
+
+        $actualRoleIds = $institutionUser->refresh()->roles->pluck('id')->toArray();
+        $this->assertCount(2, $actualRoleIds);
+        $this->assertContains($firstRole->id, $actualRoleIds);
+        $this->assertContains($secondRole->id, $actualRoleIds);
+    }
+
+    public function test_detaching_role_pivots(): void
+    {
+        $institution = Institution::factory()->create();
+        $firstRole = Role::factory()->for($institution)->create();
+        $secondRole = Role::factory()->for($institution)->create();
+        $institutionUser = InstitutionUser::factory()
+            ->for($institution)
+            ->hasAttached($firstRole)
+            ->hasAttached($secondRole)
+            ->create();
+
+        $firstRolePivot = InstitutionUserRole::firstWhere([
+            'institution_user_id' => $institutionUser->id,
+            'role_id' => $firstRole->id,
+        ]);
+        $secondRolePivot = InstitutionUserRole::firstWhere([
+            'institution_user_id' => $institutionUser->id,
+            'role_id' => $secondRole->id,
+        ]);
+
+        $this->assertModelExists($firstRolePivot);
+        $this->assertModelExists($secondRolePivot);
+
+        $institutionUser->roles()->sync([]);
+
+        $this->assertEmpty($institutionUser->refresh()->roles);
+        $this->assertEmpty(InstitutionUserRole::firstWhere([
+            'institution_user_id' => $institutionUser->id,
+            'role_id' => $firstRole->id,
+        ]));
+        $this->assertEmpty(InstitutionUserRole::firstWhere([
+            'institution_user_id' => $institutionUser->id,
+            'role_id' => $secondRole->id,
+        ]));
+    }
+
+    public function test_soft_deleting_role_pivots(): void
+    {
+        $institution = Institution::factory()->create();
+        $firstRole = Role::factory()->for($institution)->create();
+        $secondRole = Role::factory()->for($institution)->create();
+        $institutionUser = InstitutionUser::factory()
+            ->for($institution)
+            ->hasAttached($firstRole)
+            ->hasAttached($secondRole)
+            ->create();
+
+        $firstRolePivot = InstitutionUserRole::firstWhere([
+            'institution_user_id' => $institutionUser->id,
+            'role_id' => $firstRole->id,
+        ]);
+        $secondRolePivot = InstitutionUserRole::firstWhere([
+            'institution_user_id' => $institutionUser->id,
+            'role_id' => $secondRole->id,
+        ]);
+
+        $firstRolePivot->deleteOrFail();
+        $secondRolePivot->deleteOrFail();
+
+        $this->assertEmpty($institutionUser->refresh()->roles);
+        $this->assertSoftDeleted($firstRolePivot);
+        $this->assertSoftDeleted($secondRolePivot);
     }
 }

@@ -35,6 +35,7 @@ class CreateInstitutionUserAction
                 [
                     'status' => InstitutionUserStatus::Activated,
                     'email' => $userData->email,
+                    'phone' => $userData->phone,
                 ]
             );
 

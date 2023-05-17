@@ -3,6 +3,7 @@
 use App\Http\Controllers\API\PrivilegeController;
 use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\InstitutionController;
+use App\Http\Controllers\InstitutionUserController;
 use App\Http\Controllers\JwtClaimsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -33,3 +34,13 @@ Route::delete('/roles/{role_id}', [RoleController::class, 'destroy'])->whereUuid
 Route::get('/jwt-claims', [JwtClaimsController::class, 'show'])->withoutMiddleware('auth:api');
 
 Route::get('/institutions', [InstitutionController::class, 'index']);
+
+Route::get(
+    '/institution-users/{institution_user_id}',
+    [InstitutionUserController::class, 'show']
+)->whereUuid('institution_user_id');
+Route::put(
+    '/institution-users/{institution_user_id}',
+    [InstitutionUserController::class, 'update']
+)->whereUuid('institution_user_id');
+Route::get('/institution-users/export-csv', [InstitutionUserController::class, 'exportCsv']);

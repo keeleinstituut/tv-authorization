@@ -2,11 +2,12 @@
 
 namespace Database\Factories;
 
-use App\Enum\PrivilegeKey;
+use App\Enums\PrivilegeKey;
+use App\Models\Privilege;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Privilege>
+ * @extends Factory<Privilege>
  */
 class PrivilegeFactory extends Factory
 {

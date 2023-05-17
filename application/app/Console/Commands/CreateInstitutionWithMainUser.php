@@ -6,6 +6,7 @@ use App\Actions\CreateInstitutionWithMainUserAction;
 use App\DataTransferObjects\InstitutionData;
 use App\DataTransferObjects\UserData;
 use App\Rules\PersonalIdCodeRule;
+use App\Rules\PhoneNumberRule;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
 use Throwable;
@@ -38,6 +39,7 @@ class CreateInstitutionWithMainUser extends Command
             'sname' => fn () => $this->argument('sname') ?: $this->ask('What is the surname of the main user?'),
             'pic' => fn () => $this->argument('pic') ?: $this->ask('What is the personal identification code of the main user?'),
             'email' => fn () => $this->argument('email') ?: $this->ask('What is the email of the main user?'),
+            'phone' => fn () => $this->argument('phone') ?: $this->ask('What is the phone number of the main user?'),
         ];
 
         $arguments = $argumentsDefinition;
@@ -52,6 +54,7 @@ class CreateInstitutionWithMainUser extends Command
                 'fname' => ['required', 'min:2'],
                 'sname' => ['required', 'min:2'],
                 'email' => ['required', 'email'],
+                'phone' => ['required', new PhoneNumberRule],
                 'logo' => ['nullable', 'url'],
                 'pic' => ['required', new PersonalIdCodeRule],
             ]);
@@ -76,6 +79,7 @@ class CreateInstitutionWithMainUser extends Command
                     $values['email'],
                     $values['sname'],
                     $values['fname'],
+                    $values['phone'],
                 )
             );
         } catch (Throwable $e) {
