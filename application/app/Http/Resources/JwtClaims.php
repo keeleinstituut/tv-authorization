@@ -18,7 +18,7 @@ class JwtClaims extends JsonResource
     public static $wrap = null;
 
     /**
-     * Transform the internal object into an array of custom claims to be inclued in JWT.
+     * Transform the internal object into an array of custom claims to be included in JWT.
      *
      * @return array<string, mixed>
      */
