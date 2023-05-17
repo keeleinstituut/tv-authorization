@@ -36,11 +36,11 @@ Route::get('/jwt-claims', [JwtClaimsController::class, 'show'])->withoutMiddlewa
 Route::get('/institutions', [InstitutionController::class, 'index']);
 
 Route::get(
-    '/institution-users/{institutionUserId}',
+    '/institution-users/{institution_user_id}',
     [InstitutionUserController::class, 'show']
-)->whereUuid('institutionUserId');
+)->whereUuid('institution_user_id');
 Route::put(
-    '/institution-users/{institutionUserId}',
+    '/institution-users/{institution_user_id}',
     [InstitutionUserController::class, 'update']
-)->whereUuid('institutionUserId');
+)->whereUuid('institution_user_id');
 Route::get('/institution-users/export-csv', [InstitutionUserController::class, 'exportCsv']);

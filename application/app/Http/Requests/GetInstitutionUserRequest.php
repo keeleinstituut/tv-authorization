@@ -8,6 +8,6 @@ class GetInstitutionUserRequest extends FormRequest
 {
     public function getInstitutionUserId(): string
     {
-        return $this->route('institutionUserId');
+        return $this->route('institution_user_id');
     }
 }
