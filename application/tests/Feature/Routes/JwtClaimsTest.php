@@ -103,8 +103,13 @@ class JwtClaimsTest extends TestCase
             $this->createRoleWithPrivileges($institution, self::PRIVILEGES_A)
         );
 
+        $normallyAcceptedAzp = Str::of(config('keycloak.accepted_authorized_parties'))
+            ->explode(',')
+            ->firstOrFail();
+        $this->assertNotEquals($normallyAcceptedAzp, config('api.sso_internal_client_id'));
+
         $accessToken = $this->generateAccessToken(
-            generalPayload: ['azp' => 'mr. hacker']
+            azp: $normallyAcceptedAzp
         );
 
         $this->withHeaders([
@@ -139,7 +144,7 @@ class JwtClaimsTest extends TestCase
         ))->assertStatus(Response::HTTP_FORBIDDEN);
     }
 
-    public function test_request_with_missing_token_returns_403(): void
+    public function test_request_with_missing_token_returns_401(): void
     {
         $institution = $this->createInstitution();
         $institutionUser = $this->createInstitutionUserWithRoles(
@@ -153,7 +158,7 @@ class JwtClaimsTest extends TestCase
                 'personal_identification_code' => $institutionUser->user->personal_identification_code,
                 'institution_id' => $institution->id,
             ]
-        ))->assertStatus(Response::HTTP_FORBIDDEN);
+        ))->assertStatus(Response::HTTP_UNAUTHORIZED);
     }
 
     public function test_request_with_nonexistent_pic_returns_404(): void
@@ -234,7 +239,7 @@ class JwtClaimsTest extends TestCase
     public function buildExpectedResponse(InstitutionUser $expectedInstitutionUser, array $expectedPrivileges): array
     {
         return [
-            'personalIdentityCode' => $expectedInstitutionUser->user->personal_identification_code,
+            'personalIdentificationCode' => $expectedInstitutionUser->user->personal_identification_code,
             'userId' => $expectedInstitutionUser->user->id,
             'institutionUserId' => $expectedInstitutionUser->id,
             'forename' => $expectedInstitutionUser->user->forename,
@@ -253,7 +258,7 @@ class JwtClaimsTest extends TestCase
     public function generateInternalClientAccessToken(): string
     {
         return $this->generateAccessToken(
-            generalPayload: ['azp' => config('api.sso_internal_client_id')]
+            azp: config('api.sso_internal_client_id')
         );
     }
 }

@@ -23,7 +23,8 @@ class CreateInstitutionUserActionTest extends TestCase
             '46304255763',
             'some@email.com',
             'some surname',
-            'some forename'
+            'some forename',
+            '+372 5555 5555'
         );
 
         $institutionUser = (new CreateInstitutionUserAction)->execute(
@@ -53,7 +54,8 @@ class CreateInstitutionUserActionTest extends TestCase
                 '46304255763',
                 'some@email.com',
                 'some surname',
-                'some forename'
+                'some forename',
+                '+372 5555 5555'
             ),
             $institution->id,
             []

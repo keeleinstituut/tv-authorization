@@ -9,6 +9,7 @@ readonly class UserData
         public string $email,
         public string $surname,
         public string $forename,
+        public string $phone,
     ) {
     }
 }

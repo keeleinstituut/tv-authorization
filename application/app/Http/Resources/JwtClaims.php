@@ -16,14 +16,14 @@ class JwtClaims extends JsonResource
     public static $wrap = null;
 
     /**
-     * Transform the internal object into an array of custom claims to be inclued in JWT.
+     * Transform the internal object into an array of custom claims to be included in JWT.
      *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
         return [
-            'personalIdentityCode' => $this->user->personal_identification_code,
+            'personalIdentificationCode' => $this->user->personal_identification_code,
             'userId' => $this->user->id,
             'institutionUserId' => $this->id,
             'forename' => $this->user->forename,

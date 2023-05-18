@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
-use Barryvdh\LaravelIdeHelper\Eloquent;
 use Database\Factories\RoleFactory;
+use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -28,6 +29,8 @@ use Illuminate\Support\Carbon;
  * @property-read int|null $institution_user_roles_count
  * @property-read Collection<int, PrivilegeRole> $privilegeRoles
  * @property-read int|null $privilege_roles_count
+ * @property-read Collection<int, Privilege> $privileges
+ * @property-read int|null $privileges_count
  *
  * @method static RoleFactory factory($count = null, $state = [])
  * @method static Builder|Role newModelQuery()
@@ -49,7 +52,10 @@ class Role extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
 
-    protected $fillable = ['institution_id', 'name'];
+    protected $fillable = [
+        'name',
+        'institution_id',
+    ];
 
     public function institutionUserRoles(): HasMany
     {
@@ -59,6 +65,11 @@ class Role extends Model
     public function privilegeRoles(): HasMany
     {
         return $this->hasMany(PrivilegeRole::class);
+    }
+
+    public function privileges(): BelongsToMany
+    {
+        return $this->belongsToMany(Privilege::class, PrivilegeRole::class);
     }
 
     public function institution(): BelongsTo

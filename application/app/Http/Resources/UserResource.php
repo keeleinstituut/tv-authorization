@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -12,17 +13,24 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class UserResource extends JsonResource
 {
     /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
+     * @return array{
+     *     id: string,
+     *     personal_identification_code: string,
+     *     forename: string,
+     *     surname: string,
+     *     updated_at: Carbon,
+     *     created_at: Carbon
+     * }
      */
     public function toArray(Request $request): array
     {
-        return [
-            'id' => $this->id,
-            'surname' => $this->surname,
-            'forename' => $this->forename,
-            'personal_identification_code' => $this->personal_identification_code,
-        ];
+        return $this->only(
+            'id',
+            'personal_identification_code',
+            'forename',
+            'surname',
+            'updated_at',
+            'created_at'
+        );
     }
 }

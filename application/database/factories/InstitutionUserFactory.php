@@ -4,11 +4,14 @@ namespace Database\Factories;
 
 use App\Enums\InstitutionUserStatus;
 use App\Models\Institution;
+use App\Models\InstitutionUser;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\InstitutionUser>
+ * @extends Factory<InstitutionUser>
  */
 class InstitutionUserFactory extends Factory
 {
@@ -24,7 +27,20 @@ class InstitutionUserFactory extends Factory
             'user_id' => User::factory(),
             'status' => InstitutionUserStatus::Created,
             'email' => $this->faker->email,
-            'phone' => $this->faker->numerify('+3725#######'),
+            'phone' => $this->generateRandomEstonianPhoneNumber(),
         ];
+    }
+
+    private function generateRandomEstonianPhoneNumber(): string
+    {
+        return Str::of('+372')
+            ->append(fake()->randomElement([' ', '']))
+            ->append(fake()->randomElement(['3', '4', '5', '6', '7']))
+            ->append(
+                Collection::times(
+                    fake()->numberBetween(6, 7),
+                    fake()->randomDigit(...)
+                )->join('')
+            )->toString();
     }
 }
