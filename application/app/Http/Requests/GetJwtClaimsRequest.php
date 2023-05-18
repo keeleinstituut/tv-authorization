@@ -20,7 +20,7 @@ class GetJwtClaimsRequest extends FormRequest
     {
         return [
             'personal_identification_code' => ['string', 'required'],
-            'institution_id' => ['string', 'required', 'uuid'],
+            'institution_id' => ['string', 'uuid'],
         ];
     }
 }
