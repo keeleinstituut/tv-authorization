@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\GetJwtClaimsRequest;
 use App\Http\Resources\JwtClaims;
-use App\Models\InstitutionUser;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
@@ -26,25 +25,20 @@ class JwtClaimsController extends Controller
     {
         Gate::allowIf($this->isAuthorized());
 
+        $user = User::wherePersonalIdentificationCode($request->validated('personal_identification_code'))
+            ->firstOrFail();
+
         if ($request->has('institution_id')) {
-            $institutionUser = InstitutionUser::query()
-                ->whereRelation(
-                    'institution',
-                    'id',
-                    $request->validated('institution_id')
-                )
-                ->whereRelation(
-                    'user',
-                    'personal_identification_code',
-                    $request->validated('personal_identification_code')
-                )
-                ->firstOrFail();
+            $institutionUser = $user->institutionUsers()->whereRelation(
+                'institution',
+                'id',
+                $request->validated('institution_id')
+            )->first();
+
+            abort_if(empty($institutionUser), 403);
 
             return new JwtClaims($institutionUser);
         }
-
-        $user = User::wherePersonalIdentificationCode($request->validated('personal_identification_code'))
-            ->firstOrFail();
 
         return new JwtClaims($user);
     }
