@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Enums\PrivilegeKey;
+use App\Models\Department;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
 use App\Models\InstitutionUserRole;
@@ -15,6 +16,11 @@ trait EntityHelpers
     private function createInstitution(): Institution
     {
         return Institution::factory()->create();
+    }
+
+    private function createDepartment(Institution $institution): Department
+    {
+        return Department::factory()->for($institution)->create();
     }
 
     /**

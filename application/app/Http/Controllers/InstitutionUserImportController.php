@@ -5,18 +5,18 @@ namespace App\Http\Controllers;
 use App\Enums\InstitutionUserStatus;
 use App\Http\Requests\ImportUsersCsvRequest;
 use App\Http\Requests\ImportUsersCsvRowValidationRequest;
+use App\Models\Department;
 use App\Models\InstitutionUser;
-use App\Models\InstitutionUserRole;
 use App\Models\Role;
 use App\Models\User;
-use App\Policies\Scopes\RoleScope;
+use App\Policies\DepartmentPolicy;
+use App\Policies\RolePolicy;
 use App\Rules\CsvContentValidator;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use KeycloakAuthGuard\Models\JwtPayloadUser;
-use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 use UnexpectedValueException;
@@ -26,15 +26,15 @@ class InstitutionUserImportController extends Controller
     /**
      * @throws Throwable
      */
-    public function validateFile(ImportUsersCsvRequest $request): JsonResponse
+    public function validateCsv(ImportUsersCsvRequest $request): JsonResponse
     {
         $this->authorize('import', InstitutionUser::class);
 
-        $validator = $this->getFileValidator($request->file('file'));
+        $validator = $this->getCsvContentValidator($request->file('file'));
         try {
             $rowsWithErrors = [];
             foreach ($validator->validatedRows() as $idx => $attributes) {
-                if (! empty($attributes['errors'])) {
+                if (filled($attributes['errors'])) {
                     $rowsWithErrors[] = [
                         'row' => $idx,
                         'errors' => $attributes['errors'],
@@ -62,20 +62,23 @@ class InstitutionUserImportController extends Controller
     /**
      * @throws AuthorizationException
      */
-    public function import(ImportUsersCsvRequest $request): JsonResponse
+    public function importCsv(ImportUsersCsvRequest $request): JsonResponse
     {
         $this->authorize('import', InstitutionUser::class);
 
         /** @var JwtPayloadUser $activeUser */
         $activeUser = Auth::user();
-        $validator = $this->getFileValidator($request->file('file'));
+        $validator = $this->getCsvContentValidator($request->file('file'));
         try {
-            $rolesMap = Role::query()->withGlobalScope('auth', new RoleScope)
-                ->pluck('id', 'name')
-                ->toArray();
+            $roles = Role::query()->withGlobalScope('policy', RolePolicy::scope())
+                ->pluck('id', 'name');
 
+            $departments = Department::query()->withGlobalScope('policy', DepartmentPolicy::scope())
+                ->pluck('id', 'name');
+
+            $warnings = [];
             foreach ($validator->validatedRows() as $attributes) {
-                if (! empty($attributes['errors'])) {
+                if (filled($attributes['errors'])) {
                     throw new UnexpectedValueException('File contains errors');
                 }
 
@@ -84,7 +87,7 @@ class InstitutionUserImportController extends Controller
                     'personal_identification_code' => $attributes['personal_identification_code'],
                 ], [
                     'forename' => $nameParts[0],
-                    'surname' => $nameParts[1] ?? '',
+                    'surname' => $nameParts[1],
                 ]);
 
                 $institutionUser = InstitutionUser::firstOrCreate([
@@ -100,22 +103,18 @@ class InstitutionUserImportController extends Controller
                     continue;
                 }
 
-                $roleNames = explode(',', $attributes['role']);
-                foreach ($roleNames as $roleName) {
-                    $roleId = $rolesMap[trim($roleName)] ?? null;
+                $roleIds = array_map(function (string $roleName) use ($roles) {
+                    return $roles->get(trim($roleName));
+                }, explode(',', $attributes['role']));
 
-                    if (empty($roleId)) {
-                        throw new RuntimeException('Role not found');
-                    }
+                $institutionUser->roles()->sync($roleIds);
 
-                    InstitutionUserRole::firstOrCreate([
-                        'institution_user_id' => $institutionUser->id,
-                        'role_id' => $roleId,
-                    ]);
+                if (filled($attributes['department'])) {
+                    $institutionUser->department()->associate($departments->get($attributes['department']));
                 }
 
-                // TODO: add vendor initialization
-                // TODO: add department tag initialization
+                $institutionUser->save();
+
                 // TODO: add audit logs
             }
         } catch (UnexpectedValueException) {
@@ -126,14 +125,16 @@ class InstitutionUserImportController extends Controller
         }
 
         return response()->json([
-            'data' => [],
+            'data' => [
+                'warnings' => $warnings,
+            ],
         ], Response::HTTP_OK);
     }
 
     /**
      * @throws AuthorizationException
      */
-    public function validateRow(ImportUsersCsvRowValidationRequest $request): JsonResponse
+    public function validateCsvRow(ImportUsersCsvRowValidationRequest $request): JsonResponse
     {
         $this->authorize('import', InstitutionUser::class);
 
@@ -142,13 +143,13 @@ class InstitutionUserImportController extends Controller
         ], Response::HTTP_OK);
     }
 
-    private function getFileValidator(UploadedFile $file): CsvContentValidator
+    private function getCsvContentValidator(UploadedFile $file): CsvContentValidator
     {
         return (new CsvContentValidator($file->getPathname()))
             ->setExpectedHeaders([
-                'sikukood', 'nimi', 'meiliaadress', 'telefoninumber', 'üksus', 'roll', 'teostaja',
+                'Isikukood', 'Nimi', 'Meiliaadress', 'Telefoninumber', 'Üksus', 'Roll',
             ])->setAttributesNames([
-                'personal_identification_code', 'name', 'email', 'phone', 'department', 'role', 'is_vendor',
+                'personal_identification_code', 'name', 'email', 'phone', 'department', 'role',
             ])->setRules((new ImportUsersCsvRowValidationRequest)->rules());
     }
 }

@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Department;
 use App\Models\Role;
-use App\Policies\Scopes\RoleScope;
+use App\Policies\DepartmentPolicy;
+use App\Policies\RolePolicy;
 use App\Rules\PersonalIdCodeRule;
 use App\Rules\PhoneNumberRule;
 use App\Rules\UserFullNameRule;
@@ -24,7 +26,16 @@ class ImportUsersCsvRowValidationRequest extends FormRequest
             'name' => ['required', new UserFullNameRule],
             'phone' => ['required', new PhoneNumberRule],
             'email' => ['required', 'email'],
-            'department' => ['nullable', 'string'],
+            'department' => ['nullable', 'string',
+                function ($attribute, $value, $fail) {
+                    $exists = Department::query()->withGlobalScope('policy', DepartmentPolicy::scope())
+                        ->where('name', $value)->exists();
+
+                    if (! $exists) {
+                        $fail("The department with the name '$value' does not exist.");
+                    }
+                },
+            ],
             'role' => ['required', 'string',
                 function ($attribute, $value, $fail) {
                     $names = explode(',', $value);
@@ -34,7 +45,7 @@ class ImportUsersCsvRowValidationRequest extends FormRequest
                             $fail("The role with the name '$name' does not exist.");
                         }
 
-                        $exists = Role::query()->withGlobalScope('auth', new RoleScope)
+                        $exists = Role::query()->withGlobalScope('policy', RolePolicy::scope())
                             ->where('name', $name)
                             ->exists();
 
@@ -44,7 +55,6 @@ class ImportUsersCsvRowValidationRequest extends FormRequest
                     }
                 },
             ],
-            'is_vendor' => ['nullable', 'string'],
         ];
     }
 }

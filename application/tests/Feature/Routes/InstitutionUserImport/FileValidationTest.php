@@ -19,6 +19,7 @@ class FileValidationTest extends TestCase
     public function test_validation_with_correct_csv_file_returned_200(): void
     {
         $institution = $this->createInstitution();
+        $department = $this->createDepartment($institution);
         $role = $this->createRoleWithPrivileges($institution, [
             PrivilegeKey::DeactivateUser,
             PrivilegeKey::ActivateUser,
@@ -27,7 +28,7 @@ class FileValidationTest extends TestCase
         $this->sendImportFileValidationRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
-                $this->getValidCsvRow($role->name),
+                $this->getValidCsvRow($role->name, $department->name),
             ]),
             $this->getAccessToken([PrivilegeKey::AddUser], $institution->id)
         )->assertStatus(Response::HTTP_OK)
@@ -65,7 +66,7 @@ class FileValidationTest extends TestCase
 
         $this->sendImportFileValidationRequest(
             $this->composeContent([
-                ['nimi', 'meiliaadress', 'sikukood', 'telefoninumber', 'üksus', 'roll', 'teostaja'],
+                ['Roll', 'Isikukood', 'Nimi', 'Meiliaadress', 'Telefoninumber', 'Üksus'],
                 $this->getValidCsvRow($role->name),
             ]),
             $this->getAccessToken([PrivilegeKey::AddUser], $institution->id)
@@ -95,12 +96,13 @@ class FileValidationTest extends TestCase
     public function test_validation_with_file_that_has_wrong_email_column_value_stored_errors()
     {
         $institution = $this->createInstitution();
+        $department = $this->createDepartment($institution);
         $role = $this->createRoleWithPrivileges($institution, [
             PrivilegeKey::DeactivateUser,
             PrivilegeKey::ActivateUser,
         ]);
 
-        $csvRow = $this->getValidCsvRow($role->name);
+        $csvRow = $this->getValidCsvRow($role->name, $department->name);
         $csvRow[2] = 'wrongemail.com';
 
         $this->sendImportFileValidationRequest(
@@ -125,12 +127,13 @@ class FileValidationTest extends TestCase
     public function test_validation_with_file_that_has_wrong_phone_column_value_stored_errors()
     {
         $institution = $this->createInstitution();
+        $department = $this->createDepartment($institution);
         $role = $this->createRoleWithPrivileges($institution, [
             PrivilegeKey::DeactivateUser,
             PrivilegeKey::ActivateUser,
         ]);
 
-        $csvRow = $this->getValidCsvRow($role->name);
+        $csvRow = $this->getValidCsvRow($role->name, $department->name);
         $csvRow[3] = '1234455678899';
 
         $this->sendImportFileValidationRequest(
@@ -155,12 +158,13 @@ class FileValidationTest extends TestCase
     public function test_validation_with_file_that_has_wrong_name_column_value_stored_errors()
     {
         $institution = $this->createInstitution();
+        $department = $this->createDepartment($institution);
         $role = $this->createRoleWithPrivileges($institution, [
             PrivilegeKey::DeactivateUser,
             PrivilegeKey::ActivateUser,
         ]);
 
-        $csvRow = $this->getValidCsvRow($role->name);
+        $csvRow = $this->getValidCsvRow($role->name, $department->name);
         $csvRow[1] = 'Wrong Username23';
 
         $this->sendImportFileValidationRequest(
@@ -184,7 +188,9 @@ class FileValidationTest extends TestCase
 
     public function test_validation_with_file_that_has_wrong_role_column_value_stored_errors()
     {
-        $csvRow = $this->getValidCsvRow('role-name');
+        $institution = $this->createInstitution();
+        $department = $this->createDepartment($institution);
+        $csvRow = $this->getValidCsvRow('role-name', $department->name);
         $this->sendImportFileValidationRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
@@ -198,6 +204,34 @@ class FileValidationTest extends TestCase
                         'row' => 0,
                         'errors' => [
                             'role' => [],
+                        ],
+                    ],
+                ],
+            ]);
+    }
+
+    public function test_validation_with_file_that_has_wrong_department_column_value_stored_errors()
+    {
+        $institution = $this->createInstitution();
+        $role = $this->createRoleWithPrivileges($institution, [
+            PrivilegeKey::DeactivateUser,
+            PrivilegeKey::ActivateUser,
+        ]);
+
+        $csvRow = $this->getValidCsvRow($role->name, 'wrong-department');
+        $this->sendImportFileValidationRequest(
+            $this->composeContent([
+                $this->getValidCsvHeader(),
+                $csvRow,
+            ]),
+            $this->getAccessToken([PrivilegeKey::AddUser])
+        )->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+            ->assertJson([
+                'errors' => [
+                    [
+                        'row' => 0,
+                        'errors' => [
+                            'department' => [],
                         ],
                     ],
                 ],
@@ -274,7 +308,7 @@ class FileValidationTest extends TestCase
         }
 
         return $this->postJson(
-            action([InstitutionUserImportController::class, 'validateFile']),
+            action([InstitutionUserImportController::class, 'validateCsv']),
             [
                 'file' => UploadedFile::fake()->createWithContent(
                     'filename.csv',
@@ -296,13 +330,13 @@ class FileValidationTest extends TestCase
         ]);
     }
 
-    private function getValidCsvRow(string $roleName): array
+    private function getValidCsvRow(string $roleName, string $departmentName = ''): array
     {
-        return ['39511267470', 'user name', 'some@email.com', '+372 56789566', '', $roleName, false];
+        return ['39511267470', 'user name', 'some@email.com', '+372 56789566', $departmentName, $roleName];
     }
 
     private function getValidCsvHeader(): array
     {
-        return ['sikukood', 'nimi', 'meiliaadress', 'telefoninumber', 'üksus', 'roll', 'teostaja'];
+        return ['Isikukood', 'Nimi', 'Meiliaadress', 'Telefoninumber', 'Üksus', 'Roll'];
     }
 }

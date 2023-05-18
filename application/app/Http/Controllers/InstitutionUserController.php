@@ -3,25 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\GetInstitutionUserRequest;
+use App\Http\Requests\InstitutionUserListRequest;
 use App\Http\Requests\UpdateInstitutionUserRequest;
 use App\Http\Resources\InstitutionUserResource;
 use App\Models\InstitutionUser;
 use App\Policies\InstitutionUserPolicy;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use League\Csv\CannotInsertRecord;
 use League\Csv\Exception;
 use League\Csv\Writer;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
-use App\Http\Requests\InstitutionUserListRequest;
-use App\Http\Resources\InstitutionUserResource;
-use App\Models\InstitutionUser;
-use App\Policies\Scopes\InstitutionUserScope;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class InstitutionUserController extends Controller
 {
@@ -102,20 +97,17 @@ class InstitutionUserController extends Controller
         );
     }
 
-    public function getBaseQuery(): Builder
-    {
-        return InstitutionUser::getModel()
-            ->withGlobalScope('policy', InstitutionUserPolicy::scope())
-            ->whereHas('user');
-    }
+    /**
+     * @throws AuthorizationException
+     */
     public function index(InstitutionUserListRequest $request): AnonymousResourceCollection
     {
-        $this->authorize('viewList', InstitutionUser::class);
+        $this->authorize('viewAny', InstitutionUser::class);
 
-        $institutionUsersQuery = InstitutionUser::query()->with([
+        $institutionUsersQuery = $this->getBaseQuery()->with([
             'user',
             'institutionUserRoles.role',
-        ])->withGlobalScope('auth', new InstitutionUserScope);
+        ]);
 
         $roleId = $request->validated('role_id');
         $institutionUsersQuery->when($roleId, function (Builder $query, string $roleId) {
@@ -152,5 +144,12 @@ class InstitutionUserController extends Controller
                 $request->validated('per_page', 10)
             )
         );
+    }
+
+    public function getBaseQuery(): Builder
+    {
+        return InstitutionUser::getModel()
+            ->withGlobalScope('policy', InstitutionUserPolicy::scope())
+            ->whereHas('user');
     }
 }

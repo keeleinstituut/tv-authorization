@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\InstitutionUserStatus;
 use App\Models\Role;
-use App\Policies\Scopes\RoleScope;
+use App\Policies\RolePolicy;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -22,7 +22,7 @@ class InstitutionUserListRequest extends FormRequest
         return [
             'per_page' => ['integer', Rule::in([10, 50, 100])],
             'role_id' => ['uuid', function ($attribute, $value, $fail) {
-                if (! Role::where('id', $value)->withGlobalScope('auth', new RoleScope)->exists()) {
+                if (! Role::where('id', $value)->withGlobalScope('policy', RolePolicy::scope())->exists()) {
                     $fail("The selected $attribute is invalid.");
                 }
             }],

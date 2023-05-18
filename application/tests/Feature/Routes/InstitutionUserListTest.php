@@ -14,6 +14,7 @@ use Illuminate\Testing\TestResponse;
 use Str;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\EntityHelpers;
+use Tests\Feature\RepresentationHelpers;
 use Tests\TestCase;
 
 class InstitutionUserListTest extends TestCase
@@ -27,13 +28,13 @@ class InstitutionUserListTest extends TestCase
             ->has(InstitutionUserRole::factory(2))->create();
 
         $response = $this->queryInstitutionUsers(
-            $this->getAccessToken([PrivilegeKey::AddUser], $institution->id)
+            $this->getAccessToken([PrivilegeKey::ViewUser], $institution->id)
         );
 
         $response->assertStatus(Response::HTTP_OK);
         foreach ($institutionUsers as $institutionUser) {
             $response->assertJsonFragment(
-                $this->buildExpectedResponsePart($institutionUser)
+                RepresentationHelpers::createInstitutionUserNestedRepresentation($institutionUser)
             );
         }
 
@@ -54,7 +55,7 @@ class InstitutionUserListTest extends TestCase
             ->has(InstitutionUserRole::factory(2))->create();
 
         $response = $this->queryInstitutionUsers(
-            $this->getAccessToken([PrivilegeKey::AddUser], $institution->id),
+            $this->getAccessToken([PrivilegeKey::ViewUser], $institution->id),
             ['sort_by' => 'name', 'sort_order' => 'asc'],
         );
 
@@ -85,7 +86,7 @@ class InstitutionUserListTest extends TestCase
             ->first();
 
         $response = $this->queryInstitutionUsers(
-            $this->getAccessToken([PrivilegeKey::AddUser], $institution->id),
+            $this->getAccessToken([PrivilegeKey::ViewUser], $institution->id),
             ['role_id' => $role->id],
         );
 
@@ -107,7 +108,7 @@ class InstitutionUserListTest extends TestCase
             ->create();
 
         $response = $this->queryInstitutionUsers(
-            $this->getAccessToken([PrivilegeKey::AddUser], $institution->id),
+            $this->getAccessToken([PrivilegeKey::ViewUser], $institution->id),
             ['status' => InstitutionUserStatus::Activated]
         );
 
@@ -127,7 +128,7 @@ class InstitutionUserListTest extends TestCase
             ->create();
 
         $response = $this->queryInstitutionUsers(
-            $this->getAccessToken([PrivilegeKey::AddUser], $institution->id),
+            $this->getAccessToken([PrivilegeKey::ViewUser], $institution->id),
             ['per_page' => 50]
         );
 
@@ -169,33 +170,5 @@ class InstitutionUserListTest extends TestCase
             ],
             'privileges' => array_map(fn (PrivilegeKey $key) => $key->value, $privileges),
         ]);
-    }
-
-    private function buildExpectedResponsePart(InstitutionUser $institutionUser): array
-    {
-        return [
-            'id' => $institutionUser->id,
-            'user' => [
-                'id' => $institutionUser->user->id,
-                'surname' => $institutionUser->user->surname,
-                'forename' => $institutionUser->user->forename,
-                'personal_identification_code' => $institutionUser->user->personal_identification_code,
-            ],
-            'status' => $institutionUser->status,
-            'email' => $institutionUser->email,
-            'phone' => $institutionUser->phone,
-            'roles' => $institutionUser->institutionUserRoles
-                ->filter(
-                    fn (InstitutionUserRole $institutionUserRole) => is_null($institutionUserRole->deleted_at) &&
-                        is_null($institutionUserRole->role->deleted_at)
-                )->map(
-                    fn (InstitutionUserRole $institutionUserRole) => [
-                        'id' => $institutionUserRole->role_id,
-                        'name' => $institutionUserRole->role->name,
-                    ]
-                )->toArray(),
-            'created_at' => $institutionUser->created_at->toIsoString(),
-            'updated_at' => $institutionUser->updated_at->toIsoString(),
-        ];
     }
 }

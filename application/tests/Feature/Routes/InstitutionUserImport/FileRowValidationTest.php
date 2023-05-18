@@ -18,6 +18,7 @@ class FileRowValidationTest extends TestCase
     public function test_valid_row_returned_200(): void
     {
         $institution = $this->createInstitution();
+        $department = $this->createDepartment($institution);
         $role = $this->createRoleWithPrivileges($institution, [
             PrivilegeKey::DeactivateUser,
             PrivilegeKey::ActivateUser,
@@ -28,9 +29,8 @@ class FileRowValidationTest extends TestCase
             'name' => 'user name',
             'email' => 'some@email.com',
             'phone' => '+372 56789566',
-            'department' => '',
+            'department' => $department->name,
             'role' => $role->name,
-            'is_vendor' => 'false',
         ];
 
         $this->sendValidationRequest($row, $this->getAccessToken([PrivilegeKey::AddUser], $institution->id))
@@ -44,9 +44,8 @@ class FileRowValidationTest extends TestCase
             'name' => 'user name 234',
             'email' => 'someemail.com',
             'phone' => '+372 567895',
-            'department' => '',
+            'department' => 'wrong department',
             'role' => 'wrong_role',
-            'is_vendor' => false,
         ];
 
         $this->sendValidationRequest($row, $this->getAccessToken([PrivilegeKey::AddUser]))
@@ -57,7 +56,7 @@ class FileRowValidationTest extends TestCase
                     'name' => [],
                     'phone' => [],
                     'email' => [],
-                    'is_vendor' => [],
+                    'department' => [],
                 ],
             ]);
     }
@@ -78,7 +77,7 @@ class FileRowValidationTest extends TestCase
         }
 
         return $this->postJson(
-            action([InstitutionUserImportController::class, 'validateRow']),
+            action([InstitutionUserImportController::class, 'validateCsvRow']),
             $row
         );
     }

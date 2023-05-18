@@ -8,7 +8,7 @@ class CsvReader
 {
     private $file;
 
-    public function __construct(string $filename, private readonly string $separator = ',')
+    public function __construct(readonly string $filename, private readonly string $separator = ',')
     {
         $this->file = fopen($filename, 'r');
     }
@@ -22,7 +22,6 @@ class CsvReader
 
     public function rows(): Generator
     {
-        $idx = 0;
         while (! feof($this->file)) {
             $row = fgetcsv($this->file, 0, $this->separator);
             is_array($row) && yield $row;

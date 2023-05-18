@@ -20,6 +20,7 @@ class ImportTest extends TestCase
     public function test_import_with_correct_csv_file_returned_200(): void
     {
         $institution = $this->createInstitution();
+        $department = $this->createDepartment($institution);
         $role1 = $this->createRoleWithPrivileges($institution, [
             PrivilegeKey::DeactivateUser,
             PrivilegeKey::ActivateUser,
@@ -29,7 +30,11 @@ class ImportTest extends TestCase
             PrivilegeKey::ActivateUser,
         ]);
 
-        $csvRow = $this->getValidCsvRow(implode(', ', [$role1->name, $role2->name]));
+        $csvRow = $this->getValidCsvRow(
+            implode(', ', [$role1->name, $role2->name]),
+            $department->name
+        );
+
         $this->sendImportFileRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
@@ -50,6 +55,7 @@ class ImportTest extends TestCase
         $this->assertCount(2, $institutionUser->institutionUserRoles);
         $roleIds = $institutionUser->institutionUserRoles->pluck('role_id');
         $this->assertEquals([$role1->id, $role2->id], $roleIds->toArray());
+        $this->assertEquals($department->id, $institutionUser->department_id);
     }
 
     public function test_import_already_existing_user_to_the_same_institution_dont_change_anything(): void
@@ -72,7 +78,6 @@ class ImportTest extends TestCase
             '+372 56789566',
             '',
             $newRole->name,
-            'false',
         ];
 
         $this->sendImportFileRequest(
@@ -123,7 +128,6 @@ class ImportTest extends TestCase
             '+372 56789566',
             '',
             $role->name,
-            'false',
         ];
 
         $response = $this->sendImportFileRequest(
@@ -189,7 +193,7 @@ class ImportTest extends TestCase
         }
 
         return $this->postJson(
-            action([InstitutionUserImportController::class, 'import']),
+            action([InstitutionUserImportController::class, 'importCsv']),
             [
                 'file' => UploadedFile::fake()->createWithContent(
                     'filename.csv',
@@ -226,13 +230,13 @@ class ImportTest extends TestCase
         ]);
     }
 
-    private function getValidCsvRow(string $roleName): array
+    private function getValidCsvRow(string $roleName, string $departmentName = ''): array
     {
-        return ['39511267470', 'user name', 'some@email.com', '+372 56789566', '', $roleName, false];
+        return ['39511267470', 'user name', 'some@email.com', '+372 56789566', $departmentName, $roleName];
     }
 
     private function getValidCsvHeader(): array
     {
-        return ['sikukood', 'nimi', 'meiliaadress', 'telefoninumber', 'üksus', 'roll', 'teostaja'];
+        return ['Isikukood', 'Nimi', 'Meiliaadress', 'Telefoninumber', 'Üksus', 'Roll'];
     }
 }

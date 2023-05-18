@@ -13,7 +13,7 @@ class InstitutionUserPolicy
 {
     public function viewAny(JwtPayloadUser $jwtPayloadUser): bool
     {
-        throw new BadMethodCallException();
+        return Auth::hasPrivilege(PrivilegeKey::ViewUser->value);
     }
 
     public function view(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
@@ -56,12 +56,6 @@ class InstitutionUserPolicy
     }
 
     public function import()
-    {
-        /** @noinspection PhpUndefinedMethodInspection */
-        return Auth::hasPrivilege(PrivilegeKey::AddUser->value);
-    }
-
-    public function viewList()
     {
         /** @noinspection PhpUndefinedMethodInspection */
         return Auth::hasPrivilege(PrivilegeKey::AddUser->value);
