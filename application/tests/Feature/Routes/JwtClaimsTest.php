@@ -181,7 +181,7 @@ class JwtClaimsTest extends TestCase
     /**
      * @throws Throwable
      */
-    public function test_after_deleting_institution_user_returns_404(): void
+    public function test_404_returned_after_deleting_institution_user(): void
     {
         $institution = $this->createInstitution();
         $institutionUser = $this->createInstitutionUserWithRoles($institution);
@@ -192,13 +192,13 @@ class JwtClaimsTest extends TestCase
         $this->queryJwtClaims(
             $personalIdentificationCode,
             $institution->id
-        )->assertStatus(Response::HTTP_NOT_FOUND);
+        )->assertStatus(Response::HTTP_FORBIDDEN);
     }
 
     /**
      * @throws Throwable
      */
-    public function test_after_deleting_institution_returns_404(): void
+    public function test_403_returned_after_deleting_institution(): void
     {
         $institution = $this->createInstitution();
         $institutionId = $institution->id;
@@ -207,15 +207,15 @@ class JwtClaimsTest extends TestCase
         $institution->deleteOrFail();
 
         $this->queryJwtClaims($institutionUser->user->personal_identification_code, $institutionId)
-            ->assertStatus(Response::HTTP_NOT_FOUND);
+            ->assertStatus(Response::HTTP_FORBIDDEN);
     }
 
-    public function test_request_with_no_matching_institution_user_returns_404(): void
+    public function test_403_returned_when_user_does_not_belong_to_selected_institution(): void
     {
         $this->queryJwtClaims(
             User::factory()->create()->personal_identification_code,
             Institution::factory()->create()->id
-        )->assertStatus(Response::HTTP_NOT_FOUND);
+        )->assertStatus(Response::HTTP_FORBIDDEN);
     }
 
     public function test_request_with_empty_pic_returns_422(): void
