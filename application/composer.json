@@ -6,7 +6,7 @@
     "require": {
         "php": "^8.2",
         "guzzlehttp/guzzle": "^7.2",
-        "keeleinstituut/tv-common-laravel-security": "0.0.9",
+        "keeleinstituut/tv-common-laravel-security": "0.0.11",
         "laravel/framework": "^10.0",
         "laravel/sanctum": "^3.2",
         "laravel/tinker": "^2.8",
