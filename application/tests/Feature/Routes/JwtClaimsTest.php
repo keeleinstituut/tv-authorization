@@ -15,12 +15,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\EntityHelpers;
 use Tests\TestCase;
 use Throwable;
 
 class JwtClaimsTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, EntityHelpers;
 
     const PRIVILEGES_A = [PrivilegeKey::AddUser];
 
@@ -233,35 +234,6 @@ class JwtClaimsTest extends TestCase
         $this->queryJwtClaims('47607239590', 'not-uuid')->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
-    private function createInstitution(): Institution
-    {
-        return Institution::factory()->create();
-    }
-
-    /**
-     * @param  array<PrivilegeKey>  $privileges
-     */
-    private function createRoleWithPrivileges(Institution $institution, array $privileges): Role
-    {
-        $role = Role::factory()->for($institution)->create();
-
-        foreach (collect($privileges)->unique() as $privilegeKey) {
-            $privilege = Privilege::where('key', '=', $privilegeKey->value)->firstOrFail();
-            PrivilegeRole::factory()->for($role)->for($privilege)->create();
-        }
-
-        return $role;
-    }
-
-    private function createInstitutionUserWithRoles(Institution $institution, Role ...$roles): InstitutionUser
-    {
-        return InstitutionUser::factory()
-            ->for($institution)
-            ->has(InstitutionUserRole::factory()->forEachSequence(
-                ...collect($roles)->map(fn (Role $role) => ['role_id' => $role->id])
-            ))
-            ->create();
-    }
 
     private function queryJwtClaims(?string $pic, ?string $institutionId = null): TestResponse
     {
