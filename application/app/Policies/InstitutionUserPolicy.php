@@ -11,11 +11,12 @@ use KeycloakAuthGuard\Models\JwtPayloadUser;
 
 class InstitutionUserPolicy
 {
-    public function viewAny(JwtPayloadUser $jwtPayloadUser): bool
+    public function viewAny(): bool
     {
         return Auth::hasPrivilege(PrivilegeKey::ViewUser->value);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function view(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
     {
         return $this->isCurrentUser($institutionUser)
@@ -23,11 +24,13 @@ class InstitutionUserPolicy
             && $this->isInSameInstitutionAsCurrentUser($institutionUser);
     }
 
-    public function create(JwtPayloadUser $jwtPayloadUser): bool
+    /** @noinspection PhpUnusedParameterInspection */
+    public function create(): bool
     {
         return Auth::hasPrivilege(PrivilegeKey::AddUser->value);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function update(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
     {
         return $this->isCurrentUser($institutionUser)
@@ -35,12 +38,12 @@ class InstitutionUserPolicy
             && $this->isInSameInstitutionAsCurrentUser($institutionUser);
     }
 
-    public function delete(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
+    public function delete(): bool
     {
         throw new BadMethodCallException();
     }
 
-    public function restore(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
+    public function restore(): bool
     {
         throw new BadMethodCallException();
     }
