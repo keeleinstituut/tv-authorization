@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Enums\InstitutionUserStatus;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
 use App\Models\User;
@@ -25,7 +24,6 @@ class InstitutionUserFactory extends Factory
         return [
             'institution_id' => Institution::factory(),
             'user_id' => User::factory(),
-            'status' => InstitutionUserStatus::Created,
             'email' => $this->faker->email,
             'phone' => $this->generateRandomEstonianPhoneNumber(),
         ];

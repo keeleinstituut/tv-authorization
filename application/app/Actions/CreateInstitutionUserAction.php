@@ -3,7 +3,6 @@
 namespace App\Actions;
 
 use App\DataTransferObjects\UserData;
-use App\Enums\InstitutionUserStatus;
 use App\Exceptions\EmptyUserRolesException;
 use App\Models\InstitutionUser;
 use App\Models\InstitutionUserRole;
@@ -33,7 +32,6 @@ class CreateInstitutionUserAction
                     'institution_id' => $institutionId,
                 ],
                 [
-                    'status' => InstitutionUserStatus::Activated,
                     'email' => $userData->email,
                     'phone' => $userData->phone,
                 ]

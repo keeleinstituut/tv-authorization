@@ -58,10 +58,14 @@ class RepresentationHelpers
 
     public static function createInstitutionUserFlatRepresentation(InstitutionUser $institutionUser): array
     {
-        return Arr::only(
-            $institutionUser->toArray(),
-            ['id', 'email', 'phone', 'status', 'updated_at', 'created_at']
-        );
+        return [
+            ...Arr::only(
+                $institutionUser->toArray(),
+                ['id', 'email', 'phone', 'updated_at', 'created_at', 'archived_at']
+            ),
+            'status' => $institutionUser->getStatus()->value,
+            'deactivation_date' => $institutionUser->getDeactivationDateAsString(),
+        ];
     }
 
     public static function createInstitutionFlatRepresentation(Institution $institution): array
