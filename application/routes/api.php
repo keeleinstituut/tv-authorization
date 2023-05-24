@@ -50,3 +50,6 @@ Route::get('/institution-users/export-csv', [InstitutionUserController::class, '
 Route::post('/institution-users/import-csv', [InstitutionUserImportController::class, 'importCsv']);
 Route::post('/institution-users/validate-import-csv', [InstitutionUserImportController::class, 'validateCsv']);
 Route::post('/institution-users/validate-import-csv-row', [InstitutionUserImportController::class, 'validateCsvRow']);
+
+Route::post('/institution-users/deactivate', [InstitutionUserController::class, 'deactivate']);
+Route::post('/institution-users/archive', [InstitutionUserController::class, 'archive']);

@@ -3,15 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Enums\InstitutionUserStatus;
+use App\Http\Requests\ArchiveInstitutionUserRequest;
 use App\Http\Requests\GetInstitutionUserRequest;
 use App\Http\Requests\InstitutionUserListRequest;
 use App\Http\Requests\UpdateInstitutionUserRequest;
 use App\Http\Resources\InstitutionUserResource;
 use App\Models\InstitutionUser;
+use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Policies\InstitutionUserPolicy;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use League\Csv\CannotInsertRecord;
 use League\Csv\Exception;
@@ -145,6 +148,27 @@ class InstitutionUserController extends Controller
                 $request->validated('per_page', 10)
             )
         );
+    }
+
+    /** @throws AuthorizationException|Throwable */
+    public function archive(ArchiveInstitutionUserRequest $request): InstitutionUserResource
+    {
+        return DB::transaction(function () use ($request) {
+            /** @var $institutionUser InstitutionUser */
+            $institutionUser = $this->getBaseQuery()
+                ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
+                ->findOrFail($request->validated('institution_user_id'));
+
+            $this->authorize('archive', $institutionUser);
+
+            $institutionUser->archived_at = Date::now();
+            $institutionUser->institutionUserRoles()->delete();
+            $institutionUser->saveOrFail();
+
+            // TODO: audit log
+
+            return new InstitutionUserResource($institutionUser->refresh());
+        });
     }
 
     public function getBaseQuery(): Builder
