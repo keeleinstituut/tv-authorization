@@ -65,16 +65,16 @@ class InstitutionUserPolicy
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function deactivate(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
+    public function archive(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
     {
-        return Auth::hasPrivilege(PrivilegeKey::DeactivateUser->value)
+        return Auth::hasPrivilege(PrivilegeKey::ArchiveUser->value)
             && $this->isInSameInstitutionAsCurrentUser($institutionUser);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function archive(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
+    public function activate(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
     {
-        return Auth::hasPrivilege(PrivilegeKey::ArchiveUser->value)
+        return Auth::hasPrivilege(PrivilegeKey::ActivateUser->value)
             && $this->isInSameInstitutionAsCurrentUser($institutionUser);
     }
 
