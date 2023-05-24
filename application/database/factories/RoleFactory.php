@@ -22,7 +22,7 @@ class RoleFactory extends Factory
     {
 
         return [
-            'name' => fake()->jobTitle(),
+            'name' => $this->faker->unique()->jobTitle(),
             'institution_id' => Institution::factory(),
         ];
     }

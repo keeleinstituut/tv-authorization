@@ -18,11 +18,11 @@ class InstitutionFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->company(),
+            'name' => $this->faker->company(),
             'short_name' => null,
             'phone' => null,
-            'email' => fake()->companyEmail(),
-            'logo_url' => fake()->url(),
+            'email' => $this->faker->companyEmail(),
+            'logo_url' => $this->faker->url(),
         ];
     }
 }

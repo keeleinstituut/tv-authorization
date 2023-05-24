@@ -7,6 +7,7 @@ use App\Models\InstitutionUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Tests\Feature\RepresentationHelpers;
 use Tests\TestCase;
@@ -26,9 +27,7 @@ class InstitutionControllerTest extends TestCase
         // GIVEN there’s a user connected to two institutions in the database
         InstitutionUser::factory()
             ->for($expectedInstitution1 = Institution::factory()->create())
-            ->for($user = User::factory()->create([
-                'personal_identification_code' => $personalIdentificationCode = '50511246084',
-            ]))
+            ->for($user = User::factory()->create())
             ->create();
         InstitutionUser::factory()
             ->for($expectedInstitution2 = Institution::factory()->create())
@@ -36,7 +35,7 @@ class InstitutionControllerTest extends TestCase
             ->create();
 
         // WHEN request sent to endpoint
-        $response = $this->sendGetRequest($personalIdentificationCode);
+        $response = $this->sendGetRequestWithTokenForGivenUser($user);
 
         // THEN request response should only contain the institutions expected
         $response
@@ -54,9 +53,7 @@ class InstitutionControllerTest extends TestCase
         // GIVEN there’s a user connected to two institutions in the database, one of which has been soft deleted
         InstitutionUser::factory()
             ->for($expectedInstitution = Institution::factory()->create())
-            ->for($user = User::factory()->create([
-                'personal_identification_code' => $personalIdentificationCode = '50511246084',
-            ]))
+            ->for($user = User::factory()->create())
             ->create();
         InstitutionUser::factory()
             ->for($softDeletedInstitution = Institution::factory()->create())
@@ -66,7 +63,7 @@ class InstitutionControllerTest extends TestCase
         $softDeletedInstitution->delete();
 
         // WHEN request sent to endpoint
-        $response = $this->sendGetRequest($personalIdentificationCode);
+        $response = $this->sendGetRequestWithTokenForGivenUser($user);
 
         // THEN request response should only contain the institution that wasn't soft deleted
         $response
@@ -81,18 +78,16 @@ class InstitutionControllerTest extends TestCase
         // GIVEN there’s a user connected to two institutions in the database, with one for the pivots having been soft deleted
         InstitutionUser::factory()
             ->for($expectedInstitution = Institution::factory()->create())
-            ->for($user = User::factory()->create([
-                'personal_identification_code' => $personalIdentificationCode = '50511246084',
-            ]))
+            ->for($user = User::factory()->create())
             ->create();
         InstitutionUser::factory()
-            ->for(Institution::factory()->create())
+            ->for(Institution::factory())
             ->for($user)
             ->create()
             ->delete();
 
         // WHEN request sent to endpoint
-        $response = $this->sendGetRequest($personalIdentificationCode);
+        $response = $this->sendGetRequestWithTokenForGivenUser($user);
 
         // THEN request response should only contain the institution for which the pivot wasn't soft deleted
         $response
@@ -106,15 +101,13 @@ class InstitutionControllerTest extends TestCase
     {
         // GIVEN there’s a user connected to an institution in the database, but the user has been soft deleted
         InstitutionUser::factory()
-            ->for(Institution::factory()->create())
-            ->for($user = User::factory()->create([
-                'personal_identification_code' => $personalIdentificationCode = '50511246084',
-            ]))
+            ->for(Institution::factory())
+            ->for($user = User::factory()->create())
             ->create();
         $user->delete();
 
         // WHEN request sent to endpoint
-        $response = $this->sendGetRequest($personalIdentificationCode);
+        $response = $this->sendGetRequestWithTokenForGivenUser($user);
 
         // THEN response data should be empty
         $response
@@ -126,13 +119,18 @@ class InstitutionControllerTest extends TestCase
     {
         // GIVEN the following data is in database
         InstitutionUser::factory()
-            ->for(Institution::factory()->create())
+            ->for(Institution::factory())
             ->for(User::factory()->create([
                 'personal_identification_code' => '60810202280',
             ]))->create();
 
         // WHEN request targets nonexistent institution user
-        $response = $this->sendGetRequest('32402126598');
+        $response = $this->sendGetRequestWithGivenToken($this->generateAccessToken([
+            'personalIdentificationCode' => '32402126598',
+            'userId' => Str::orderedUuid(),
+            'forename' => fake()->firstName(),
+            'surname' => fake()->lastName(),
+        ]));
 
         // THEN response data should be empty
         $response
@@ -144,10 +142,9 @@ class InstitutionControllerTest extends TestCase
     {
         // GIVEN the following data is in database
         InstitutionUser::factory()
-            ->for(Institution::factory()->create())
-            ->for(User::factory()->create([
-                'personal_identification_code' => '50511246084',
-            ]))->create();
+            ->for(Institution::factory())
+            ->for(User::factory())
+            ->create();
 
         // WHEN request sent without access token in header
         $response = $this
@@ -158,28 +155,30 @@ class InstitutionControllerTest extends TestCase
         $response->assertUnauthorized();
     }
 
-    public function test_updating_user_when_pic_missing_in_access_token(): void
+    public function test_updating_user_when_tolkevarav_claims_empty(): void
     {
         // GIVEN the following data is in database
         InstitutionUser::factory()
-            ->for(Institution::factory()->create())
-            ->for(User::factory()->create([
-                'personal_identification_code' => '50511246084',
-            ]))->create();
+            ->for(Institution::factory())
+            ->for(User::factory())
+            ->create();
 
-        // WHEN request sent without PIC in access token
-        $response = $this->sendGetRequest(null);
+        // WHEN request sent with Tolkevarav claims empty
+        $response = $this->sendGetRequestWithGivenToken($this->generateAccessToken([]));
 
         // THEN response should indicate that the request failed authentication
         $response->assertUnauthorized();
     }
 
-    private function sendGetRequest(?string $tokenPersonalIdentificationCode): TestResponse
+    private function sendGetRequestWithTokenForGivenUser(User $user): TestResponse
     {
-        $accessToken = $this->generateAccessToken([
-            'personalIdentificationCode' => $tokenPersonalIdentificationCode,
-        ]);
+        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForUser($user));
 
+        return $this->sendGetRequestWithGivenToken($accessToken);
+    }
+
+    private function sendGetRequestWithGivenToken(string $accessToken): TestResponse
+    {
         return $this
             ->withHeaders([
                 'Authorization' => "Bearer $accessToken",

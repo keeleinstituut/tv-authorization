@@ -51,7 +51,7 @@ class RepresentationHelpers
     public static function createUserFlatRepresentation(?User $user): array
     {
         return Arr::only(
-            $user->toArray(),
+            $user?->toArray() ?? [],
             ['id', 'personal_identification_code', 'forename', 'surname', 'updated_at', 'created_at']
         );
     }

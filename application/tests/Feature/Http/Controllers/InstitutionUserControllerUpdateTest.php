@@ -1,7 +1,5 @@
 <?php
 
-/** @noinspection PhpUnhandledExceptionInspection */
-
 namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\PrivilegeKey;
@@ -15,13 +13,13 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
-use Tests\Feature\ModelHelpers;
+use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\RepresentationHelpers;
 use Tests\TestCase;
 
 class InstitutionUserControllerUpdateTest extends TestCase
 {
-    use RefreshDatabase, ModelHelpers;
+    use RefreshDatabase, InstitutionUserHelpers;
 
     public function setUp(): void
     {
@@ -47,11 +45,11 @@ class InstitutionUserControllerUpdateTest extends TestCase
             privileges: [PrivilegeKey::AddUser, PrivilegeKey::EditUser]
         );
         $viewUserRole = $this->createFactoryRole(PrivilegeKey::ViewUser, $createdInstitution->id);
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
 
         // WHEN request sent to endpoint
-        $response = $this->sendPutRequest(
+        $response = $this->sendPutRequestWithTokenFor(
             $createdInstitutionUser->id,
-            $createdInstitution->id,
             [
                 'user' => [
                     'forename' => $expectedForename = 'Testander',
@@ -59,7 +57,8 @@ class InstitutionUserControllerUpdateTest extends TestCase
                 'phone' => $expectedPhoneNumber = '+372 5678901',
                 'roles' => [$editUserRole->id, $viewUserRole->id],
                 'department_id' => $createdDepartment->id,
-            ]
+            ],
+            $actingUser
         );
 
         // THEN the database state should be what is expected after update
@@ -94,12 +93,13 @@ class InstitutionUserControllerUpdateTest extends TestCase
         ] = $this->createBasicModels(
             privileges: [PrivilegeKey::AddUser, PrivilegeKey::EditUser]
         );
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
 
         // WHEN request sent to endpoint
-        $response = $this->sendPutRequest(
+        $response = $this->sendPutRequestWithTokenFor(
             $createdInstitutionUser->id,
-            $createdInstitution->id,
-            ['roles' => []]
+            ['roles' => []],
+            $actingUser
         );
 
         // THEN the database state should be what is expected after update
@@ -119,12 +119,13 @@ class InstitutionUserControllerUpdateTest extends TestCase
             'institution' => $createdInstitution,
             'institutionUser' => $createdInstitutionUser,
         ] = $this->createBasicModels();
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
 
         // WHEN request sent to endpoint
-        $response = $this->sendPutRequest(
+        $response = $this->sendPutRequestWithTokenFor(
             $createdInstitutionUser->id,
-            $createdInstitution->id,
-            ['department_id' => null]
+            ['department_id' => null],
+            $actingUser
         );
 
         // THEN the database state should be what is expected after update
@@ -150,16 +151,17 @@ class InstitutionUserControllerUpdateTest extends TestCase
             email: ($expectedEmail = 'testarok@email.tv'),
             phone: ($expectedPhone = '+372 34567890'),
         );
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
 
         // WHEN invalid payload is sent to endpoint
-        $response = $this->sendPutRequest(
+        $response = $this->sendPutRequestWithTokenFor(
             $createdInstitutionUser->id,
-            $createdInstitution->id,
             [
                 'email' => 'someother@email.com',
                 'phone' => '+372 45678901',
                 ...$invalidPayload,
-            ]
+            ],
+            $actingUser
         );
 
         // THEN the database state should not change
@@ -182,12 +184,13 @@ class InstitutionUserControllerUpdateTest extends TestCase
         ] = $this->createBasicModels(
             phone: '+372 50000000'
         );
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
 
         // WHEN request sent to endpoint
-        $response = $this->sendPutRequest(
+        $response = $this->sendPutRequestWithTokenFor(
             $createdInstitutionUser->id,
-            $createdInstitution->id,
-            ['phone' => $validPhoneNumber]
+            ['phone' => $validPhoneNumber],
+            $actingUser
         );
 
         // THEN the database state should have updated phone number
@@ -202,21 +205,21 @@ class InstitutionUserControllerUpdateTest extends TestCase
 
     public function test_updating_nonexistent_user(): void
     {
-        // GIVEN institution has no users
-        $createdInstitution = Institution::factory()->create();
+        // GIVEN institution has only one (acting) user
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege(
+            Institution::factory(),
+            PrivilegeKey::EditUser
+        );
 
         // WHEN request targets nonexistent institution user
-        $response = $this->sendPutRequest(
+        $response = $this->sendPutRequestWithTokenFor(
             ($randomUuid = Str::uuid()),
-            $createdInstitution->id,
-            Arr::undot(['user.forename' => 'Testjalina'])
+            Arr::undot(['user.forename' => 'Testjalina']),
+            $actingUser
         );
 
         // THEN database state should not change
         $this->assertDatabaseMissing(
-            InstitutionUser::class,
-            ['institution_id' => $createdInstitution->id]
-        )->assertDatabaseMissing(
             InstitutionUser::class,
             ['id' => $randomUuid]
         );
@@ -227,29 +230,31 @@ class InstitutionUserControllerUpdateTest extends TestCase
 
     public function test_updating_user_in_another_institution(): void
     {
-        // GIVEN there are two institutions and only one of them has users
-        $createdInstitutionWithoutUsers = Institution::factory()->create();
-        $createdInstitutionUser = InstitutionUser::factory()
+        // GIVEN there are two institutions and with separate users
+        $targetInstitutionUser = InstitutionUser::factory()
             ->for($createdInstitutionWithUser = Institution::factory()->create())
             ->for(User::factory()->create())
             ->create([
                 'email' => ($expectedEmail = 'testafana@testy.dev'),
             ]);
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege(
+            $secondInstitution = Institution::factory()->create(),
+            PrivilegeKey::EditUser
+        );
 
-        // WHEN request token contains institution without users, but targets user from other institution
-        $response = $this->sendPutRequest(
-            $createdInstitutionUser->id,
-            $createdInstitutionWithoutUsers->id,
-            ['email' => 'someother@email.com']
+        // WHEN request token authenticates user from one institution, but targets user from other institution
+        $response = $this->sendPutRequestWithTokenFor(
+            $targetInstitutionUser->id,
+            ['email' => 'someother@email.com'],
+            $actingUser
         );
 
         // THEN the database state should not change
-        $this->assertEquals($expectedEmail, InstitutionUser::findOrFail($createdInstitutionUser->id)->email);
-        $this->assertDatabaseHas(Institution::class, ['id' => $createdInstitutionWithoutUsers->id])
-            ->assertDatabaseMissing(InstitutionUser::class, ['institution_id' => $createdInstitutionWithoutUsers->id])
+        $this->assertEquals($expectedEmail, InstitutionUser::findOrFail($targetInstitutionUser->id)->email);
+        $this->assertDatabaseHas(Institution::class, ['id' => $secondInstitution->id])
             ->assertDatabaseHas(Institution::class, ['id' => $createdInstitutionWithUser->id])
             ->assertEquals(
-                [$createdInstitutionUser->id],
+                [$targetInstitutionUser->id],
                 InstitutionUser::whereInstitutionId($createdInstitutionWithUser->id)->get()->pluck('id')->toArray()
             );
 
@@ -266,13 +271,13 @@ class InstitutionUserControllerUpdateTest extends TestCase
         ] = $this->createBasicModels(
             email: ($expectedEmail = 'test123@eki.ee')
         );
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::ViewUser);
 
         // WHEN request sent without EDIT_USER privilege in token
-        $response = $this->sendPutRequest(
+        $response = $this->sendPutRequestWithTokenFor(
             $createdInstitutionUser->id,
-            $createdInstitution->id,
             ['email' => 'someother@email.com'],
-            [PrivilegeKey::ViewUser]
+            $actingUser
         );
 
         // THEN the database state should not change
@@ -293,6 +298,7 @@ class InstitutionUserControllerUpdateTest extends TestCase
             email: ($expectedEmail = 'test321@ike.ee'),
             privileges: [PrivilegeKey::ViewUser]
         );
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
 
         $roleInAnotherInstitution = $this->createFactoryRole(
             PrivilegeKey::ViewRole,
@@ -300,13 +306,13 @@ class InstitutionUserControllerUpdateTest extends TestCase
         );
 
         // WHEN request input has role from another institution
-        $response = $this->sendPutRequest(
+        $response = $this->sendPutRequestWithTokenFor(
             $createdInstitutionUser->id,
-            $createdInstitution->id,
             [
                 'email' => 'someother@email.com',
                 'roles' => [$roleInAnotherInstitution->id],
-            ]
+            ],
+            $actingUser
         );
 
         // THEN the database state should not change
@@ -330,19 +336,20 @@ class InstitutionUserControllerUpdateTest extends TestCase
         ] = $this->createBasicModels(
             email: ($expectedEmail = 'test321@ike.ee'),
         );
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
 
         $departmentInAnotherInstitution = Department::factory()
             ->for(Institution::factory()->create())
             ->create();
 
         // WHEN request input has department from another institution
-        $response = $this->sendPutRequest(
+        $response = $this->sendPutRequestWithTokenFor(
             $createdInstitutionUser->id,
-            $createdInstitution->id,
             [
                 'email' => 'someother@email.com',
                 'department_id' => [$departmentInAnotherInstitution->id],
-            ]
+            ],
+            $actingUser
         );
 
         // THEN the database state should not change
@@ -366,15 +373,16 @@ class InstitutionUserControllerUpdateTest extends TestCase
         ] = $this->createBasicModels(
             email: ($expectedEmail = 'test321@ike.ee'),
         );
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
 
         // WHEN request input has nonexistent department
-        $response = $this->sendPutRequest(
+        $response = $this->sendPutRequestWithTokenFor(
             $createdInstitutionUser->id,
-            $createdInstitution->id,
             [
                 'email' => 'someother@email.com',
                 'department_id' => ($randomUuid = Str::uuid()),
-            ]
+            ],
+            $actingUser
         );
 
         // THEN database state should not change
@@ -403,15 +411,16 @@ class InstitutionUserControllerUpdateTest extends TestCase
             email: ($expectedEmail = 'test321@ike.ee'),
             privileges: [PrivilegeKey::ViewUser]
         );
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
 
         // WHEN request input has nonexistent role
-        $response = $this->sendPutRequest(
+        $response = $this->sendPutRequestWithTokenFor(
             $createdInstitutionUser->id,
-            $createdInstitution->id,
             [
                 'email' => 'someother@email.com',
                 'roles' => [$randomUuid = Str::uuid()],
-            ]
+            ],
+            $actingUser
         );
 
         // THEN database state should not change
@@ -453,17 +462,28 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $response->assertUnauthorized();
     }
 
-    /**
-     * @param  array<PrivilegeKey>  $tokenPrivileges
-     */
-    private function sendPutRequest(string $routeId,
-        string $tokenInstitution,
+    private function sendPutRequestWithTokenFor(
+        string $targetId,
         array $requestPayload,
-        array $tokenPrivileges = [PrivilegeKey::EditUser]): TestResponse
+        InstitutionUser $actingUser,
+        array $tolkevaravClaimsOverride = []): TestResponse
+    {
+        $accessToken = $this->generateAccessToken([
+            ...$this->makeTolkevaravClaimsForInstitutionUser($actingUser),
+            ...$tolkevaravClaimsOverride,
+        ]);
+
+        return $this->sendPutRequestWithCustomToken($targetId, $requestPayload, $accessToken);
+    }
+
+    private function sendPutRequestWithCustomToken(
+        string $targetId,
+        array $requestPayload,
+        string $accessToken): TestResponse
     {
         return $this
-            ->withHeaders($this->createJsonHeaderWithTokenParams($tokenInstitution, $tokenPrivileges))
-            ->putJson("/api/institution-users/$routeId", $requestPayload);
+            ->withHeaders(['Authorization' => "Bearer $accessToken"])
+            ->putJson("/api/institution-users/$targetId", $requestPayload);
     }
 
     /**

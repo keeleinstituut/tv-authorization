@@ -2,24 +2,24 @@
 
 namespace Tests\Feature\Integration;
 
+use App\Enums\PrivilegeKey;
+use App\Models\Institution;
 use App\Models\Privilege;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Feature\InstitutionUserHelpers;
 use Tests\TestCase;
 
 class PrivilegeControllerTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, InstitutionUserHelpers;
 
     /**
      * A basic feature test example.
      */
     public function test_api_privileges_endpoint(): void
     {
-        $accessToken = $this->generateAccessToken([
-            'privileges' => [
-                'VIEW_ROLE',
-            ],
-        ]);
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege(Institution::factory(), PrivilegeKey::ViewRole);
+        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForInstitutionUser($actingUser));
 
         $response = $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
@@ -39,10 +39,8 @@ class PrivilegeControllerTest extends TestCase
 
     public function test_unauthorized(): void
     {
-        $accessToken = $this->generateAccessToken([
-            'privileges' => [
-            ],
-        ]);
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege(Institution::factory(), null);
+        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForInstitutionUser($actingUser));
 
         $response = $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
