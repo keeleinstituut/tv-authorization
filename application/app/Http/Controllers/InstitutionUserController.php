@@ -3,12 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Enums\InstitutionUserStatus;
+use App\Http\Requests\ActivateInstitutionUserRequest;
 use App\Http\Requests\GetInstitutionUserRequest;
 use App\Http\Requests\InstitutionUserListRequest;
 use App\Http\Requests\UpdateInstitutionUserRequest;
 use App\Http\Resources\InstitutionUserResource;
 use App\Models\InstitutionUser;
+use App\Models\Role;
+use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Policies\InstitutionUserPolicy;
+use App\Policies\RolePolicy;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -145,6 +149,36 @@ class InstitutionUserController extends Controller
                 $request->validated('per_page', 10)
             )
         );
+    }
+
+    /** @throws AuthorizationException|Throwable */
+    public function activate(ActivateInstitutionUserRequest $request): InstitutionUserResource
+    {
+        return DB::transaction(function () use ($request) {
+            /** @var $institutionUser InstitutionUser */
+            $institutionUser = $this->getBaseQuery()
+                ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
+                ->findOrFail($request->validated('institution_user_id'));
+
+            $this->authorize('activate', $institutionUser);
+
+            $institutionUser->deactivation_date = null;
+            $institutionUser->roles()->sync(
+                Role::query()
+                    ->withoutGlobalScope(RolePolicy::scope())
+                    ->findMany($request->validated('roles'))
+            );
+            $institutionUser->saveOrFail();
+
+            // TODO: audit log
+
+            /** @noinspection PhpStatementHasEmptyBodyInspection */
+            if (filter_var($request->validated('notify_user'), FILTER_VALIDATE_BOOLEAN)) {
+                // TODO: queue email to user
+            }
+
+            return new InstitutionUserResource($institutionUser->refresh());
+        });
     }
 
     public function getBaseQuery(): Builder
