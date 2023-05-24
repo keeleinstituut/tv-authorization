@@ -157,7 +157,7 @@ class InstitutionUserControllerShowTest extends TestCase
         $response = $this->sendGetRequest(
             $createdInstitutionUser->id,
             $createdInstitution->id,
-            [PrivilegeKey::SetUserVacation]
+            [PrivilegeKey::EditUserVacation]
         );
 
         // THEN response should indicate action is forbidden

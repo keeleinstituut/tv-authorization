@@ -21,8 +21,8 @@ enum DefaultRole: string
                 PrivilegeKey::ActivateUser,
                 PrivilegeKey::DeactivateUser,
                 PrivilegeKey::ArchiveUser,
-                PrivilegeKey::SetUserWorkTime,
-                PrivilegeKey::SetUserVacation,
+                PrivilegeKey::EditUserWorkTime,
+                PrivilegeKey::EditUserVacation,
             ],
             default => []
         };
