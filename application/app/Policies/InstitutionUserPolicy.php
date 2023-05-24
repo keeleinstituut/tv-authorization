@@ -61,6 +61,13 @@ class InstitutionUserPolicy
         return Auth::hasPrivilege(PrivilegeKey::AddUser->value);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function deactivate(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
+    {
+        return Auth::hasPrivilege(PrivilegeKey::DeactivateUser->value)
+            && $this->isInSameInstitutionAsCurrentUser($institutionUser);
+    }
+
     public function isCurrentUser(InstitutionUser $institutionUser): bool
     {
         return filled($currentUserId = Auth::user()?->id)

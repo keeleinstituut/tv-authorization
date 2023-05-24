@@ -3,16 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Enums\InstitutionUserStatus;
+use App\Enums\PrivilegeKey;
+use App\Http\Requests\DeactivateInstitutionUserRequest;
 use App\Http\Requests\GetInstitutionUserRequest;
 use App\Http\Requests\InstitutionUserListRequest;
 use App\Http\Requests\UpdateInstitutionUserRequest;
 use App\Http\Resources\InstitutionUserResource;
 use App\Models\InstitutionUser;
+use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Policies\InstitutionUserPolicy;
+use App\Util\DateUtil;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use League\Csv\CannotInsertRecord;
 use League\Csv\Exception;
 use League\Csv\Writer;
@@ -145,6 +151,34 @@ class InstitutionUserController extends Controller
                 $request->validated('per_page', 10)
             )
         );
+    }
+
+    /** @throws AuthorizationException|Throwable */
+    public function deactivate(DeactivateInstitutionUserRequest $request): InstitutionUserResource
+    {
+        return DB::transaction(function () use ($request) {
+            /** @var $institutionUser InstitutionUser */
+            $institutionUser = $this->getBaseQuery()
+                ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
+                ->findOrFail($request->validated('institution_user_id'));
+
+            $this->authorize('deactivate', $institutionUser);
+
+            if ($request->validated('deactivation_date') === null) {
+                Gate::allowIf(Auth::hasPrivilege(PrivilegeKey::ActivateUser->value));
+            }
+
+            $institutionUser->deactivation_date = $request->validated('deactivation_date');
+            $institutionUser->saveOrFail();
+
+            if ($request->getValidatedDeactivationDateAtEstonianMidnight()?->isSameDay(DateUtil::estonianNow())) {
+                $institutionUser->institutionUserRoles()->delete();
+            }
+
+            // TODO: audit log
+
+            return new InstitutionUserResource($institutionUser->refresh());
+        });
     }
 
     public function getBaseQuery(): Builder
