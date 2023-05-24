@@ -8,7 +8,7 @@ use App\Models\Privilege;
 use App\Models\PrivilegeRole;
 use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class PrivilegeTest extends TestCase
@@ -17,17 +17,17 @@ class PrivilegeTest extends TestCase
 
     public function test_privilege_table_is_equal_to_enum(): void
     {
-        $keysInDatabase = Privilege::all()
-            ->map(fn ($model) => $model->key->value)
+        $keysInDatabase = DB::table('privileges')
+            ->pluck('key')
+            ->sort()
             ->toArray();
 
-        $keysInEnum = Arr::map(
-            PrivilegeKey::cases(),
-            fn ($enum) => $enum->value
-        );
+        $keysInEnum = collect(PrivilegeKey::cases())
+            ->map(fn (PrivilegeKey $enum) => $enum->value)
+            ->sort()
+            ->toArray();
 
-        $this->assertEmpty(array_diff($keysInDatabase, $keysInEnum)); // Check no keys missing in enum
-        $this->assertEmpty(array_diff($keysInEnum, $keysInDatabase)); // Check no keys missing in database
+        $this->assertEquals($keysInEnum, $keysInDatabase);
     }
 
     public function test_adding_role_pivots(): void
