@@ -3,6 +3,7 @@
 namespace App\Console;
 
 use App\Console\Commands\DetachRolesFromDeactivatedUsers;
+use App\Util\DateUtil;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -15,7 +16,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule
             ->command(DetachRolesFromDeactivatedUsers::class)
-            ->timezone('Europe/Tallinn')
+            ->timezone(DateUtil::ESTONIAN_TIMEZONE)
             ->onOneServer()
             ->daily();
     }
