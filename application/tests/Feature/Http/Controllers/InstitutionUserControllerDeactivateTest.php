@@ -599,7 +599,6 @@ class InstitutionUserControllerDeactivateTest extends TestCase
                 $institutionUser->roles()->attach(
                     Role::factory()
                         ->hasAttached(Privilege::firstWhere('key', PrivilegeKey::DeactivateUser->value))
-                        ->hasAttached(Privilege::firstWhere('key', PrivilegeKey::ActivateUser->value))
                         ->create()
                 );
 

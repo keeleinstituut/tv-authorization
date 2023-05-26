@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Enums\InstitutionUserStatus;
-use App\Enums\PrivilegeKey;
 use App\Http\Requests\DeactivateInstitutionUserRequest;
 use App\Http\Requests\GetInstitutionUserRequest;
 use App\Http\Requests\InstitutionUserListRequest;
@@ -16,9 +15,7 @@ use App\Util\DateUtil;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use League\Csv\CannotInsertRecord;
 use League\Csv\Exception;
 use League\Csv\Writer;
@@ -163,10 +160,6 @@ class InstitutionUserController extends Controller
                 ->findOrFail($request->validated('institution_user_id'));
 
             $this->authorize('deactivate', $institutionUser);
-
-            if ($request->validated('deactivation_date') === null) {
-                Gate::allowIf(Auth::hasPrivilege(PrivilegeKey::ActivateUser->value));
-            }
 
             $institutionUser->deactivation_date = $request->validated('deactivation_date');
             $institutionUser->saveOrFail();
