@@ -9,6 +9,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Testing\TestResponse;
 use Str;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\TestCase;
 
@@ -322,7 +323,7 @@ class FileValidationTest extends TestCase
     {
         $institutionId = $institutionId ?: Str::orderedUuid();
 
-        return $this->generateAccessToken([
+        return AuthHelpers::generateAccessToken([
             'selectedInstitution' => [
                 'id' => $institutionId,
             ],

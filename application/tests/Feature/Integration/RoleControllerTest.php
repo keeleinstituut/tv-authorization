@@ -9,6 +9,7 @@ use App\Models\Role;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Tests\AuthHelpers;
 use Tests\TestCase;
 
 class RoleControllerTest extends TestCase
@@ -36,7 +37,7 @@ class RoleControllerTest extends TestCase
         ]);
         $role->load('privileges');
 
-        $accessToken = $this->generateAccessToken([
+        $accessToken = AuthHelpers::generateAccessToken([
             'selectedInstitution' => [
                 'id' => $role->institution_id,
             ],
@@ -67,7 +68,7 @@ class RoleControllerTest extends TestCase
         ]);
         $role->load('privileges');
 
-        $accessToken = $this->generateAccessToken([
+        $accessToken = AuthHelpers::generateAccessToken([
             'selectedInstitution' => [
                 'id' => $role->institution_id,
             ],
@@ -91,7 +92,7 @@ class RoleControllerTest extends TestCase
     public function test_api_roles_create_endpoint(): void
     {
         $institution = Institution::factory()->create();
-        $accessToken = $this->generateAccessToken([
+        $accessToken = AuthHelpers::generateAccessToken([
             'selectedInstitution' => [
                 'id' => $institution->id,
             ],
@@ -131,7 +132,7 @@ class RoleControllerTest extends TestCase
             'role_id' => $role->id,
         ]);
 
-        $accessToken = $this->generateAccessToken([
+        $accessToken = AuthHelpers::generateAccessToken([
             'selectedInstitution' => [
                 'id' => $role->institution_id,
             ],
@@ -172,7 +173,7 @@ class RoleControllerTest extends TestCase
             'privilege_id' => Privilege::where('key', 'ADD_ROLE')->first()->id,
         ]);
 
-        $accessToken = $this->generateAccessToken([
+        $accessToken = AuthHelpers::generateAccessToken([
             'selectedInstitution' => [
                 'id' => $role->institution_id,
             ],
@@ -227,7 +228,7 @@ class RoleControllerTest extends TestCase
     {
         $role = Role::factory()->create();
 
-        $accessToken = $this->generateAccessToken([
+        $accessToken = AuthHelpers::generateAccessToken([
             'selectedInstitution' => [
                 'id' => $role->institution_id,
             ],
@@ -257,9 +258,9 @@ class RoleControllerTest extends TestCase
         // Populate some roles
         $roles = Role::factory(3)->create();
 
-        $accessToken = $this->generateAccessToken([
+        $accessToken = AuthHelpers::generateAccessToken([
             'selectedInstitution' => [
-                // Some non existing institution id
+                // Some non-existing institution id
                 'id' => Str::orderedUuid(),
             ],
             'privileges' => [

@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\TestCase;
 
@@ -221,7 +222,7 @@ class ImportTest extends TestCase
             $this->createRoleWithPrivileges($institution, $privileges)
         );
 
-        return $this->generateAccessToken([
+        return AuthHelpers::generateAccessToken([
             'selectedInstitution' => [
                 'id' => $institution->id,
             ],

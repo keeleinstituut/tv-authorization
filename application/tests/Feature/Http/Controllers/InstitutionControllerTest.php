@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Testing\TestResponse;
+use Tests\AuthHelpers;
 use Tests\Feature\RepresentationHelpers;
 use Tests\TestCase;
 
@@ -176,7 +177,7 @@ class InstitutionControllerTest extends TestCase
 
     private function sendGetRequest(?string $tokenPersonalIdentificationCode): TestResponse
     {
-        $accessToken = $this->generateAccessToken([
+        $accessToken = AuthHelpers::generateAccessToken([
             'personalIdentificationCode' => $tokenPersonalIdentificationCode,
         ]);
 

@@ -4,6 +4,7 @@ namespace Tests\Feature\Integration;
 
 use App\Models\Privilege;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\AuthHelpers;
 use Tests\TestCase;
 
 class PrivilegeControllerTest extends TestCase
@@ -15,7 +16,7 @@ class PrivilegeControllerTest extends TestCase
      */
     public function test_api_privileges_endpoint(): void
     {
-        $accessToken = $this->generateAccessToken([
+        $accessToken = AuthHelpers::generateAccessToken([
             'privileges' => [
                 'VIEW_ROLE',
             ],
@@ -39,7 +40,7 @@ class PrivilegeControllerTest extends TestCase
 
     public function test_unauthorized(): void
     {
-        $accessToken = $this->generateAccessToken([
+        $accessToken = AuthHelpers::generateAccessToken([
             'privileges' => [
             ],
         ]);

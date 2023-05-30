@@ -14,6 +14,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
 use Illuminate\Testing\TestResponse;
 use League\Csv\Reader;
+use Tests\AuthHelpers;
 use Tests\Feature\ModelHelpers;
 use Tests\TestCase;
 
@@ -268,7 +269,7 @@ class InstitutionUserControllerExportTest extends TestCase
         string $tokenUserPic,
         array $tokenPrivileges = [PrivilegeKey::ExportUser]): TestResponse
     {
-        $token = $this->generateAccessToken([
+        $token = AuthHelpers::generateAccessToken([
             'selectedInstitution' => ['id' => $tokenInstitutionId],
             'personalIdentificationCode' => $tokenUserPic,
             'privileges' => Arr::map($tokenPrivileges, fn ($privilege) => $privilege->value),

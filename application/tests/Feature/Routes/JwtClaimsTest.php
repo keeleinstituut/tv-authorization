@@ -6,15 +6,12 @@ use App\Enums\PrivilegeKey;
 use App\Http\Controllers\JwtClaimsController;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
-use App\Models\InstitutionUserRole;
-use App\Models\Privilege;
-use App\Models\PrivilegeRole;
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\TestCase;
 use Throwable;
@@ -121,7 +118,7 @@ class JwtClaimsTest extends TestCase
             ->firstOrFail();
         $this->assertNotEquals($normallyAcceptedAzp, config('api.sso_internal_client_id'));
 
-        $accessToken = $this->generateAccessToken(
+        $accessToken = AuthHelpers::generateAccessToken(
             azp: $normallyAcceptedAzp
         );
 
@@ -144,7 +141,7 @@ class JwtClaimsTest extends TestCase
             $this->createRoleWithPrivileges($institution, self::PRIVILEGES_A)
         );
 
-        $accessToken = $this->generateAccessToken();
+        $accessToken = AuthHelpers::generateAccessToken();
 
         $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
@@ -234,7 +231,6 @@ class JwtClaimsTest extends TestCase
         $this->queryJwtClaims('47607239590', 'not-uuid')->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
-
     private function queryJwtClaims(?string $pic, ?string $institutionId = null): TestResponse
     {
         $accessToken = $this->generateInternalClientAccessToken();
@@ -284,7 +280,7 @@ class JwtClaimsTest extends TestCase
 
     public function generateInternalClientAccessToken(): string
     {
-        return $this->generateAccessToken(
+        return AuthHelpers::generateAccessToken(
             azp: config('api.sso_internal_client_id')
         );
     }

@@ -8,6 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\TestCase;
 
@@ -86,7 +87,7 @@ class FileRowValidationTest extends TestCase
     {
         $institutionId = $institutionId ?: Str::orderedUuid();
 
-        return $this->generateAccessToken([
+        return AuthHelpers::generateAccessToken([
             'selectedInstitution' => [
                 'id' => $institutionId,
             ],

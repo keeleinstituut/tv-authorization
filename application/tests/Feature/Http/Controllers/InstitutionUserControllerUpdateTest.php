@@ -15,6 +15,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use Tests\AuthHelpers;
 use Tests\Feature\ModelHelpers;
 use Tests\Feature\RepresentationHelpers;
 use Tests\TestCase;
@@ -462,7 +463,7 @@ class InstitutionUserControllerUpdateTest extends TestCase
         array $tokenPrivileges = [PrivilegeKey::EditUser]): TestResponse
     {
         return $this
-            ->withHeaders($this->createJsonHeaderWithTokenParams($tokenInstitution, $tokenPrivileges))
+            ->withHeaders(AuthHelpers::createJsonHeaderWithTokenParams($tokenInstitution, $tokenPrivileges))
             ->putJson("/api/institution-users/$routeId", $requestPayload);
     }
 

@@ -13,6 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Str;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\Feature\RepresentationHelpers;
 use Tests\TestCase;
@@ -164,7 +165,7 @@ class InstitutionUserListTest extends TestCase
     {
         $institutionId = $institutionId ?: Str::orderedUuid();
 
-        return $this->generateAccessToken([
+        return AuthHelpers::generateAccessToken([
             'selectedInstitution' => [
                 'id' => $institutionId,
             ],

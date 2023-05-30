@@ -6,7 +6,7 @@ use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\InstitutionUserController;
 use App\Http\Controllers\InstitutionUserImportController;
 use App\Http\Controllers\JwtClaimsController;
-use Illuminate\Http\Request;
+use App\Http\RouteConstants;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -20,33 +20,36 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+Route::withoutMiddleware('auth:api')->get('/jwt-claims', [JwtClaimsController::class, 'show']);
 
 Route::get('/privileges', [PrivilegeController::class, 'index']);
-
-Route::get('/roles', [RoleController::class, 'index']);
-Route::post('/roles', [RoleController::class, 'store']);
-Route::get('/roles/{role_id}', [RoleController::class, 'show'])->whereUuid('role_id');
-Route::put('/roles/{role_id}', [RoleController::class, 'update'])->whereUuid('role_id');
-Route::delete('/roles/{role_id}', [RoleController::class, 'destroy'])->whereUuid('role_id');
-
-Route::get('/jwt-claims', [JwtClaimsController::class, 'show'])->withoutMiddleware('auth:api');
-
 Route::get('/institutions', [InstitutionController::class, 'index']);
 
-Route::get('/institution-users', [InstitutionUserController::class, 'index']);
-Route::get(
-    '/institution-users/{institution_user_id}',
-    [InstitutionUserController::class, 'show']
-)->whereUuid('institution_user_id');
-Route::put(
-    '/institution-users/{institution_user_id}',
-    [InstitutionUserController::class, 'update']
-)->whereUuid('institution_user_id');
+Route::prefix(RouteConstants::ROLES_INDEX)
+    ->controller(RoleController::class)
+    ->whereUuid(RouteConstants::ROLE_ID)
+    ->group(function (): void {
+        Route::get('/', 'index');
+        Route::post('/', 'store');
+        Route::get(RouteConstants::ROLE_SUBPATH, 'show');
+        Route::put(RouteConstants::ROLE_SUBPATH, 'update');
+        Route::delete(RouteConstants::ROLE_SUBPATH, 'destroy');
+    });
 
-Route::get('/institution-users/export-csv', [InstitutionUserController::class, 'exportCsv']);
-Route::post('/institution-users/import-csv', [InstitutionUserImportController::class, 'importCsv']);
-Route::post('/institution-users/validate-import-csv', [InstitutionUserImportController::class, 'validateCsv']);
-Route::post('/institution-users/validate-import-csv-row', [InstitutionUserImportController::class, 'validateCsvRow']);
+Route::prefix(RouteConstants::INSTITUTION_USERS_INDEX)
+    ->controller(InstitutionUserController::class)
+    ->whereUuid(RouteConstants::INSTITUTION_USER_ID)
+    ->group(function (): void {
+        Route::get('/', 'index');
+        Route::get(RouteConstants::INSTITUTION_USER_SUBPATH, 'show');
+        Route::put(RouteConstants::INSTITUTION_USER_SUBPATH, 'update');
+        Route::get('/export-csv', 'exportCsv');
+    });
+
+Route::prefix(RouteConstants::INSTITUTION_USERS_INDEX)
+    ->controller(InstitutionUserImportController::class)
+    ->group(function (): void {
+        Route::post('/import-csv', 'importCsv');
+        Route::post('/validate-import-csv', 'validateCsv');
+        Route::post('/validate-import-csv-row', 'validateCsvRow');
+    });
