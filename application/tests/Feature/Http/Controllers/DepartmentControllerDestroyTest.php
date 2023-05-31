@@ -4,7 +4,6 @@ namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\PrivilegeKey;
 use App\Http\Controllers\DepartmentController;
-use App\Http\RouteConstants;
 use App\Models\Department;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
@@ -167,7 +166,7 @@ class DepartmentControllerDestroyTest extends DepartmentControllerTestCase
             ->withHeaders($headers)
             ->deleteJson(action(
                 [DepartmentController::class, 'destroy'],
-                [RouteConstants::DEPARTMENT_ID => $departmentId]
+                ['department_id' => $departmentId]
             ));
     }
 

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreDepartmentRequest;
 use App\Http\Requests\UpdateDepartmentRequest;
 use App\Http\Resources\DepartmentResource;
-use App\Http\RouteConstants;
 use App\Models\Department;
 use App\Models\Institution;
 use App\Policies\DepartmentPolicy;
@@ -48,7 +47,7 @@ class DepartmentController extends Controller
      */
     public function show(Request $request): DepartmentResource
     {
-        $id = $request->route(RouteConstants::DEPARTMENT_ID);
+        $id = $request->route('department_id');
         $department = $this->getBaseQuery()->findOrFail($id);
 
         $this->authorize('view', $department);
@@ -63,7 +62,7 @@ class DepartmentController extends Controller
     public function update(UpdateDepartmentRequest $request): DepartmentResource
     {
         return DB::transaction(function () use ($request): DepartmentResource {
-            $id = $request->route(RouteConstants::DEPARTMENT_ID);
+            $id = $request->route('department_id');
             $department = $this->getBaseQuery()->findOrFail($id);
 
             $this->authorize('update', $department);
@@ -81,7 +80,7 @@ class DepartmentController extends Controller
     public function destroy(Request $request): DepartmentResource
     {
         return DB::transaction(function () use ($request): DepartmentResource {
-            $id = $request->route(RouteConstants::DEPARTMENT_ID);
+            $id = $request->route('department_id');
 
             /** @var Department $department */
             $department = $this->getBaseQuery()->findOrFail($id);

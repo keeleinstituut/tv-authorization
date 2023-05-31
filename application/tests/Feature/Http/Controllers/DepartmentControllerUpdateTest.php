@@ -4,7 +4,6 @@ namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\PrivilegeKey;
 use App\Http\Controllers\DepartmentController;
-use App\Http\RouteConstants;
 use App\Models\Department;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
@@ -337,7 +336,7 @@ class DepartmentControllerUpdateTest extends DepartmentControllerTestCase
             ->putJson(
                 action(
                     [DepartmentController::class, 'update'],
-                    [RouteConstants::DEPARTMENT_ID => $departmentId]
+                    ['department_id' => $departmentId]
                 ),
                 $payload
             );

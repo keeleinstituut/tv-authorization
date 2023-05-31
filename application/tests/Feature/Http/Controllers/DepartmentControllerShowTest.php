@@ -3,7 +3,6 @@
 namespace Tests\Feature\Http\Controllers;
 
 use App\Http\Controllers\DepartmentController;
-use App\Http\RouteConstants;
 use App\Models\Department;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
@@ -92,7 +91,7 @@ class DepartmentControllerShowTest extends DepartmentControllerTestCase
             ->withHeaders($headers)
             ->getJson(action(
                 [DepartmentController::class, 'show'],
-                [RouteConstants::DEPARTMENT_ID => $departmentId]
+                ['department_id' => $departmentId]
             ));
     }
 }
