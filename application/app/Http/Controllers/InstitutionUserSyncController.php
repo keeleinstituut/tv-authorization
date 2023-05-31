@@ -2,29 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\InstitutionUserResource;
+use App\Http\Resources\Sync\InstitutionUserSyncResource;
 use App\Models\InstitutionUser;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use KeycloakAuthGuard\Middleware\EnsureJwtBelongsToServiceAccountWithSyncRole;
 
 class InstitutionUserSyncController extends Controller
 {
-    /**
-     * TODO: add endpoint protection from public access
-     */
+    public function __construct()
+    {
+        $this->middleware(EnsureJwtBelongsToServiceAccountWithSyncRole::class);
+    }
+
     public function index(): AnonymousResourceCollection
     {
-        return InstitutionUserResource::collection(
-            InstitutionUser::query()->paginate(1000)
+        return InstitutionUserSyncResource::collection(
+            InstitutionUser::withTrashed()->paginate(1000)
         );
     }
-    /**
-     * TODO: add endpoint protection from public access
-     */
-    public function show(Request $request): InstitutionUserResource
+
+    public function show(Request $request): InstitutionUserSyncResource
     {
-        return new InstitutionUserResource(
-            InstitutionUser::whereId($request->route('id'))->firstOrFail()
+        return new InstitutionUserSyncResource(
+            InstitutionUser::withTrashed()->whereId($request->route('id'))->firstOrFail()
         );
     }
 }

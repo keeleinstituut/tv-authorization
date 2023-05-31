@@ -185,7 +185,7 @@ return [
         /*
          * Package Service Providers...
          */
-
+        SyncTools\SyncToolsServiceProvider::class,
         /*
          * Application Service Providers...
          */

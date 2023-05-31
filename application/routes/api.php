@@ -6,6 +6,7 @@ use App\Http\Controllers\InstitutionSyncController;
 use App\Http\Controllers\InstitutionUserSyncController;
 use App\Http\Controllers\JwtClaimsController;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -32,8 +33,9 @@ Route::put('/roles/{role_id}', [RoleController::class, 'update'])->whereUuid('ro
 Route::delete('/roles/{role_id}', [RoleController::class, 'destroy'])->whereUuid('role_id');
 Route::get('/jwt-claims', [JwtClaimsController::class, 'show'])->withoutMiddleware('auth:api');
 
-
-Route::get('/sync/institutions', [InstitutionSyncController::class, 'index'])->withoutMiddleware('auth:api');
-Route::get('/sync/institutions/{id}', [InstitutionSyncController::class, 'show'])->whereUuid('id')->withoutMiddleware('auth:api');
-Route::get('/sync/institution-users', [InstitutionUserSyncController::class, 'index'])->withoutMiddleware('auth:api');
-Route::get('/sync/institution-users/{id}', [InstitutionUserSyncController::class, 'show'])->whereUuid('id')->withoutMiddleware('auth:api');
+Route::withoutMiddleware(['auth:api', ThrottleRequests::class])->group(function () {
+    Route::get('/sync/institutions', [InstitutionSyncController::class, 'index']);
+    Route::get('/sync/institutions/{id}', [InstitutionSyncController::class, 'show'])->whereUuid('id');
+    Route::get('/sync/institution-users', [InstitutionUserSyncController::class, 'index']);
+    Route::get('/sync/institution-users/{id}', [InstitutionUserSyncController::class, 'show'])->whereUuid('id');
+});

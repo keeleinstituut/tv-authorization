@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\Sync;
 
 use App\Models\Institution;
 use Illuminate\Http\Request;
@@ -9,7 +9,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * @mixin Institution
  */
-class InstitutionResource extends JsonResource
+class InstitutionSyncResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -24,6 +24,7 @@ class InstitutionResource extends JsonResource
             'logo_url' => $this->logo_url,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'deleted_at' => $this->deleted_at,
         ];
     }
 }

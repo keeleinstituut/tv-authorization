@@ -2,12 +2,17 @@
 
 namespace App\Observers;
 
-use Amqp\Publisher;
 use App\Models\InstitutionUser;
+use SyncTools\AmqpPublisher;
 
 class InstitutionUserObserver
 {
-    public function __construct(private readonly Publisher $publisher)
+    /**
+     * Handle events after all transactions are committed.
+     */
+    public bool $afterCommit = true;
+
+    public function __construct(private readonly AmqpPublisher $publisher)
     {
     }
 
@@ -19,10 +24,15 @@ class InstitutionUserObserver
         $this->publishEvent($institutionUser, 'institution-user.saved');
     }
 
+    public function deleted(InstitutionUser $institutionUser): void
+    {
+        $this->publishEvent($institutionUser, 'institution-user.saved');
+    }
+
     /**
      * Handle the InstitutionUser "deleted" event.
      */
-    public function deleted(InstitutionUser $institutionUser): void
+    public function forceDeleted(InstitutionUser $institutionUser): void
     {
         $this->publishEvent($institutionUser, 'institution-user.deleted');
     }

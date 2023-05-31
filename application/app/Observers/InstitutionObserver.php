@@ -2,8 +2,8 @@
 
 namespace App\Observers;
 
-use Amqp\Publisher;
 use App\Models\Institution;
+use SyncTools\AmqpPublisher;
 
 class InstitutionObserver
 {
@@ -12,10 +12,9 @@ class InstitutionObserver
      */
     public bool $afterCommit = true;
 
-    public function __construct(private readonly Publisher $publisher)
+    public function __construct(private readonly AmqpPublisher $publisher)
     {
     }
-
 
     /**
      * Handle the Institution "saved" event.
@@ -25,10 +24,15 @@ class InstitutionObserver
         $this->publishEvent($institution, 'institution.saved');
     }
 
+    public function deleted(Institution $institution): void
+    {
+        $this->publishEvent($institution, 'institution.saved');
+    }
+
     /**
      * Handle the Institution "deleted" event.
      */
-    public function deleted(Institution $institution): void
+    public function forceDeleted(Institution $institution): void
     {
         $this->publishEvent($institution, 'institution.deleted');
     }

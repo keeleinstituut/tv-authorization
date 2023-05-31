@@ -1,7 +1,5 @@
 <?php
 
-use Amqp\Events\MessageEventFactory;
-
 return [
     /*
     |--------------------------------------------------------------------------
@@ -25,12 +23,12 @@ return [
         'exchanges' => [
             [
                 'exchange' => 'institution',
-                'type' => 'fanout'
+                'type' => 'fanout',
             ],
             [
                 'exchange' => 'institution-user',
-                'type' => 'fanout'
-            ]
+                'type' => 'fanout',
+            ],
         ],
     ],
 ];
