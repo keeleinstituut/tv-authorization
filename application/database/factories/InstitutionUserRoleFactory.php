@@ -3,12 +3,11 @@
 namespace Database\Factories;
 
 use App\Models\InstitutionUser;
-use App\Models\InstitutionUserRole;
 use App\Models\Role;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<InstitutionUserRole>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\InstitutionUserRole>
  */
 class InstitutionUserRoleFactory extends Factory
 {
