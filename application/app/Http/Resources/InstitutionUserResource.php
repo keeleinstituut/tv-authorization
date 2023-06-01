@@ -2,9 +2,12 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\InstitutionUserStatus;
+use App\Http\Resources\API\RoleResource;
 use App\Models\InstitutionUser;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Http\Resources\Json\ResourceCollection;
 
 /**
  * @mixin InstitutionUser
@@ -12,20 +15,34 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class InstitutionUserResource extends JsonResource
 {
     /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
+     * @return array{
+     *     id: string,
+     *     user: UserResource,
+     *     institution: InstitutionResource,
+     *     department: DepartmentResource,
+     *     roles: ResourceCollection<RoleResource>,
+     *     phone: string,
+     *     email: string,
+     *     status: InstitutionUserStatus,
+     *     updated_at: Carbon,
+     *     created_at: Carbon
+     * }
      */
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            ...$this->only(
+                'id',
+                'email',
+                'phone',
+                'status',
+                'created_at',
+                'updated_at',
+            ),
             'user' => new UserResource($this->user),
-            'status' => $this->status,
-            'email' => $this->email,
-            'phone' => null,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'institution' => new InstitutionResource($this->institution),
+            'department' => new DepartmentResource($this->department),
+            'roles' => RoleResource::collection($this->roles),
         ];
     }
 }

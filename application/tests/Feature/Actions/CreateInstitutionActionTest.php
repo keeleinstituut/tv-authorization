@@ -2,12 +2,15 @@
 
 namespace Feature\Actions;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Actions\CreateInstitutionAction;
 use App\DataTransferObjects\InstitutionData;
 use Tests\TestCase;
 
 class CreateInstitutionActionTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_institution_creation(): void
     {
         $institutionName = 'institution name';

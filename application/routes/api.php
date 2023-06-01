@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\API\PrivilegeController;
 use App\Http\Controllers\API\RoleController;
+use App\Http\Controllers\InstitutionController;
+use App\Http\Controllers\InstitutionUserController;
+use App\Http\Controllers\InstitutionUserImportController;
 use App\Http\Controllers\InstitutionSyncController;
 use App\Http\Controllers\InstitutionUserSyncController;
 use App\Http\Controllers\JwtClaimsController;
@@ -30,7 +33,25 @@ Route::post('/roles', [RoleController::class, 'store']);
 Route::get('/roles/{role_id}', [RoleController::class, 'show'])->whereUuid('role_id');
 Route::put('/roles/{role_id}', [RoleController::class, 'update'])->whereUuid('role_id');
 Route::delete('/roles/{role_id}', [RoleController::class, 'destroy'])->whereUuid('role_id');
+
 Route::get('/jwt-claims', [JwtClaimsController::class, 'show'])->withoutMiddleware('auth:api');
+
+Route::get('/institutions', [InstitutionController::class, 'index']);
+
+Route::get('/institution-users', [InstitutionUserController::class, 'index']);
+Route::get(
+    '/institution-users/{institution_user_id}',
+    [InstitutionUserController::class, 'show']
+)->whereUuid('institution_user_id');
+Route::put(
+    '/institution-users/{institution_user_id}',
+    [InstitutionUserController::class, 'update']
+)->whereUuid('institution_user_id');
+
+Route::get('/institution-users/export-csv', [InstitutionUserController::class, 'exportCsv']);
+Route::post('/institution-users/import-csv', [InstitutionUserImportController::class, 'importCsv']);
+Route::post('/institution-users/validate-import-csv', [InstitutionUserImportController::class, 'validateCsv']);
+Route::post('/institution-users/validate-import-csv-row', [InstitutionUserImportController::class, 'validateCsvRow']);
 
 Route::withoutMiddleware(['auth:api', 'throttle:api'])->group(function () {
     Route::get('/sync/institutions', [InstitutionSyncController::class, 'index']);

@@ -19,6 +19,10 @@ class InstitutionFactory extends Factory
     {
         return [
             'name' => fake()->company(),
+            'short_name' => null,
+            'phone' => null,
+            'email' => fake()->companyEmail(),
+            'logo_url' => fake()->url(),
         ];
     }
 }

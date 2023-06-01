@@ -15,18 +15,28 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\EntityHelpers;
 use Tests\TestCase;
 use Throwable;
 
 class JwtClaimsTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, EntityHelpers;
 
     const PRIVILEGES_A = [PrivilegeKey::AddUser];
 
     const PRIVILEGES_B = [PrivilegeKey::DeleteRole, PrivilegeKey::DeactivateUser];
 
-    public function test_correct_claims_returned_for_user_with_single_role(): void
+    public function test_correct_claims_returned_when_institution_not_selected(): void
+    {
+        $user = User::factory()->create();
+
+        $this->queryJwtClaims($user->personal_identification_code)
+            ->assertStatus(Response::HTTP_OK)
+            ->assertExactJson($this->buildExpectedResponseWhenInstitutionNotSelected($user));
+    }
+
+    public function test_correct_claims_returned_for_user_with_single_role_when_institution_selected(): void
     {
         $institution = $this->createInstitution();
         $institutionUser = $this->createInstitutionUserWithRoles(
@@ -38,10 +48,10 @@ class JwtClaimsTest extends TestCase
             $institutionUser->user->personal_identification_code,
             $institution->id
         )->assertStatus(Response::HTTP_OK)
-            ->assertExactJson($this->buildExpectedResponse($institutionUser, self::PRIVILEGES_A));
+            ->assertExactJson($this->buildExpectedResponseWhenInstitutionSelected($institutionUser, self::PRIVILEGES_A));
     }
 
-    public function test_correct_claims_returned_for_user_with_two_roles(): void
+    public function test_correct_claims_returned_for_user_with_two_roles_when_institution_selected(): void
     {
         $institution = $this->createInstitution();
         $institutionUser = $this->createInstitutionUserWithRoles(
@@ -54,7 +64,7 @@ class JwtClaimsTest extends TestCase
             $institutionUser->user->personal_identification_code,
             $institution->id
         )->assertStatus(Response::HTTP_OK)
-            ->assertExactJson($this->buildExpectedResponse(
+            ->assertExactJson($this->buildExpectedResponseWhenInstitutionSelected(
                 $institutionUser,
                 array_merge(self::PRIVILEGES_A, self::PRIVILEGES_B)
             ));
@@ -63,7 +73,7 @@ class JwtClaimsTest extends TestCase
     /**
      * @throws Throwable
      */
-    public function test_correct_claims_returned_after_deleting_one_role(): void
+    public function test_correct_claims_returned_after_deleting_one_role_when_institution_selected(): void
     {
         $institution = $this->createInstitution();
         $roleA = $this->createRoleWithPrivileges($institution, self::PRIVILEGES_A);
@@ -76,13 +86,13 @@ class JwtClaimsTest extends TestCase
             $institutionUser->user->personal_identification_code,
             $institution->id
         )->assertStatus(Response::HTTP_OK)
-            ->assertExactJson($this->buildExpectedResponse(
+            ->assertExactJson($this->buildExpectedResponseWhenInstitutionSelected(
                 $institutionUser,
                 self::PRIVILEGES_B
             ));
     }
 
-    public function test_no_privileges_returned_after_deleting_privilege_roles(): void
+    public function test_no_privileges_returned_after_deleting_privilege_roles_when_institution_selected(): void
     {
         $institution = $this->createInstitution();
         $roleA = $this->createRoleWithPrivileges($institution, self::PRIVILEGES_A);
@@ -95,7 +105,7 @@ class JwtClaimsTest extends TestCase
             $institutionUser->user->personal_identification_code,
             $institution->id
         )->assertStatus(Response::HTTP_OK)
-            ->assertExactJson($this->buildExpectedResponse($institutionUser, []));
+            ->assertExactJson($this->buildExpectedResponseWhenInstitutionSelected($institutionUser, []));
     }
 
     public function test_request_with_invalid_azp_claim_in_token_returns_403(): void
@@ -172,7 +182,7 @@ class JwtClaimsTest extends TestCase
     /**
      * @throws Throwable
      */
-    public function test_after_deleting_institution_user_returns_404(): void
+    public function test_404_returned_after_deleting_institution_user(): void
     {
         $institution = $this->createInstitution();
         $institutionUser = $this->createInstitutionUserWithRoles($institution);
@@ -183,13 +193,13 @@ class JwtClaimsTest extends TestCase
         $this->queryJwtClaims(
             $personalIdentificationCode,
             $institution->id
-        )->assertStatus(Response::HTTP_NOT_FOUND);
+        )->assertStatus(Response::HTTP_FORBIDDEN);
     }
 
     /**
      * @throws Throwable
      */
-    public function test_after_deleting_institution_returns_404(): void
+    public function test_403_returned_after_deleting_institution(): void
     {
         $institution = $this->createInstitution();
         $institutionId = $institution->id;
@@ -198,23 +208,23 @@ class JwtClaimsTest extends TestCase
         $institution->deleteOrFail();
 
         $this->queryJwtClaims($institutionUser->user->personal_identification_code, $institutionId)
-            ->assertStatus(Response::HTTP_NOT_FOUND);
+            ->assertStatus(Response::HTTP_FORBIDDEN);
     }
 
-    public function test_request_with_no_matching_institution_user_returns_404(): void
+    public function test_403_returned_when_user_does_not_belong_to_selected_institution(): void
     {
         $this->queryJwtClaims(
             User::factory()->create()->personal_identification_code,
             Institution::factory()->create()->id
-        )->assertStatus(Response::HTTP_NOT_FOUND);
+        )->assertStatus(Response::HTTP_FORBIDDEN);
     }
 
-    public function test_request_with_missing_pic_returns_422(): void
+    public function test_request_with_empty_pic_returns_422(): void
     {
         $this->queryJwtClaims('', Str::uuid())->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
-    public function test_request_with_missing_institution_id_returns_422(): void
+    public function test_request_with_empty_institution_id_returns_422(): void
     {
         $this->queryJwtClaims('47607239590', '')->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
@@ -224,55 +234,29 @@ class JwtClaimsTest extends TestCase
         $this->queryJwtClaims('47607239590', 'not-uuid')->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
-    private function createInstitution(): Institution
-    {
-        return Institution::factory()->create();
-    }
 
-    /**
-     * @param  array<PrivilegeKey>  $privileges
-     */
-    private function createRoleWithPrivileges(Institution $institution, array $privileges): Role
-    {
-        $role = Role::factory()->for($institution)->create();
-
-        foreach (collect($privileges)->unique() as $privilegeKey) {
-            $privilege = Privilege::where('key', '=', $privilegeKey->value)->firstOrFail();
-            PrivilegeRole::factory()->for($role)->for($privilege)->create();
-        }
-
-        return $role;
-    }
-
-    private function createInstitutionUserWithRoles(Institution $institution, Role ...$roles): InstitutionUser
-    {
-        return InstitutionUser::factory()
-            ->for($institution)
-            ->has(InstitutionUserRole::factory()->forEachSequence(
-                ...collect($roles)->map(fn (Role $role) => ['role_id' => $role->id])
-            ))
-            ->create();
-    }
-
-    private function queryJwtClaims(?string $pic, ?string $institutionId): TestResponse
+    private function queryJwtClaims(?string $pic, ?string $institutionId = null): TestResponse
     {
         $accessToken = $this->generateInternalClientAccessToken();
+        $parameters = $institutionId === null
+            ? ['personal_identification_code' => $pic]
+            : ['personal_identification_code' => $pic, 'institution_id' => $institutionId];
 
         return $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
         ])->getJson(action(
             [JwtClaimsController::class, 'show'],
-            ['personal_identification_code' => $pic, 'institution_id' => $institutionId]
+            $parameters
         ));
     }
 
     /**
      * @param  array<PrivilegeKey>  $expectedPrivileges
      */
-    public function buildExpectedResponse(InstitutionUser $expectedInstitutionUser, array $expectedPrivileges): array
+    public function buildExpectedResponseWhenInstitutionSelected(InstitutionUser $expectedInstitutionUser, array $expectedPrivileges): array
     {
         return [
-            'personalIdentityCode' => $expectedInstitutionUser->user->personal_identification_code,
+            'personalIdentificationCode' => $expectedInstitutionUser->user->personal_identification_code,
             'userId' => $expectedInstitutionUser->user->id,
             'institutionUserId' => $expectedInstitutionUser->id,
             'forename' => $expectedInstitutionUser->user->forename,
@@ -285,6 +269,16 @@ class JwtClaimsTest extends TestCase
                 ->map(fn (PrivilegeKey $privilege) => $privilege->value)
                 ->unique()
                 ->toArray(),
+        ];
+    }
+
+    public function buildExpectedResponseWhenInstitutionNotSelected(User $expectedUser): array
+    {
+        return [
+            'personalIdentificationCode' => $expectedUser->personal_identification_code,
+            'userId' => $expectedUser->id,
+            'forename' => $expectedUser->forename,
+            'surname' => $expectedUser->surname,
         ];
     }
 
