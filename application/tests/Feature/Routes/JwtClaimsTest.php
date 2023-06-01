@@ -6,10 +6,6 @@ use App\Enums\PrivilegeKey;
 use App\Http\Controllers\JwtClaimsController;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
-use App\Models\InstitutionUserRole;
-use App\Models\Privilege;
-use App\Models\PrivilegeRole;
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -233,7 +229,6 @@ class JwtClaimsTest extends TestCase
     {
         $this->queryJwtClaims('47607239590', 'not-uuid')->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
-
 
     private function queryJwtClaims(?string $pic, ?string $institutionId = null): TestResponse
     {

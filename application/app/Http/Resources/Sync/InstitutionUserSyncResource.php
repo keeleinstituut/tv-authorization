@@ -2,10 +2,13 @@
 
 namespace App\Http\Resources\Sync;
 
+use App\Enums\InstitutionUserStatus;
+use App\Http\Resources\DepartmentResource;
 use App\Http\Resources\UserResource;
 use App\Models\InstitutionUser;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
 
 /**
  * @mixin InstitutionUser
@@ -13,22 +16,34 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class InstitutionUserSyncResource extends JsonResource
 {
     /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
+     * @return array{
+     *     id: string,
+     *     user: UserResource,
+     *     institution_id: string,
+     *     department: DepartmentResource,
+     *     phone: string,
+     *     email: string,
+     *     status: InstitutionUserStatus,
+     *     updated_at: Carbon,
+     *     created_at: Carbon,
+     *     deleted_at: Carbon
+     * }
      */
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            ...$this->only(
+                'id',
+                'email',
+                'phone',
+                'status',
+                'created_at',
+                'updated_at',
+                'deleted_at'
+            ),
             'user' => new UserResource($this->user),
-            'status' => $this->status,
+            'department' => new DepartmentResource($this->department),
             'institution_id' => $this->institution_id,
-            'email' => $this->email,
-            'phone' => null,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'deleted_at' => $this->deleted_at,
         ];
     }
 }

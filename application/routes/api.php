@@ -3,9 +3,9 @@
 use App\Http\Controllers\API\PrivilegeController;
 use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\InstitutionController;
+use App\Http\Controllers\InstitutionSyncController;
 use App\Http\Controllers\InstitutionUserController;
 use App\Http\Controllers\InstitutionUserImportController;
-use App\Http\Controllers\InstitutionSyncController;
 use App\Http\Controllers\InstitutionUserSyncController;
 use App\Http\Controllers\JwtClaimsController;
 use Illuminate\Http\Request;
