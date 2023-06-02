@@ -4,7 +4,6 @@ namespace Tests\Feature\Http\Controllers;
 
 use App\Http\Controllers\InstitutionSyncController;
 use App\Models\Institution;
-use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -29,8 +28,7 @@ class InstitutionSyncControllerTest extends TestCase
 
     public function test_list_of_institutions_with_deleted_returned(): void
     {
-        $institutions = Institution::factory(5)
-            ->create(['deleted_at' => Carbon::now()]);
+        $institutions = Institution::factory(5)->trashed()->create();
 
         $this->queryInstitutionsForSync($this->generateServiceAccountAccessToken())
             ->assertStatus(Response::HTTP_OK)
@@ -59,7 +57,7 @@ class InstitutionSyncControllerTest extends TestCase
 
     public function test_single_deleted_institution_returned(): void
     {
-        $institution = Institution::factory()->create(['deleted_at' => Carbon::now()]);
+        $institution = Institution::factory()->trashed()->create();
         $this->queryInstitutionForSync($institution->id, $this->generateServiceAccountAccessToken())
             ->assertStatus(Response::HTTP_OK)
             ->assertJson(['data' => $this->createInstitutionRepresentation($institution)]);
