@@ -30,7 +30,7 @@ trait AuthHelpers
         return static::createJwt($payload->toArray());
     }
 
-    private static function createJwt(array $payload): string
+    protected static function createJwt(array $payload): string
     {
         $privateKeyPem = static::getPrivateKey();
 

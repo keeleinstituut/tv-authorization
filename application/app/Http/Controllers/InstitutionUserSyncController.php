@@ -10,6 +10,8 @@ use KeycloakAuthGuard\Middleware\EnsureJwtBelongsToServiceAccountWithSyncRole;
 
 class InstitutionUserSyncController extends Controller
 {
+    const PER_PAGE = 1000;
+
     public function __construct()
     {
         $this->middleware(EnsureJwtBelongsToServiceAccountWithSyncRole::class);
@@ -18,7 +20,7 @@ class InstitutionUserSyncController extends Controller
     public function index(): AnonymousResourceCollection
     {
         return InstitutionUserSyncResource::collection(
-            InstitutionUser::withTrashed()->paginate(1000)
+            InstitutionUser::withTrashed()->paginate(self::PER_PAGE)
         );
     }
 
