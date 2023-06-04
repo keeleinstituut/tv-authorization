@@ -147,8 +147,10 @@ class InstitutionUserSyncControllerTest extends TestCase
 
     public function generateServiceAccountAccessToken(?string $role = null): string
     {
+        $azp = explode(',', config('keycloak.service_accounts_accepted_authorized_parties'))[0];
         return $this->createJwt([
             'iss' => config('keycloak.base_url').'/realms/'.config('keycloak.realm'),
+            'azp' => $azp,
             'realm_access' => [
                 'roles' => filled($role) ? [$role] : [config('keycloak.service_account_sync_role')],
             ],

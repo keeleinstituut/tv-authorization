@@ -33,6 +33,7 @@
         <env name="KEYCLOAK_REALM" value="tolkevarav-dev" />
         <env name="KEYCLOAK_BASE_URL" value="https://sso.dev.tolkevarav.eki.ee" />
         <env name="KEYCLOAK_SERVICE_ACCOUNT_SYNC_ROLE" value="sync-user" />
+        <env name="SERVICE_ACCOUNTS_ACCEPTED_AUTHORIZED_PARTIES" value="serviceacc"/>
         <env name="SSO_INTERNAL_CLIENT_ID" value="some-client-id" />
     </php>
 </phpunit>
