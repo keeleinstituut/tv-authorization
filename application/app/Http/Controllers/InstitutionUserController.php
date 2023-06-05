@@ -163,12 +163,10 @@ class InstitutionUserController extends Controller
             $this->authorize('activate', $institutionUser);
 
             $institutionUser->deactivation_date = null;
-            $institutionUser->roles()->sync(
-                Role::query()
-                    ->withoutGlobalScope(RolePolicy::scope())
-                    ->findMany($request->validated('roles'))
-            );
             $institutionUser->saveOrFail();
+            $institutionUser->roles()->sync(
+                Role::findMany($request->validated('roles'))
+            );
 
             // TODO: audit log
 
