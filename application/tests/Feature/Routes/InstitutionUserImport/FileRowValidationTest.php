@@ -43,7 +43,7 @@ class FileRowValidationTest extends TestCase
             'role' => $role->name,
         ];
 
-        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
         $this->sendValidationRequest($row, $accessToken)
             ->assertStatus(Response::HTTP_OK);
     }
@@ -65,7 +65,7 @@ class FileRowValidationTest extends TestCase
             ))
             ->create();
 
-        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $this->sendValidationRequest($row, $accessToken)
             ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)

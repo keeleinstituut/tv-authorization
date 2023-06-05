@@ -501,12 +501,11 @@ class InstitutionUserControllerUpdateTest extends TestCase
         InstitutionUser $actingUser,
         array $tolkevaravClaimsOverride = []): TestResponse
     {
-        $accessToken = AuthHelpers::generateAccessToken([
-            ...AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingUser),
-            ...$tolkevaravClaimsOverride,
-        ]);
-
-        return $this->sendPutRequestWithCustomToken($targetId, $requestPayload, $accessToken);
+        return $this->sendPutRequestWithCustomToken(
+            $targetId,
+            $requestPayload,
+            AuthHelpers::generateAccessTokenForInstitutionUser($actingUser, $tolkevaravClaimsOverride)
+        );
     }
 
     private function sendPutRequestWithCustomToken(

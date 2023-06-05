@@ -141,7 +141,7 @@ class InstitutionUserControllerExportTest extends TestCase
             ->create()
         );
 
-        // WHEN request sent to endpoint with the token authenticatiing current institution user
+        // WHEN request sent to endpoint with the token authenticating current institution user
         $response = $this->sendGetRequestWithTokenFor($currentInstitutionUser);
 
         // THEN request should be a download
@@ -180,7 +180,7 @@ class InstitutionUserControllerExportTest extends TestCase
             ->create()
         );
 
-        // WHEN request sent to endpoint with the token authenticatiing current institution user
+        // WHEN request sent to endpoint with the token authenticating current institution user
         $response = $this->sendGetRequestWithTokenFor($currentInstitutionUser);
 
         // THEN request should be a download
@@ -250,10 +250,7 @@ class InstitutionUserControllerExportTest extends TestCase
         InstitutionUser $institutionUser,
         array $tolkevaravClaimsOverride = []): TestResponse
     {
-        $token = AuthHelpers::generateAccessToken([
-            ...AuthHelpers::makeTolkevaravClaimsForInstitutionUser($institutionUser),
-            ...$tolkevaravClaimsOverride,
-        ]);
+        $token = AuthHelpers::generateAccessTokenForInstitutionUser($institutionUser, $tolkevaravClaimsOverride);
 
         return $this
             ->withHeaders(['Authorization' => "Bearer $token"])

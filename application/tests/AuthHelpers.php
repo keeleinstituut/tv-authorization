@@ -11,6 +11,17 @@ use Illuminate\Support\Str;
 
 readonly class AuthHelpers
 {
+    public static function generateAccessTokenForInstitutionUser(
+        InstitutionUser $institutionUser,
+        array $tolkevaravClaimOverrides = [],
+        string $azp = null): string
+    {
+        return AuthHelpers::generateAccessToken([
+            ...AuthHelpers::makeTolkevaravClaimsForInstitutionUser($institutionUser),
+            ...$tolkevaravClaimOverrides,
+        ], $azp);
+    }
+
     /** @return array{
      *     personalIdentificationCode: string,
      *     userId: string,

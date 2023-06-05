@@ -20,7 +20,7 @@ class PrivilegeControllerTest extends TestCase
     public function test_api_privileges_endpoint(): void
     {
         $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege(Institution::factory(), PrivilegeKey::ViewRole);
-        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingUser);
 
         $response = $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
@@ -41,7 +41,7 @@ class PrivilegeControllerTest extends TestCase
     public function test_unauthorized(): void
     {
         $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege(Institution::factory(), null);
-        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingUser);
 
         $response = $this->withHeaders([
             'Authorization' => "Bearer $accessToken",

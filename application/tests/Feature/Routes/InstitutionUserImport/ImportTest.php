@@ -39,7 +39,7 @@ class ImportTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
             ))
             ->create();
-        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $csvRow = $this->getValidCsvRow(
             implode(', ', [$role1->name, $role2->name]),
@@ -97,7 +97,7 @@ class ImportTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
             ))
             ->create();
-        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $this->sendImportFileRequest(
             $this->composeContent([
@@ -155,7 +155,7 @@ class ImportTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
             ))
             ->create();
-        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $response = $this->sendImportFileRequest(
             $this->composeContent([
@@ -185,7 +185,7 @@ class ImportTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
             ))
             ->create();
-        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $this->sendImportFileRequest(
             $this->composeContent([
@@ -213,7 +213,7 @@ class ImportTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::ActivateUser->value)
             ))
             ->create();
-        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $this->sendImportFileRequest(
             $this->composeContent([

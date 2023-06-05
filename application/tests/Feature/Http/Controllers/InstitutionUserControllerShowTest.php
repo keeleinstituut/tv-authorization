@@ -171,12 +171,10 @@ class InstitutionUserControllerShowTest extends TestCase
         InstitutionUser $institutionUser,
         array $tolkevaravClaimsOverride = []): TestResponse
     {
-        $token = AuthHelpers::generateAccessToken([
-            ...AuthHelpers::makeTolkevaravClaimsForInstitutionUser($institutionUser),
-            ...$tolkevaravClaimsOverride,
-        ]);
-
-        return $this->sendGetRequestWithCustomToken($targetId, $token);
+        return $this->sendGetRequestWithCustomToken(
+            $targetId,
+            AuthHelpers::generateAccessTokenForInstitutionUser($institutionUser, $tolkevaravClaimsOverride)
+        );
     }
 
     private function sendGetRequestWithCustomToken(

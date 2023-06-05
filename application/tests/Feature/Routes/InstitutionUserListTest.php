@@ -34,7 +34,7 @@ class InstitutionUserListTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::ViewUser->value)
             ))
             ->create();
-        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $response = $this->queryInstitutionUsers($accessToken);
 
@@ -67,7 +67,7 @@ class InstitutionUserListTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::ViewUser->value)
             ))
             ->create();
-        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $response = $this->queryInstitutionUsers(
             $accessToken,
@@ -106,7 +106,7 @@ class InstitutionUserListTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::ViewUser->value)
             ))
             ->create();
-        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $response = $this->queryInstitutionUsers(
             $accessToken,
@@ -136,7 +136,7 @@ class InstitutionUserListTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::ViewUser->value)
             ))
             ->create();
-        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $response = $this->queryInstitutionUsers(
             $accessToken,
@@ -164,7 +164,7 @@ class InstitutionUserListTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::ViewUser->value)
             ))
             ->create();
-        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $response = $this->queryInstitutionUsers(
             $accessToken,
