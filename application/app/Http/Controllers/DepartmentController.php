@@ -29,9 +29,9 @@ class DepartmentController extends Controller
      */
     public function store(StoreDepartmentRequest $request): DepartmentResource
     {
-        return DB::transaction(function () use ($request): DepartmentResource {
-            $this->authorize('create', Department::class);
+        $this->authorize('create', Department::class);
 
+        return DB::transaction(function () use ($request): DepartmentResource {
             $currentInstitution = Institution::findOrFail(Auth::user()->institutionId);
 
             $newDepartment = new Department($request->validated());
