@@ -11,7 +11,7 @@ use KeycloakAuthGuard\Models\JwtPayloadUser;
 
 class InstitutionUserPolicy
 {
-    public function viewAny(): bool
+    public function viewAny(JwtPayloadUser $jwtPayloadUser): bool
     {
         return Auth::hasPrivilege(PrivilegeKey::ViewUser->value);
     }
@@ -25,7 +25,7 @@ class InstitutionUserPolicy
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function create(): bool
+    public function create(JwtPayloadUser $jwtPayloadUser): bool
     {
         return Auth::hasPrivilege(PrivilegeKey::AddUser->value);
     }
@@ -38,12 +38,12 @@ class InstitutionUserPolicy
             && $this->isInSameInstitutionAsCurrentUser($institutionUser);
     }
 
-    public function delete(): bool
+    public function delete(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
     {
         throw new BadMethodCallException();
     }
 
-    public function restore(): bool
+    public function restore(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
     {
         throw new BadMethodCallException();
     }
@@ -60,7 +60,6 @@ class InstitutionUserPolicy
 
     public function import()
     {
-        /** @noinspection PhpUndefinedMethodInspection */
         return Auth::hasPrivilege(PrivilegeKey::AddUser->value);
     }
 

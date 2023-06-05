@@ -2,6 +2,7 @@
 
 namespace App\Models\Scopes;
 
+use App\Util\DateUtil;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
@@ -12,9 +13,9 @@ class ExcludeDeactivatedInstitutionUsersScope implements Scope
     public function apply(Builder $builder, Model $model): void
     {
         $builder->where(
-            fn ($groupedClause) => $groupedClause
+            fn (Builder $groupedClause) => $groupedClause
                 ->whereNull('deactivation_date')
-                ->orWhereDate('deactivation_date', '>', Date::now('Europe/Tallinn'))
+                ->orWhereDate('deactivation_date', '>', Date::now(DateUtil::ESTONIAN_TIMEZONE)->format('Y-m-d'))
         );
     }
 }

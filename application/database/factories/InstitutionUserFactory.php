@@ -11,6 +11,9 @@ use Illuminate\Support\Str;
 
 /**
  * @extends Factory<InstitutionUser>
+ *
+ * @method static InstitutionUserFactory forUser(array $state)
+ * @method static InstitutionUserFactory forInstitution(array $state)
  */
 class InstitutionUserFactory extends Factory
 {

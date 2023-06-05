@@ -15,6 +15,7 @@ use App\Util\DateUtil;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use League\Csv\CannotInsertRecord;
 use League\Csv\Exception;
@@ -164,7 +165,7 @@ class InstitutionUserController extends Controller
             $institutionUser->deactivation_date = $request->validated('deactivation_date');
             $institutionUser->saveOrFail();
 
-            if ($request->getValidatedDeactivationDateAtEstonianMidnight()?->isSameDay(DateUtil::estonianNow())) {
+            if ($request->getValidatedDeactivationDateAtEstonianMidnight()?->isSameDay(Date::today(DateUtil::ESTONIAN_TIMEZONE))) {
                 $institutionUser->institutionUserRoles()->delete();
             }
 

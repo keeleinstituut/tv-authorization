@@ -61,7 +61,8 @@ trait ModelAssertions
         ]);
     }
 
-    /** @param $action Closure(): TestResponse
+    /**
+     * @param $action Closure(): TestResponse
      * @param $convertModelToArray Closure(Model): array
      * @param $modelsWithExpectedChanges array<array{Model, array}>
      * @param $expectedStatus int

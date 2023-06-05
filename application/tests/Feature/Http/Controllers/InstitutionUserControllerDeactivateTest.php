@@ -510,9 +510,6 @@ class InstitutionUserControllerDeactivateTest extends TestCase
         );
     }
 
-    /**
-     * @param  string  $deactivationDate
-     */
     private function sendDeactivateRequestWithExpectedPayloadAndHeaders(InstitutionUser $targetInstitutionUser,
         InstitutionUser $actingInstitutionUser,
         ?string $deactivationDate): TestResponse

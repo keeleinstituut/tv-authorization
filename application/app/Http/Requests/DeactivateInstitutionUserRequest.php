@@ -6,8 +6,10 @@ use App\Enums\InstitutionUserStatus;
 use App\Http\Requests\Traits\FindsInstitutionUsersWithAnyStatus;
 use App\Util\DateUtil;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Date;
 
 class DeactivateInstitutionUserRequest extends FormRequest
 {
@@ -44,22 +46,22 @@ class DeactivateInstitutionUserRequest extends FormRequest
 
     /** @noinspection PhpUnusedParameterInspection */
     private function validateDateIsNotBeforeCurrentEstonianDate(string $attribute,
-        mixed $value,
+        string $value,
         Closure $fail): void
     {
-        if (DateUtil::convertStringToEstonianMidnight($value)->isBefore(DateUtil::currentEstonianDateAtMidnight())) {
+        if (static::convertDateStringToEstonianMidnight($value)->isBefore(Date::today(DateUtil::ESTONIAN_TIMEZONE))) {
             $fail('Date is earlier than the current calendar date in Estonia.');
         }
     }
 
     /** @noinspection PhpUnusedParameterInspection */
     private function validateDateIsNotAfterOneYearFromCurrentEstonianDate(string $attribute,
-        mixed $value,
+        string $value,
         Closure $fail): void
     {
-        $oneYearFromNowEstonianTime = DateUtil::currentEstonianDateAtMidnight()->addYear();
+        $oneYearFromNowEstonianTime = Date::today(DateUtil::ESTONIAN_TIMEZONE)->addYear();
 
-        if (DateUtil::convertStringToEstonianMidnight($value)->isAfter($oneYearFromNowEstonianTime)) {
+        if (static::convertDateStringToEstonianMidnight($value)->isAfter($oneYearFromNowEstonianTime)) {
             $fail('Date is later than one year from the current calendar date in Estonia.');
         }
     }
@@ -70,6 +72,11 @@ class DeactivateInstitutionUserRequest extends FormRequest
             return null;
         }
 
-        return DateUtil::convertStringToEstonianMidnight($deactivationDate);
+        return static::convertDateStringToEstonianMidnight($deactivationDate)->toImmutable();
+    }
+
+    private static function convertDateStringToEstonianMidnight(string $dateString): CarbonInterface
+    {
+        return Date::parse($dateString, DateUtil::ESTONIAN_TIMEZONE);
     }
 }

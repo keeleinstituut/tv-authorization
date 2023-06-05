@@ -8,8 +8,8 @@ use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Models\Scopes\ExcludeIfRelatedUserSoftDeletedScope;
 use App\Util\DateUtil;
 use Carbon\CarbonImmutable;
-use Carbon\CarbonInterface;
 use Database\Factories\InstitutionUserFactory;
+use DateTimeInterface;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -22,13 +22,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 
 /**
  * App\Models\InstitutionUser
  *
  * @property string $id
  * @property Carbon|null $created_at
- * @property Carbon|null $deactivation_date
+ * @property string|null $deactivation_date
  * @property Carbon|null $archived_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -60,6 +61,7 @@ use Illuminate\Support\Carbon;
  * @method static Builder|InstitutionUser whereDeletedAt($value)
  * @method static Builder|InstitutionUser withTrashed()
  * @method static Builder|InstitutionUser withoutTrashed()
+ * @method static Builder|InstitutionUser status(InstitutionUserStatus $value)
  *
  * @mixin Eloquent
  */
@@ -105,6 +107,7 @@ class InstitutionUser extends Model
             ->withTimestamps();
     }
 
+    /** @noinspection PhpUnused */
     public function scopeStatus(Builder $query, InstitutionUserStatus $status): void
     {
         match ($status) {
@@ -113,7 +116,7 @@ class InstitutionUser extends Model
                 ->where(
                     fn ($groupedClause) => $groupedClause
                         ->whereNull('deactivation_date')
-                        ->orWhereDate('deactivation_date', '>', DateUtil::estonianNow())
+                        ->orWhereDate('deactivation_date', '>', Date::now(DateUtil::ESTONIAN_TIMEZONE)->format('Y-m-d'))
                 ),
             InstitutionUserStatus::Archived => $query
                 ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
@@ -123,7 +126,7 @@ class InstitutionUser extends Model
                 ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
                 ->whereNull('archived_at')
                 ->whereNotNull('deactivation_date')
-                ->whereDate('deactivation_date', '<=', DateUtil::currentEstonianDateAtMidnight())
+                ->whereDate('deactivation_date', '<=', Date::now(DateUtil::ESTONIAN_TIMEZONE)->format('Y-m-d'))
         };
     }
 
@@ -143,32 +146,22 @@ class InstitutionUser extends Model
     public function isDeactivated(): bool
     {
         return filled($this->deactivation_date)
-            && ! $this->deactivation_date->isAfter(DateUtil::currentEstonianDateAtMidnight());
+            && ! Date::parse($this->deactivation_date, DateUtil::ESTONIAN_TIMEZONE)->isFuture();
     }
 
     /** @noinspection PhpUnused */
     protected function deactivationDate(): Attribute
     {
         return Attribute::make(
-            get: function (?string $value): ?CarbonImmutable {
-                if (empty($value)) {
-                    return null;
-                }
-
-                return DateUtil::convertStringToEstonianMidnight($value);
-            },
-            set: function (CarbonInterface|string|null $value): ?string {
-                if ($value instanceof CarbonInterface) {
-                    return DateUtil::convertDateTimeObjectToEstonianMidnight($value)->format('Y-m-d');
+            set: function (DateTimeInterface|string|null $value): ?string {
+                if ($value instanceof DateTimeInterface) {
+                    return CarbonImmutable::parse($value)
+                        ->timezone(DateUtil::ESTONIAN_TIMEZONE)
+                        ->format('Y-m-d');
                 }
 
                 return $value;
             }
         );
-    }
-
-    public function getDeactivationDateAsString(): ?string
-    {
-        return $this->deactivation_date?->format('Y-m-d');
     }
 }

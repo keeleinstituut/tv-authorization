@@ -14,16 +14,16 @@ class ScheduleTest extends TestCase
 {
     public function test_detach_roles_from_deactivated_users_runs_after_midnight_estonian_time(): void
     {
-        // GIVEN the current Estonian time is 1999-12-31T23:59:59
-        Date::setTestNow(Date::create(1999, 12, 31, 23, 59, 59, tz: 'Europe/Tallinn'));
+        // GIVEN the current Estonian time is to 2000-01-01T02:59:59
+        Date::setTestNow(Date::create(2000, 01, 01, 02, 59, 59, tz: 'Europe/Tallinn'));
 
         // And (sanity check) the command is among due events
         $this->assertEmpty(
             $this->getDueEvents()->filter($this->isDetachCommandEvent(...))
         );
 
-        // WHEN we travel to 2000-01-01T00:00:00 Estonian time
-        $this->travelTo(Date::create(2000, tz: 'Europe/Tallinn'));
+        // WHEN we travel to 2000-01-01T03:00:00 Estonian time
+        $this->travelTo(Date::create(2000, 01, 01, 03, 00, 00, tz: 'Europe/Tallinn'));
 
         // THEN the command should be among due events
         $this->assertNotEmpty(

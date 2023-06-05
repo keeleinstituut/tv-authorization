@@ -6,6 +6,7 @@ use App\Models\InstitutionUserRole;
 use App\Util\DateUtil;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Console\Isolatable;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -28,7 +29,7 @@ class DetachRolesFromDeactivatedUsers extends Command implements Isolatable
                     'institution_user_id',
                     DB::table('institution_users')
                         ->select('id')
-                        ->whereDate('deactivation_date', '<=', DateUtil::currentEstonianDateAtMidnight())
+                        ->whereDate('deactivation_date', '<=', Date::now(DateUtil::ESTONIAN_TIMEZONE)->format('Y-m-d'))
                 )
                 ->delete();
 
