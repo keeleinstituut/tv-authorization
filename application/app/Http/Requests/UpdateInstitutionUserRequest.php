@@ -42,7 +42,7 @@ class UpdateInstitutionUserRequest extends FormRequest
     {
         return new ModelBelongsToInstitutionRule(
             Role::class,
-            $this->findInstitutionUserInstitutionId()
+            fn () => $this->findInstitutionUserInstitutionId()
         );
     }
 
@@ -50,7 +50,7 @@ class UpdateInstitutionUserRequest extends FormRequest
     {
         return new ModelBelongsToInstitutionRule(
             Department::class,
-            $this->findInstitutionUserInstitutionId()
+            fn () => $this->findInstitutionUserInstitutionId()
         );
     }
 

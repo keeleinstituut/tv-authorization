@@ -1,6 +1,6 @@
 <?php
 
-namespace Feature\Actions;
+namespace Tests\Feature\Actions;
 
 use App\Actions\CreateInstitutionAction;
 use App\DataTransferObjects\InstitutionData;

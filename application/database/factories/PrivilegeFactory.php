@@ -21,7 +21,7 @@ class PrivilegeFactory extends Factory
         $availablePrivileges = collect(PrivilegeKey::cases())->pluck('value');
 
         return [
-            'key' => fake()->randomElement($availablePrivileges),
+            'key' => $this->faker->randomElement($availablePrivileges),
         ];
     }
 }

@@ -14,7 +14,7 @@ class DepartmentFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->city(),
+            'name' => $this->faker->city(),
             'institution_id' => Institution::factory(),
         ];
     }

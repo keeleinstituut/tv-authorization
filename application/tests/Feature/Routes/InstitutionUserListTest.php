@@ -7,11 +7,11 @@ use App\Enums\PrivilegeKey;
 use App\Http\Controllers\InstitutionUserController;
 use App\Models\InstitutionUser;
 use App\Models\InstitutionUserRole;
+use App\Models\Privilege;
 use App\Models\Role;
 use Illuminate\Database\Eloquent\Factories\Sequence;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
-use Str;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\AuthHelpers;
 use Tests\EntityHelpers;
@@ -25,12 +25,18 @@ class InstitutionUserListTest extends TestCase
     public function test_list_of_institution_users_returned(): void
     {
         $institution = $this->createInstitution();
-        $institutionUsers = InstitutionUser::factory(10)->for($institution)
+        $institutionUsers = InstitutionUser::factory(9)->for($institution)
             ->has(InstitutionUserRole::factory(2))->create();
 
-        $response = $this->queryInstitutionUsers(
-            $this->getAccessToken([PrivilegeKey::ViewUser], $institution->id)
-        );
+        $actingInstitutionUser = InstitutionUser::factory()
+            ->for($institution)
+            ->has(Role::factory()->hasAttached(
+                Privilege::firstWhere('key', PrivilegeKey::ViewUser->value)
+            ))
+            ->create();
+        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+
+        $response = $this->queryInstitutionUsers($accessToken);
 
         $response->assertStatus(Response::HTTP_OK);
         foreach ($institutionUsers as $institutionUser) {
@@ -52,11 +58,19 @@ class InstitutionUserListTest extends TestCase
     public function test_list_of_institution_users_sortable(): void
     {
         $institution = $this->createInstitution();
-        $institutionUsers = InstitutionUser::factory(10)->for($institution)
+        $institutionUsers = InstitutionUser::factory(9)->for($institution)
             ->has(InstitutionUserRole::factory(2))->create();
 
+        $actingInstitutionUser = InstitutionUser::factory()
+            ->for($institution)
+            ->has(Role::factory()->hasAttached(
+                Privilege::firstWhere('key', PrivilegeKey::ViewUser->value)
+            ))
+            ->create();
+        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+
         $response = $this->queryInstitutionUsers(
-            $this->getAccessToken([PrivilegeKey::ViewUser], $institution->id),
+            $accessToken,
             ['sort_by' => 'name', 'sort_order' => 'asc'],
         );
 
@@ -64,7 +78,7 @@ class InstitutionUserListTest extends TestCase
         $institutionUsersData = json_decode($response->content(), true);
 
         $this->assertEquals(
-            $institutionUsers->sortBy('user.surname')->pluck('user.surname')->toArray(),
+            $institutionUsers->push($actingInstitutionUser)->sortBy('user.surname')->pluck('user.surname')->toArray(),
             collect($institutionUsersData['data'])->pluck('user.surname')->toArray()
         );
     }
@@ -86,8 +100,16 @@ class InstitutionUserListTest extends TestCase
         $role = Role::where('institution_id', '=', $institution->id)
             ->first();
 
+        $actingInstitutionUser = InstitutionUser::factory()
+            ->for($institution)
+            ->has(Role::factory()->hasAttached(
+                Privilege::firstWhere('key', PrivilegeKey::ViewUser->value)
+            ))
+            ->create();
+        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+
         $response = $this->queryInstitutionUsers(
-            $this->getAccessToken([PrivilegeKey::ViewUser], $institution->id),
+            $accessToken,
             ['role_id' => $role->id],
         );
 
@@ -108,8 +130,16 @@ class InstitutionUserListTest extends TestCase
         ))->for($institution)->has(InstitutionUserRole::factory(2))
             ->create();
 
+        $actingInstitutionUser = InstitutionUser::factory()
+            ->for($institution)
+            ->has(Role::factory()->hasAttached(
+                Privilege::firstWhere('key', PrivilegeKey::ViewUser->value)
+            ))
+            ->create();
+        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+
         $response = $this->queryInstitutionUsers(
-            $this->getAccessToken([PrivilegeKey::ViewUser], $institution->id),
+            $accessToken,
             ['status' => InstitutionUserStatus::Activated]
         );
 
@@ -128,8 +158,16 @@ class InstitutionUserListTest extends TestCase
             ->has(InstitutionUserRole::factory(2))
             ->create();
 
+        $actingInstitutionUser = InstitutionUser::factory()
+            ->for($institution)
+            ->has(Role::factory()->hasAttached(
+                Privilege::firstWhere('key', PrivilegeKey::ViewUser->value)
+            ))
+            ->create();
+        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+
         $response = $this->queryInstitutionUsers(
-            $this->getAccessToken([PrivilegeKey::ViewUser], $institution->id),
+            $accessToken,
             ['per_page' => 50]
         );
 
@@ -159,17 +197,5 @@ class InstitutionUserListTest extends TestCase
             [InstitutionUserController::class, 'index'],
             $queryParams ?: []
         ));
-    }
-
-    private function getAccessToken(array $privileges, ?string $institutionId = null): string
-    {
-        $institutionId = $institutionId ?: Str::orderedUuid();
-
-        return AuthHelpers::generateAccessToken([
-            'selectedInstitution' => [
-                'id' => $institutionId,
-            ],
-            'privileges' => array_map(fn (PrivilegeKey $key) => $key->value, $privileges),
-        ]);
     }
 }
