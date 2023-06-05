@@ -140,7 +140,7 @@ class InstitutionUserControllerShowTest extends TestCase
             'institution' => $createdInstitution,
             'institutionUser' => $createdInstitutionUser,
         ] = $this->createBasicModels();
-        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::SetUserVacation);
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUserVacation);
 
         // WHEN request sent without VIEW_USER privilege in token
         $response = $this->sendGetRequestWithTokenFor($createdInstitutionUser->id, $actingUser);

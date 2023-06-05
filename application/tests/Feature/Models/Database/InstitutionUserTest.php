@@ -11,7 +11,6 @@ use App\Models\InstitutionUserRole;
 use App\Models\Role;
 use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Models\User;
-use App\Util\DateUtil;
 use Carbon\CarbonInterface;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -130,19 +129,13 @@ class InstitutionUserTest extends TestCase
         $refreshedInstitutionUser = InstitutionUser::withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
             ->find($institutionUser->id);
 
-        // THEN the attribute getter should return a Carbon instance
-        $this->assertInstanceOf(CarbonInterface::class, $refreshedInstitutionUser->deactivation_date);
+        // THEN the attribute getter should return a string
+        $this->assertIsString($refreshedInstitutionUser->deactivation_date);
 
-        // And that instance should equal the initial deactivation time WITH Estonian timezone information included
-        $expectedDeactivationTime = Date::createMidnightDate(
-            $deactivationTime->year,
-            $deactivationTime->month,
-            $deactivationTime->day,
-            'Europe/Tallinn'
-        );
+        // And the string should equal the date in Estonia (2000-01-01), not UTC (1999-12-31)
         $this->assertEquals(
-            $expectedDeactivationTime->toISOString(true),
-            $refreshedInstitutionUser->deactivation_date->toISOString(true)
+            '2000-01-01',
+            $refreshedInstitutionUser->deactivation_date
         );
     }
 
@@ -171,7 +164,6 @@ class InstitutionUserTest extends TestCase
             InstitutionUser::withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
                 ->find($institutionUser->id)
                 ->deactivation_date
-                ->format('Y-m-d')
         );
     }
 
@@ -346,13 +338,13 @@ class InstitutionUserTest extends TestCase
                 ->create(['deactivation_date' => Date::now()->subMonth()->format('Y-m-d')]),
             InstitutionUser::factory()
                 ->for($referenceInstitution)
-                ->create(['deactivation_date' => DateUtil::estonianNow()->format('Y-m-d')]),
+                ->create(['deactivation_date' => Date::now()]),
         ];
 
         $institutionUsersExpectedArchived = [
             InstitutionUser::factory()
                 ->for($referenceInstitution)
-                ->create(['archived_at' => DateUtil::estonianNow()]),
+                ->create(['archived_at' => Date::now()]),
             InstitutionUser::factory()
                 ->for($referenceInstitution)
                 ->create([
