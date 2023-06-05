@@ -2,18 +2,21 @@
 
 namespace Tests\Feature\Integration;
 
+use App\Enums\PrivilegeKey;
 use App\Models\Institution;
+use App\Models\InstitutionUser;
 use App\Models\Privilege;
 use App\Models\PrivilegeRole;
 use App\Models\Role;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
+use Tests\Feature\InstitutionUserHelpers;
 use Tests\TestCase;
 
 class RoleControllerTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, InstitutionUserHelpers;
 
     private $testNow;
 
@@ -30,20 +33,16 @@ class RoleControllerTest extends TestCase
      */
     public function test_api_roles_list_endpoint(): void
     {
-        $role = Role::factory()->create();
+        $role = Role::factory()->for(
+            $institution = Institution::factory()->create()
+        )->create();
         PrivilegeRole::factory(3)->create([
             'role_id' => $role->id,
         ]);
         $role->load('privileges');
 
-        $accessToken = $this->generateAccessToken([
-            'selectedInstitution' => [
-                'id' => $role->institution_id,
-            ],
-            'privileges' => [
-                'VIEW_ROLE',
-            ],
-        ]);
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($institution, PrivilegeKey::ViewRole);
+        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForInstitutionUser($actingUser));
 
         $response = $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
@@ -61,20 +60,16 @@ class RoleControllerTest extends TestCase
 
     public function test_api_roles_single_endpoint(): void
     {
-        $role = Role::factory()->create();
+        $role = Role::factory()->for(
+            $institution = Institution::factory()->create()
+        )->create();
         PrivilegeRole::factory(3)->create([
             'role_id' => $role->id,
         ]);
         $role->load('privileges');
 
-        $accessToken = $this->generateAccessToken([
-            'selectedInstitution' => [
-                'id' => $role->institution_id,
-            ],
-            'privileges' => [
-                'VIEW_ROLE',
-            ],
-        ]);
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($institution, PrivilegeKey::ViewRole);
+        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForInstitutionUser($actingUser));
 
         $response = $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
@@ -91,14 +86,8 @@ class RoleControllerTest extends TestCase
     public function test_api_roles_create_endpoint(): void
     {
         $institution = Institution::factory()->create();
-        $accessToken = $this->generateAccessToken([
-            'selectedInstitution' => [
-                'id' => $institution->id,
-            ],
-            'privileges' => [
-                'ADD_ROLE',
-            ],
-        ]);
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($institution, PrivilegeKey::AddRole);
+        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForInstitutionUser($actingUser));
 
         $payload = json_decode(<<<EOT
             {
@@ -115,7 +104,7 @@ class RoleControllerTest extends TestCase
             'Accept' => 'application/json',
         ])->postJson('/api/roles', $payload);
 
-        $savedRole = Role::first();
+        $savedRole = Role::findOrFail($response->json('data.id'));
 
         $response
             ->assertStatus(201)
@@ -126,19 +115,14 @@ class RoleControllerTest extends TestCase
 
     public function test_api_roles_update_endpoint(): void
     {
-        $role = Role::factory()->create();
+        $role = Role::factory()->for(
+            $institution = Institution::factory()->create()
+        )->create();
         PrivilegeRole::factory(3)->create([
             'role_id' => $role->id,
         ]);
-
-        $accessToken = $this->generateAccessToken([
-            'selectedInstitution' => [
-                'id' => $role->institution_id,
-            ],
-            'privileges' => [
-                'EDIT_ROLE',
-            ],
-        ]);
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($institution, PrivilegeKey::EditRole);
+        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForInstitutionUser($actingUser));
 
         $payload = json_decode(<<<EOT
             {
@@ -166,20 +150,15 @@ class RoleControllerTest extends TestCase
 
     public function test_api_roles_update_endpoint_removing_and_adding_privilege(): void
     {
-        $role = Role::factory()->create();
+        $role = Role::factory()->for(
+            $institution = Institution::factory()->create()
+        )->create();
         PrivilegeRole::factory()->create([
             'role_id' => $role->id,
             'privilege_id' => Privilege::where('key', 'ADD_ROLE')->first()->id,
         ]);
-
-        $accessToken = $this->generateAccessToken([
-            'selectedInstitution' => [
-                'id' => $role->institution_id,
-            ],
-            'privileges' => [
-                'EDIT_ROLE',
-            ],
-        ]);
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($institution, PrivilegeKey::EditRole);
+        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForInstitutionUser($actingUser));
 
         $response = $this
             ->withHeaders([
@@ -225,16 +204,12 @@ class RoleControllerTest extends TestCase
 
     public function test_api_roles_delete_endpoint(): void
     {
-        $role = Role::factory()->create();
+        $role = Role::factory()->for(
+            $institution = Institution::factory()->create()
+        )->create();
 
-        $accessToken = $this->generateAccessToken([
-            'selectedInstitution' => [
-                'id' => $role->institution_id,
-            ],
-            'privileges' => [
-                'DELETE_ROLE',
-            ],
-        ]);
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($institution, PrivilegeKey::DeleteRole);
+        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForInstitutionUser($actingUser));
 
         $response = $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
@@ -257,23 +232,24 @@ class RoleControllerTest extends TestCase
         // Populate some roles
         $roles = Role::factory(3)->create();
 
+        $actingUser = InstitutionUser::factory()
+            ->for(Institution::factory())
+            ->for(User::factory())
+            ->create();
         $accessToken = $this->generateAccessToken([
-            'selectedInstitution' => [
-                // Some non existing institution id
-                'id' => Str::orderedUuid(),
-            ],
+            ...$this->makeTolkevaravClaimsForInstitutionUser($actingUser),
             'privileges' => [
-                'VIEW_ROLE',
-                'ADD_ROLE',
-                'EDIT_ROLE',
-                'DELETE_ROLE',
+                PrivilegeKey::ViewRole->value,
+                PrivilegeKey::AddRole->value,
+                PrivilegeKey::EditRole->value,
+                PrivilegeKey::DeleteRole->value,
             ],
         ]);
 
         $role = $roles[0];
         $roleId = $role->id;
 
-        // Returns empty array since institution doesn't exist and roles as well
+        // Returns empty array since no roles exist in institution
         $this
             ->withHeaders([
                 'Authorization' => "Bearer $accessToken",

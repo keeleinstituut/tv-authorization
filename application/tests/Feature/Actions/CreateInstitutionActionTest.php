@@ -1,10 +1,10 @@
 <?php
 
-namespace Feature\Actions;
+namespace Tests\Feature\Actions;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Actions\CreateInstitutionAction;
 use App\DataTransferObjects\InstitutionData;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class CreateInstitutionActionTest extends TestCase

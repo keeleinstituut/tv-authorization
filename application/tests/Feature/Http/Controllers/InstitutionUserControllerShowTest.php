@@ -13,13 +13,13 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
-use Tests\Feature\ModelHelpers;
+use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\RepresentationHelpers;
 use Tests\TestCase;
 
 class InstitutionUserControllerShowTest extends TestCase
 {
-    use RefreshDatabase, ModelHelpers;
+    use RefreshDatabase, InstitutionUserHelpers;
 
     public function setUp(): void
     {
@@ -42,14 +42,12 @@ class InstitutionUserControllerShowTest extends TestCase
             forename: $expectedForename = 'Testjana',
             surname: $expectedSurname = 'Testjovka',
             attachInstitutionUserToDepartment: false,
-            privileges: [PrivilegeKey::AddUser, PrivilegeKey::EditUser]
+            privileges: [PrivilegeKey::ViewUser, PrivilegeKey::EditUser]
         );
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::ViewUser);
 
         // WHEN request sent to endpoint
-        $response = $this->sendGetRequest(
-            $createdInstitutionUser->id,
-            $createdInstitution->id
-        );
+        $response = $this->sendGetRequestWithTokenFor($createdInstitutionUser->id, $actingUser);
 
         // THEN request response should correspond to the expected state
         $expectedResponseData = [
@@ -74,14 +72,11 @@ class InstitutionUserControllerShowTest extends TestCase
 
     public function test_requesting_nonexistent_user(): void
     {
-        // GIVEN institution has no users
-        $createdInstitution = Institution::factory()->create();
+        // GIVEN institution with single (acting) user
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege(Institution::factory(), PrivilegeKey::ViewUser);
 
         // WHEN request targets nonexistent institution user
-        $response = $this->sendGetRequest(
-            Str::uuid(),
-            $createdInstitution->id
-        );
+        $response = $this->sendGetRequestWithTokenFor(Str::orderedUuid(), $actingUser);
 
         // THEN response status should indicate resource was not found
         $response->assertNotFound();
@@ -95,12 +90,10 @@ class InstitutionUserControllerShowTest extends TestCase
             'institutionUser' => $createdInstitutionUser,
         ] = $this->createBasicModels();
         $createdInstitutionUser->delete();
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::ViewUser);
 
         // WHEN request targets the soft-deleted institution user
-        $response = $this->sendGetRequest(
-            $createdInstitutionUser,
-            $createdInstitution->id
-        );
+        $response = $this->sendGetRequestWithTokenFor($createdInstitutionUser->id, $actingUser);
 
         // THEN response status should indicate resource was not found
         $response->assertNotFound();
@@ -115,12 +108,10 @@ class InstitutionUserControllerShowTest extends TestCase
             'institutionUser' => $createdInstitutionUser,
         ] = $this->createBasicModels();
         $createdUser->delete();
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::ViewUser);
 
         // WHEN request targets the institution user with a soft-deleted user relation*
-        $response = $this->sendGetRequest(
-            $createdInstitutionUser,
-            $createdInstitution->id
-        );
+        $response = $this->sendGetRequestWithTokenFor($createdInstitutionUser->id, $actingUser);
 
         // THEN response status should indicate resource was not found
         $response->assertNotFound();
@@ -128,18 +119,15 @@ class InstitutionUserControllerShowTest extends TestCase
 
     public function test_requesting_user_in_another_institution(): void
     {
-        // GIVEN there are two institutions and only one of them has users
-        $createdInstitutionWithoutUsers = Institution::factory()->create();
-        $createdInstitutionUser = InstitutionUser::factory()
-            ->for(Institution::factory()->create())
-            ->for(User::factory()->create())
+        // GIVEN there are two institutions, one of them with target user, one with acting user
+        $targetInstitutionUser = InstitutionUser::factory()
+            ->for(Institution::factory())
+            ->for(User::factory())
             ->create();
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege(Institution::factory(), PrivilegeKey::ViewUser);
 
-        // WHEN request token contains institution without users, but targets user from other institution
-        $response = $this->sendGetRequest(
-            $createdInstitutionUser->id,
-            $createdInstitutionWithoutUsers->id
-        );
+        // WHEN request token contains user from one institution, but targets user from other institution
+        $response = $this->sendGetRequestWithTokenFor($targetInstitutionUser->id, $actingUser);
 
         // THEN response should indicate resource is not found
         $response->assertNotFound();
@@ -152,13 +140,10 @@ class InstitutionUserControllerShowTest extends TestCase
             'institution' => $createdInstitution,
             'institutionUser' => $createdInstitutionUser,
         ] = $this->createBasicModels();
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUserVacation);
 
         // WHEN request sent without VIEW_USER privilege in token
-        $response = $this->sendGetRequest(
-            $createdInstitutionUser->id,
-            $createdInstitution->id,
-            [PrivilegeKey::EditUserVacation]
-        );
+        $response = $this->sendGetRequestWithTokenFor($createdInstitutionUser->id, $actingUser);
 
         // THEN response should indicate action is forbidden
         $response->assertForbidden();
@@ -180,15 +165,25 @@ class InstitutionUserControllerShowTest extends TestCase
         $response->assertUnauthorized();
     }
 
-    /**
-     * @param  array<PrivilegeKey>  $tokenPrivileges
-     */
-    private function sendGetRequest(string $routeId,
-        string $tokenInstitution,
-        array $tokenPrivileges = [PrivilegeKey::ViewUser]): TestResponse
+    private function sendGetRequestWithTokenFor(
+        string $targetId,
+        InstitutionUser $institutionUser,
+        array $tolkevaravClaimsOverride = []): TestResponse
+    {
+        $token = $this->generateAccessToken([
+            ...$this->makeTolkevaravClaimsForInstitutionUser($institutionUser),
+            ...$tolkevaravClaimsOverride,
+        ]);
+
+        return $this->sendGetRequestWithCustomToken($targetId, $token);
+    }
+
+    private function sendGetRequestWithCustomToken(
+        string $targetId,
+        string $accessToken): TestResponse
     {
         return $this
-            ->withHeaders($this->createJsonHeaderWithTokenParams($tokenInstitution, $tokenPrivileges))
-            ->getJson("/api/institution-users/$routeId");
+            ->withHeaders(['Authorization' => "Bearer $accessToken"])
+            ->getJson("/api/institution-users/$targetId");
     }
 }

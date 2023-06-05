@@ -1,6 +1,6 @@
 <?php
 
-namespace Feature\Models\Database;
+namespace Tests\Feature\Models\Database;
 
 use App\Models\User;
 use Illuminate\Database\QueryException;
