@@ -61,10 +61,9 @@ class RepresentationHelpers
         return [
             ...Arr::only(
                 $institutionUser->toArray(),
-                ['id', 'email', 'phone', 'updated_at', 'created_at', 'archived_at']
+                ['id', 'email', 'phone', 'updated_at', 'created_at', 'archived_at', 'deactivation_date']
             ),
             'status' => $institutionUser->getStatus()->value,
-            'deactivation_date' => $institutionUser->getDeactivationDateAsString(),
         ];
     }
 

@@ -6,6 +6,7 @@ use App\Util\DateUtil;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
+use Illuminate\Support\Facades\Date;
 
 class ExcludeDeactivatedInstitutionUsersScope implements Scope
 {
@@ -14,7 +15,7 @@ class ExcludeDeactivatedInstitutionUsersScope implements Scope
         $builder->where(
             fn (Builder $groupedClause) => $groupedClause
                 ->whereNull('deactivation_date')
-                ->orWhereDate('deactivation_date', '>', DateUtil::currentEstonianDateAtMidnight())
+                ->orWhereDate('deactivation_date', '>', Date::now(DateUtil::ESTONIAN_TIMEZONE)->format('Y-m-d'))
         );
     }
 }
