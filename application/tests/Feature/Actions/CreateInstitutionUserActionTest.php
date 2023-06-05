@@ -1,6 +1,6 @@
 <?php
 
-namespace Feature\Actions;
+namespace Tests\Feature\Actions;
 
 use App\Actions\CreateInstitutionUserAction;
 use App\DataTransferObjects\UserData;
@@ -10,11 +10,13 @@ use App\Models\InstitutionUserRole;
 use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Throwable;
 
 class CreateInstitutionUserActionTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** * @throws Throwable */
     public function test_creation_of_institution_user(): void
     {
         $institution = Institution::factory()->createOne();
@@ -45,6 +47,7 @@ class CreateInstitutionUserActionTest extends TestCase
         );
     }
 
+    /** * @throws Throwable */
     public function test_creation_of_institution_user_without_roles(): void
     {
         $institution = Institution::factory()->createOne();

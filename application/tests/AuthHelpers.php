@@ -2,17 +2,26 @@
 
 namespace Tests;
 
-use App\Enums\PrivilegeKey;
 use App\Models\InstitutionUser;
 use App\Models\InstitutionUserRole;
 use App\Models\PrivilegeRole;
 use App\Models\User;
 use Firebase\JWT\JWT;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 readonly class AuthHelpers
 {
+    public static function generateAccessTokenForInstitutionUser(
+        InstitutionUser $institutionUser,
+        array $tolkevaravClaimOverrides = [],
+        string $azp = null): string
+    {
+        return AuthHelpers::generateAccessToken([
+            ...AuthHelpers::makeTolkevaravClaimsForInstitutionUser($institutionUser),
+            ...$tolkevaravClaimOverrides,
+        ], $azp);
+    }
+
     /** @return array{
      *     personalIdentificationCode: string,
      *     userId: string,
@@ -84,11 +93,7 @@ readonly class AuthHelpers
                 ->explode(',')
                 ->first(),
             'iss' => config('keycloak.base_url').'/realms/'.config('keycloak.realm'),
-            'tolkevarav' => collect([
-                'userId' => 1,
-                'personalIdentificationCode' => '11111111111',
-                'privileges' => [],
-            ])->merge($tolkevaravPayload)->toArray(),
+            'tolkevarav' => $tolkevaravPayload,
         ]);
 
         return static::createJwt($payload->toArray());
@@ -108,21 +113,5 @@ readonly class AuthHelpers
         return "-----BEGIN PRIVATE KEY-----\n".
             wordwrap($key, 64, "\n", true).
             "\n-----END PRIVATE KEY-----";
-    }
-
-    /**
-     * @param  array<PrivilegeKey>  $privileges
-     */
-    public static function createJsonHeaderWithTokenParams(string $institutionId, array $privileges): array
-    {
-        $defaultToken = self::generateAccessToken([
-            'selectedInstitution' => ['id' => $institutionId],
-            'privileges' => Arr::map($privileges, fn ($privilege) => $privilege->value),
-        ]);
-
-        return [
-            'Authorization' => "Bearer $defaultToken",
-            'Accept' => 'application/json',
-        ];
     }
 }

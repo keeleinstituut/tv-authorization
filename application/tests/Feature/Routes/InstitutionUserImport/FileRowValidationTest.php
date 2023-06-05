@@ -1,11 +1,13 @@
 <?php
 
-namespace Feature\Routes\InstitutionUserImport;
+namespace Tests\Feature\Routes\InstitutionUserImport;
 
 use App\Enums\PrivilegeKey;
 use App\Http\Controllers\InstitutionUserImportController;
+use App\Models\InstitutionUser;
+use App\Models\Privilege;
+use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\AuthHelpers;
@@ -25,6 +27,13 @@ class FileRowValidationTest extends TestCase
             PrivilegeKey::ActivateUser,
         ]);
 
+        $actingInstitutionUser = InstitutionUser::factory()
+            ->for($institution)
+            ->has(Role::factory()->hasAttached(
+                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
+            ))
+            ->create();
+
         $row = [
             'personal_identification_code' => '39511267470',
             'name' => 'user name',
@@ -34,7 +43,8 @@ class FileRowValidationTest extends TestCase
             'role' => $role->name,
         ];
 
-        $this->sendValidationRequest($row, $this->getAccessToken([PrivilegeKey::AddUser], $institution->id))
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
+        $this->sendValidationRequest($row, $accessToken)
             ->assertStatus(Response::HTTP_OK);
     }
 
@@ -49,7 +59,15 @@ class FileRowValidationTest extends TestCase
             'role' => 'wrong_role',
         ];
 
-        $this->sendValidationRequest($row, $this->getAccessToken([PrivilegeKey::AddUser]))
+        $actingInstitutionUser = InstitutionUser::factory()
+            ->has(Role::factory()->hasAttached(
+                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
+            ))
+            ->create();
+
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
+
+        $this->sendValidationRequest($row, $accessToken)
             ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
             ->assertJson([
                 'errors' => [
@@ -81,17 +99,5 @@ class FileRowValidationTest extends TestCase
             action([InstitutionUserImportController::class, 'validateCsvRow']),
             $row
         );
-    }
-
-    private function getAccessToken(array $privileges, ?string $institutionId = null): string
-    {
-        $institutionId = $institutionId ?: Str::orderedUuid();
-
-        return AuthHelpers::generateAccessToken([
-            'selectedInstitution' => [
-                'id' => $institutionId,
-            ],
-            'privileges' => array_map(fn (PrivilegeKey $key) => $key->value, $privileges),
-        ]);
     }
 }

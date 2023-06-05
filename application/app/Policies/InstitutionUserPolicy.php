@@ -16,6 +16,7 @@ class InstitutionUserPolicy
         return Auth::hasPrivilege(PrivilegeKey::ViewUser->value);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function view(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
     {
         return $this->isCurrentUser($institutionUser)
@@ -23,11 +24,13 @@ class InstitutionUserPolicy
             && $this->isInSameInstitutionAsCurrentUser($institutionUser);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function create(JwtPayloadUser $jwtPayloadUser): bool
     {
         return Auth::hasPrivilege(PrivilegeKey::AddUser->value);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function update(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
     {
         return $this->isCurrentUser($institutionUser)
@@ -57,7 +60,6 @@ class InstitutionUserPolicy
 
     public function import()
     {
-        /** @noinspection PhpUndefinedMethodInspection */
         return Auth::hasPrivilege(PrivilegeKey::AddUser->value);
     }
 

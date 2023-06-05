@@ -118,9 +118,7 @@ class JwtClaimsTest extends TestCase
             ->firstOrFail();
         $this->assertNotEquals($normallyAcceptedAzp, config('api.sso_internal_client_id'));
 
-        $accessToken = AuthHelpers::generateAccessToken(
-            azp: $normallyAcceptedAzp
-        );
+        $accessToken = AuthHelpers::generateAccessToken(azp: $normallyAcceptedAzp);
 
         $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
@@ -280,8 +278,6 @@ class JwtClaimsTest extends TestCase
 
     public function generateInternalClientAccessToken(): string
     {
-        return AuthHelpers::generateAccessToken(
-            azp: config('api.sso_internal_client_id')
-        );
+        return AuthHelpers::generateAccessToken(azp: config('api.sso_internal_client_id'));
     }
 }
