@@ -18,7 +18,7 @@ class Kernel extends ConsoleKernel
             ->command(DetachRolesFromDeactivatedUsers::class)
             ->timezone(DateUtil::ESTONIAN_TIMEZONE)
             ->onOneServer()
-            ->daily();
+            ->dailyAt('03:00');
     }
 
     /**
