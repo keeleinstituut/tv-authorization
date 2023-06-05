@@ -12,7 +12,6 @@ use App\Models\InstitutionUser;
 use App\Models\Role;
 use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Policies\InstitutionUserPolicy;
-use App\Policies\RolePolicy;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;

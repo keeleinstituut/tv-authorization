@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::table('institution_users', function (Blueprint $table) {
             $table->dropColumn(['status']);
-            $table->date('deactivation_date')->nullable();
-            $table->timestampTz('archived_at')->nullable();
+            $table->date('deactivation_date')->index()->nullable();
+            $table->timestampTz('archived_at')->index()->nullable();
         });
     }
 

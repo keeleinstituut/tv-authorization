@@ -405,7 +405,7 @@ class InstitutionUserControllerActivateTest extends TestCase
             [$targetInstitutionUser, []],
         ];
 
-        $initialTargetDeactivationDate = $targetInstitutionUser->deactivation_date?->format('Y-m-d');
+        $initialTargetDeactivationDate = $targetInstitutionUser->deactivation_date;
 
         $this->assertModelsInExpectedStateAfterAction(
             fn () => $this->sendActivateRequestWithExpectedPayloadAndHeaders(
