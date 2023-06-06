@@ -18,7 +18,7 @@ class CsvContentValidator
 
     private CsvReader $reader;
 
-    public function __construct(string $csvPath, string $separator = ';')
+    public function __construct(string $csvPath, string $separator = ',')
     {
         $this->reader = new CsvReader($csvPath, $separator);
     }
