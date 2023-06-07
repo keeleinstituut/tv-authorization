@@ -15,11 +15,11 @@ trait ModelAssertions
 {
     public function assertInstitutionUserIsIncludedAndActive(string $id): void
     {
-        $instutionUser = InstitutionUser::find($id);
-        $this->assertNotNull($instutionUser);
-        $this->assertTrue($instutionUser->exists());
-        $this->assertFalse($instutionUser->isDeactivated());
-        $this->assertEquals(InstitutionUserStatus::Active, $instutionUser->getStatus());
+        $institutionUser = InstitutionUser::find($id);
+        $this->assertNotNull($institutionUser);
+        $this->assertTrue($institutionUser->exists());
+        $this->assertFalse($institutionUser->isDeactivated());
+        $this->assertEquals(InstitutionUserStatus::Active, $institutionUser->getStatus());
     }
 
     public function assertInstitutionUserRolePivotsAreSoftDeleted(Collection $pivots): void

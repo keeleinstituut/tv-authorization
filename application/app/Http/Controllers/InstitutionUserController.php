@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\InstitutionUserStatus;
 use App\Http\Requests\ActivateInstitutionUserRequest;
+use App\Http\Requests\ArchiveInstitutionUserRequest;
 use App\Http\Requests\DeactivateInstitutionUserRequest;
 use App\Http\Requests\GetInstitutionUserRequest;
 use App\Http\Requests\InstitutionUserListRequest;
@@ -200,6 +201,27 @@ class InstitutionUserController extends Controller
             if (filter_var($request->validated('notify_user'), FILTER_VALIDATE_BOOLEAN)) {
                 // TODO: queue email to user
             }
+
+            return new InstitutionUserResource($institutionUser->refresh());
+        });
+    }
+
+    /** @throws AuthorizationException|Throwable */
+    public function archive(ArchiveInstitutionUserRequest $request): InstitutionUserResource
+    {
+        return DB::transaction(function () use ($request) {
+            /** @var $institutionUser InstitutionUser */
+            $institutionUser = $this->getBaseQuery()
+                ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
+                ->findOrFail($request->validated('institution_user_id'));
+
+            $this->authorize('archive', $institutionUser);
+
+            $institutionUser->archived_at = Date::now();
+            $institutionUser->institutionUserRoles()->delete();
+            $institutionUser->saveOrFail();
+
+            // TODO: audit log
 
             return new InstitutionUserResource($institutionUser->refresh());
         });

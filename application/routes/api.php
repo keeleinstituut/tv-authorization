@@ -53,3 +53,4 @@ Route::post('/institution-users/validate-import-csv-row', [InstitutionUserImport
 
 Route::post('/institution-users/deactivate', [InstitutionUserController::class, 'deactivate']);
 Route::post('/institution-users/activate', [InstitutionUserController::class, 'activate']);
+Route::post('/institution-users/archive', [InstitutionUserController::class, 'archive']);
