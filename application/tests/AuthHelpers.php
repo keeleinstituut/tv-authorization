@@ -9,8 +9,19 @@ use App\Models\User;
 use Firebase\JWT\JWT;
 use Illuminate\Support\Str;
 
-trait AuthHelpers
+readonly class AuthHelpers
 {
+    public static function generateAccessTokenForInstitutionUser(
+        InstitutionUser $institutionUser,
+        array $tolkevaravClaimOverrides = [],
+        string $azp = null): string
+    {
+        return AuthHelpers::generateAccessToken([
+            ...AuthHelpers::makeTolkevaravClaimsForInstitutionUser($institutionUser),
+            ...$tolkevaravClaimOverrides,
+        ], $azp);
+    }
+
     /** @return array{
      *     personalIdentificationCode: string,
      *     userId: string,
@@ -71,7 +82,7 @@ trait AuthHelpers
         ];
     }
 
-    public static function generateAccessToken(array $tolkevaravPayload, string $azp = null): string
+    public static function generateAccessToken(array $tolkevaravPayload = [], string $azp = null): string
     {
         // TODO: would be good to have full example JWT here with
         // TODO: all relevant claims to simulate real JWT.

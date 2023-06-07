@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\AuthHelpers;
 
 trait DataProviders
 {
@@ -11,7 +12,7 @@ trait DataProviders
     public static function provideInvalidHeaderCreators(): array
     {
         return [
-            'Tõlkevärav claims are empty' => [fn () => ['Authorization' => 'Bearer '.self::generateAccessToken([])]],
+            'Tõlkevärav claims are empty' => [fn () => ['Authorization' => 'Bearer '.AuthHelpers::generateAccessToken()]],
             'Bearer token is blank' => [fn () => ['Authorization' => 'Bearer ']],
             'Authorization header is missing' => [fn () => []],
         ];

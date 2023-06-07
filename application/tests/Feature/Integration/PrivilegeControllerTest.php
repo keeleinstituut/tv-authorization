@@ -6,6 +6,7 @@ use App\Enums\PrivilegeKey;
 use App\Models\Institution;
 use App\Models\Privilege;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\TestCase;
 
@@ -19,7 +20,7 @@ class PrivilegeControllerTest extends TestCase
     public function test_api_privileges_endpoint(): void
     {
         $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege(Institution::factory(), PrivilegeKey::ViewRole);
-        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForInstitutionUser($actingUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingUser);
 
         $response = $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
@@ -40,7 +41,7 @@ class PrivilegeControllerTest extends TestCase
     public function test_unauthorized(): void
     {
         $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege(Institution::factory(), null);
-        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForInstitutionUser($actingUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingUser);
 
         $response = $this->withHeaders([
             'Authorization' => "Bearer $accessToken",

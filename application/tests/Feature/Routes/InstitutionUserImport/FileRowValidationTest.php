@@ -10,6 +10,7 @@ use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\TestCase;
 
@@ -42,7 +43,7 @@ class FileRowValidationTest extends TestCase
             'role' => $role->name,
         ];
 
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
         $this->sendValidationRequest($row, $accessToken)
             ->assertStatus(Response::HTTP_OK);
     }
@@ -64,7 +65,7 @@ class FileRowValidationTest extends TestCase
             ))
             ->create();
 
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $this->sendValidationRequest($row, $accessToken)
             ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)

@@ -17,6 +17,7 @@ class CreateInstitutionRoleActionTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** * @throws Throwable */
     public function test_creation_of_institution_role(): void
     {
         $institution = Institution::factory()->createOne();
@@ -34,6 +35,7 @@ class CreateInstitutionRoleActionTest extends TestCase
         $this->assertCount(count(PrivilegeKey::cases()), $role->privilegeRoles);
     }
 
+    /** * @throws Throwable */
     public function test_creation_of_institution_role_without_privileges(): void
     {
         $institution = Institution::factory()->createOne();
@@ -48,6 +50,7 @@ class CreateInstitutionRoleActionTest extends TestCase
         );
     }
 
+    /** * @throws Throwable */
     public function test_creation_of_institution_role_with_empty_name(): void
     {
         $institution = Institution::factory()->createOne();

@@ -13,9 +13,11 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\RepresentationHelpers;
 use Tests\TestCase;
+use Throwable;
 
 class InstitutionUserControllerUpdateTest extends TestCase
 {
@@ -27,6 +29,9 @@ class InstitutionUserControllerUpdateTest extends TestCase
         Carbon::setTestNow(Carbon::now());
     }
 
+    /**
+     * @throws Throwable
+     */
     public function test_fields_are_updated(): void
     {
         // GIVEN the following data is in database
@@ -84,6 +89,9 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $this->assertResponseJsonDataIsEqualTo($actualState, $response);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function test_removing_roles(): void
     {
         // GIVEN the following data is in database
@@ -112,6 +120,9 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $this->assertResponseJsonDataIsEqualTo($actualState, $response);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function test_removing_department(): void
     {
         // GIVEN the following data is in database
@@ -140,6 +151,8 @@ class InstitutionUserControllerUpdateTest extends TestCase
 
     /**
      * @dataProvider provideInvalidRequestPayloads
+     *
+     * @throws Throwable
      */
     public function test_request_validation(array $invalidPayload): void
     {
@@ -174,6 +187,8 @@ class InstitutionUserControllerUpdateTest extends TestCase
 
     /**
      * @dataProvider provideValidPhoneNumbers
+     *
+     * @throws Throwable
      */
     public function test_valid_phone_numbers(string $validPhoneNumber): void
     {
@@ -262,6 +277,9 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $response->assertNotFound();
     }
 
+    /**
+     * @throws Throwable
+     */
     public function test_updating_user_without_privilege(): void
     {
         // GIVEN the following data is in database
@@ -287,6 +305,9 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $response->assertForbidden();
     }
 
+    /**
+     * @throws Throwable
+     */
     public function test_adding_role_from_another_institution(): void
     {
         // GIVEN the following data is in database
@@ -326,6 +347,9 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $response->assertUnprocessable();
     }
 
+    /**
+     * @throws Throwable
+     */
     public function test_adding_department_from_another_institution(): void
     {
         // GIVEN the following data is in database
@@ -363,6 +387,9 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $response->assertUnprocessable();
     }
 
+    /**
+     * @throws Throwable
+     */
     public function test_adding_nonexistent_department(): void
     {
         // GIVEN the following data is in database
@@ -400,6 +427,9 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $response->assertUnprocessable();
     }
 
+    /**
+     * @throws Throwable
+     */
     public function test_adding_nonexistent_role(): void
     {
         // GIVEN the following data is in database
@@ -438,6 +468,9 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $response->assertUnprocessable();
     }
 
+    /**
+     * @throws Throwable
+     */
     public function test_updating_user_without_access_token(): void
     {
         // GIVEN the following data is in database
@@ -468,12 +501,11 @@ class InstitutionUserControllerUpdateTest extends TestCase
         InstitutionUser $actingUser,
         array $tolkevaravClaimsOverride = []): TestResponse
     {
-        $accessToken = $this->generateAccessToken([
-            ...$this->makeTolkevaravClaimsForInstitutionUser($actingUser),
-            ...$tolkevaravClaimsOverride,
-        ]);
-
-        return $this->sendPutRequestWithCustomToken($targetId, $requestPayload, $accessToken);
+        return $this->sendPutRequestWithCustomToken(
+            $targetId,
+            $requestPayload,
+            AuthHelpers::generateAccessTokenForInstitutionUser($actingUser, $tolkevaravClaimsOverride)
+        );
     }
 
     private function sendPutRequestWithCustomToken(

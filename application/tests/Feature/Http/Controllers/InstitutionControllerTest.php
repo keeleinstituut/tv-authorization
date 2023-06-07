@@ -9,6 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use Tests\AuthHelpers;
 use Tests\Feature\RepresentationHelpers;
 use Tests\TestCase;
 
@@ -125,7 +126,7 @@ class InstitutionControllerTest extends TestCase
             ]))->create();
 
         // WHEN request targets nonexistent institution user
-        $response = $this->sendGetRequestWithGivenToken($this->generateAccessToken([
+        $response = $this->sendGetRequestWithGivenToken(AuthHelpers::generateAccessToken([
             'personalIdentificationCode' => '32402126598',
             'userId' => Str::orderedUuid(),
             'forename' => fake()->firstName(),
@@ -164,7 +165,7 @@ class InstitutionControllerTest extends TestCase
             ->create();
 
         // WHEN request sent with Tolkevarav claims empty
-        $response = $this->sendGetRequestWithGivenToken($this->generateAccessToken([]));
+        $response = $this->sendGetRequestWithGivenToken(AuthHelpers::generateAccessToken());
 
         // THEN response should indicate that the request failed authentication
         $response->assertUnauthorized();
@@ -172,7 +173,7 @@ class InstitutionControllerTest extends TestCase
 
     private function sendGetRequestWithTokenForGivenUser(User $user): TestResponse
     {
-        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForUser($user));
+        $accessToken = AuthHelpers::generateAccessToken(AuthHelpers::makeTolkevaravClaimsForUser($user));
 
         return $this->sendGetRequestWithGivenToken($accessToken);
     }

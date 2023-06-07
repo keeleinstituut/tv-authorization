@@ -23,6 +23,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\AuthHelpers;
 use Tests\Feature\DataProviders;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\ModelAssertions;
@@ -429,7 +430,7 @@ class InstitutionUserControllerDeactivateTest extends TestCase
      * @dataProvider provideRandomInstitutionUserIdInvalidator
      *
      * @param $makePayloadInvalid Closure(array): array
-     *
+     * @param int $expectedStatusCode
      * @throws Throwable
      */
     public function test_nothing_is_changed_when_state_is_valid_but_payload_invalid(Closure $makePayloadInvalid, int $expectedStatusCode): void
@@ -464,7 +465,7 @@ class InstitutionUserControllerDeactivateTest extends TestCase
         $this->assertInstitutionUserRolePivotsExist($targetInstitutionUserRolePivots);
     }
 
-    /** @dataProvider provideInvalidHeaderCreators
+    /** @dataProvider \Tests\Feature\DataProviders::provideInvalidHeaderCreators
      * @param $createInvalidHeader Closure(): array
      *
      * @throws Throwable
@@ -525,7 +526,7 @@ class InstitutionUserControllerDeactivateTest extends TestCase
     {
         return $this->sendDeactivateRequestWithCustomPayloadAndHeaders(
             $payload,
-            self::createHeadersForInstitutionUser($actingInstitutionUser)
+            AuthHelpers::createHeadersForInstitutionUser($actingInstitutionUser)
         );
     }
 

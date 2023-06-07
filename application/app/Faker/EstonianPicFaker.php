@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 
 class EstonianPicFaker extends Base
 {
+    /** @noinspection PhpUnused */
     public function estonianPIC(): string
     {
         $dateOfBirth = Carbon::parse($this->generator->dateTimeBetween('1900-01-01', 'yesterday'));

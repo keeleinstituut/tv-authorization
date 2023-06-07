@@ -66,6 +66,7 @@ trait ModelAssertions
      * @param $convertModelToArray Closure(Model): array
      * @param $modelsWithExpectedChanges array<array{Model, array}>
      * @param $expectedStatus int
+     * @return TestResponse
      */
     public function assertModelsInExpectedStateAfterAction(Closure $action,
         Closure $convertModelToArray,

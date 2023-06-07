@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\TestCase;
 
@@ -33,7 +34,7 @@ class FileValidationTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
             ))
             ->create();
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $this->sendImportFileValidationRequest(
             $this->composeContent([
@@ -62,7 +63,7 @@ class FileValidationTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::ActivateUser->value)
             ))
             ->create();
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $this->sendImportFileValidationRequest(
             $this->composeContent([
@@ -87,7 +88,7 @@ class FileValidationTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
             ))
             ->create();
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $this->sendImportFileValidationRequest(
             $this->composeContent([
@@ -115,7 +116,7 @@ class FileValidationTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
             ))
             ->create();
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $this->sendImportFileValidationRequest(
             $this->composeContent([
@@ -144,7 +145,7 @@ class FileValidationTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
             ))
             ->create();
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $this->sendImportFileValidationRequest(
             $this->composeContent([
@@ -183,7 +184,7 @@ class FileValidationTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
             ))
             ->create();
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $this->sendImportFileValidationRequest(
             $this->composeContent([
@@ -222,7 +223,7 @@ class FileValidationTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
             ))
             ->create();
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $this->sendImportFileValidationRequest(
             $this->composeContent([
@@ -255,7 +256,7 @@ class FileValidationTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
             ))
             ->create();
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $this->sendImportFileValidationRequest(
             $this->composeContent([
@@ -290,7 +291,7 @@ class FileValidationTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
             ))
             ->create();
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $csvRow = $this->getValidCsvRow($role->name, 'wrong-department');
         $this->sendImportFileValidationRequest(
@@ -331,7 +332,7 @@ class FileValidationTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
             ))
             ->create();
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $roleColumnValue = implode(', ', [$role1->name, $role2->name]);
         $this->sendImportFileValidationRequest(
@@ -358,7 +359,7 @@ class FileValidationTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
             ))
             ->create();
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $this->sendImportFileValidationRequest(
             $this->composeContent([

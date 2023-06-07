@@ -9,7 +9,6 @@ use Illuminate\Testing\TestResponse;
 abstract class TestCase extends BaseTestCase
 {
     use CreatesApplication;
-    use AuthHelpers;
 
     public function assertResponseJsonDataIsEqualTo(array $expectedData, TestResponse $actualResponse): void
     {

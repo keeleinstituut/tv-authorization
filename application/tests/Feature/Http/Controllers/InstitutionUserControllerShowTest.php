@@ -13,6 +13,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\RepresentationHelpers;
 use Tests\TestCase;
@@ -170,12 +171,10 @@ class InstitutionUserControllerShowTest extends TestCase
         InstitutionUser $institutionUser,
         array $tolkevaravClaimsOverride = []): TestResponse
     {
-        $token = $this->generateAccessToken([
-            ...$this->makeTolkevaravClaimsForInstitutionUser($institutionUser),
-            ...$tolkevaravClaimsOverride,
-        ]);
-
-        return $this->sendGetRequestWithCustomToken($targetId, $token);
+        return $this->sendGetRequestWithCustomToken(
+            $targetId,
+            AuthHelpers::generateAccessTokenForInstitutionUser($institutionUser, $tolkevaravClaimsOverride)
+        );
     }
 
     private function sendGetRequestWithCustomToken(

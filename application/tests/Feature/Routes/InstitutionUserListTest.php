@@ -14,6 +14,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\Feature\RepresentationHelpers;
 use Tests\TestCase;
@@ -34,7 +35,7 @@ class InstitutionUserListTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::ViewUser->value)
             ))
             ->create();
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $response = $this->queryInstitutionUsers($accessToken);
 
@@ -67,7 +68,7 @@ class InstitutionUserListTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::ViewUser->value)
             ))
             ->create();
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $response = $this->queryInstitutionUsers(
             $accessToken,
@@ -106,7 +107,7 @@ class InstitutionUserListTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::ViewUser->value)
             ))
             ->create();
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $response = $this->queryInstitutionUsers(
             $accessToken,
@@ -139,7 +140,7 @@ class InstitutionUserListTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::ViewUser->value)
             ))
             ->create();
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $response = $this->queryInstitutionUsers(
             $accessToken,
@@ -167,7 +168,7 @@ class InstitutionUserListTest extends TestCase
                 Privilege::firstWhere('key', PrivilegeKey::ViewUser->value)
             ))
             ->create();
-        $accessToken = self::generateAccessToken(self::makeTolkevaravClaimsForInstitutionUser($actingInstitutionUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
 
         $response = $this->queryInstitutionUsers(
             $accessToken,

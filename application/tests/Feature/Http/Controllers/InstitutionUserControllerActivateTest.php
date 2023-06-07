@@ -22,6 +22,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
@@ -168,7 +169,7 @@ class InstitutionUserControllerActivateTest extends TestCase
      * @dataProvider provideNonexistentInstitutionUserIdInvalidator
      *
      * @param $makePayloadInvalid Closure(array): array
-     *
+     * @param int $expectedStatusCode
      * @throws Throwable
      */
     public function test_nothing_is_changed_when_state_valid_but_payload_invalid(Closure $makePayloadInvalid, int $expectedStatusCode): void
@@ -242,7 +243,7 @@ class InstitutionUserControllerActivateTest extends TestCase
 
     /** @dataProvider provideTargetInstitutionUserInvalidators
      * @param $makeTargetInstitutionUserStateInvalid Closure(InstitutionUser): void
-     *
+     * @param int $expectedStatusCode
      * @throws Throwable
      */
     public function test_nothing_is_changed_when_target_has_invalid_state(Closure $makeTargetInstitutionUserStateInvalid,
@@ -290,7 +291,7 @@ class InstitutionUserControllerActivateTest extends TestCase
 
     /** @dataProvider provideActingInstitutionUserInvalidators
      * @param $modifyActingInstitutionUser Closure(InstitutionUser): void
-     *
+     * @param int $expectedStatusCode
      * @throws Throwable
      */
     public function test_nothing_is_changed_when_acting_user_has_invalid_state(Closure $modifyActingInstitutionUser, int $expectedStatusCode): void
@@ -354,17 +355,7 @@ class InstitutionUserControllerActivateTest extends TestCase
         );
     }
 
-    /** @return array<array{Closure(InstitutionUser): array}> */
-    public static function provideInvalidHeaderCreators(): array
-    {
-        return [
-            'Tõlkevärav claims are empty' => [fn () => ['Authorization' => 'Bearer '.self::generateAccessToken([])]],
-            'Bearer token is blank' => [fn () => ['Authorization' => 'Bearer ']],
-            'Authorization header is missing' => [fn () => []],
-        ];
-    }
-
-    /** @dataProvider provideInvalidHeaderCreators
+    /** @dataProvider \Tests\Feature\DataProviders::provideInvalidHeaderCreators
      * @param $createHeaderFromInstitutionUser Closure(InstitutionUser): array
      *
      * @throws Throwable
@@ -433,7 +424,11 @@ class InstitutionUserControllerActivateTest extends TestCase
     }
 
     /**
-     * @param  Collection<Role>  $roles
+     * @param InstitutionUser $targetInstitutionUser
+     * @param InstitutionUser $actingInstitutionUser
+     * @param Collection<Role> $roles
+     * @param bool $notifyUser
+     * @return TestResponse
      */
     private function sendActivateRequestWithExpectedPayloadAndHeaders(InstitutionUser $targetInstitutionUser,
         InstitutionUser $actingInstitutionUser,
@@ -451,7 +446,7 @@ class InstitutionUserControllerActivateTest extends TestCase
     {
         return $this->sendActivateRequestWithCustomPayloadAndHeaders(
             $payload,
-            self::createHeadersForInstitutionUser($actingInstitutionUser)
+            AuthHelpers::createHeadersForInstitutionUser($actingInstitutionUser)
         );
     }
 

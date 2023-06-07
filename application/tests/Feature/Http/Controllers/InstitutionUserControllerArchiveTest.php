@@ -18,6 +18,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
@@ -225,17 +226,7 @@ class InstitutionUserControllerArchiveTest extends TestCase
         $this->assertInstitutionUserRolePivotsExist($targetInstitutionUserRolePivots);
     }
 
-    /** @return array<array{Closure(): array}> */
-    public static function provideInvalidHeaderCreators(): array
-    {
-        return [
-            'Tõlkevärav claims are empty' => [fn () => ['Authorization' => 'Bearer '.self::generateAccessToken([])]],
-            'Bearer token is blank' => [fn () => ['Authorization' => 'Bearer ']],
-            'Authorization header is missing' => [fn () => []],
-        ];
-    }
-
-    /** @dataProvider provideInvalidHeaderCreators
+    /** @dataProvider \Tests\Feature\DataProviders::provideInvalidHeaderCreators
      * @param $createInvalidHeader Closure(): array
      *
      * @throws Throwable
@@ -316,7 +307,7 @@ class InstitutionUserControllerArchiveTest extends TestCase
      * @dataProvider provideRandomInstitutionUserIdInvalidator
      *
      * @param $makePayloadInvalid Closure(array): array
-     *
+     * @param int $expectedStatusCode
      * @throws Throwable
      */
     public function test_nothing_is_changed_when_state_is_valid_but_payload_invalid(Closure $makePayloadInvalid, int $expectedStatusCode): void
@@ -390,7 +381,7 @@ class InstitutionUserControllerArchiveTest extends TestCase
     {
         return $this->sendArchiveRequestWithCustomPayloadAndHeaders(
             $payload,
-            self::createHeadersForInstitutionUser($actingInstitutionUser)
+            AuthHelpers::createHeadersForInstitutionUser($actingInstitutionUser)
         );
     }
 

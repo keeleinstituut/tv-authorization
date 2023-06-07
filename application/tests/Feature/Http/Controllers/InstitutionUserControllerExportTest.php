@@ -13,6 +13,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use League\Csv\Reader;
+use Tests\AuthHelpers;
 use Tests\TestCase;
 
 class InstitutionUserControllerExportTest extends TestCase
@@ -140,7 +141,7 @@ class InstitutionUserControllerExportTest extends TestCase
             ->create()
         );
 
-        // WHEN request sent to endpoint with the token authenticatiing current institution user
+        // WHEN request sent to endpoint with the token authenticating current institution user
         $response = $this->sendGetRequestWithTokenFor($currentInstitutionUser);
 
         // THEN request should be a download
@@ -179,7 +180,7 @@ class InstitutionUserControllerExportTest extends TestCase
             ->create()
         );
 
-        // WHEN request sent to endpoint with the token authenticatiing current institution user
+        // WHEN request sent to endpoint with the token authenticating current institution user
         $response = $this->sendGetRequestWithTokenFor($currentInstitutionUser);
 
         // THEN request should be a download
@@ -249,10 +250,7 @@ class InstitutionUserControllerExportTest extends TestCase
         InstitutionUser $institutionUser,
         array $tolkevaravClaimsOverride = []): TestResponse
     {
-        $token = $this->generateAccessToken([
-            ...$this->makeTolkevaravClaimsForInstitutionUser($institutionUser),
-            ...$tolkevaravClaimsOverride,
-        ]);
+        $token = AuthHelpers::generateAccessTokenForInstitutionUser($institutionUser, $tolkevaravClaimsOverride);
 
         return $this
             ->withHeaders(['Authorization' => "Bearer $token"])

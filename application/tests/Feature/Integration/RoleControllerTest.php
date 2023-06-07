@@ -11,6 +11,7 @@ use App\Models\Role;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\TestCase;
 
@@ -42,7 +43,7 @@ class RoleControllerTest extends TestCase
         $role->load('privileges');
 
         $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($institution, PrivilegeKey::ViewRole);
-        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForInstitutionUser($actingUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingUser);
 
         $response = $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
@@ -69,7 +70,7 @@ class RoleControllerTest extends TestCase
         $role->load('privileges');
 
         $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($institution, PrivilegeKey::ViewRole);
-        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForInstitutionUser($actingUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingUser);
 
         $response = $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
@@ -87,7 +88,7 @@ class RoleControllerTest extends TestCase
     {
         $institution = Institution::factory()->create();
         $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($institution, PrivilegeKey::AddRole);
-        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForInstitutionUser($actingUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingUser);
 
         $payload = json_decode(<<<EOT
             {
@@ -122,7 +123,7 @@ class RoleControllerTest extends TestCase
             'role_id' => $role->id,
         ]);
         $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($institution, PrivilegeKey::EditRole);
-        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForInstitutionUser($actingUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingUser);
 
         $payload = json_decode(<<<EOT
             {
@@ -158,7 +159,7 @@ class RoleControllerTest extends TestCase
             'privilege_id' => Privilege::where('key', 'ADD_ROLE')->first()->id,
         ]);
         $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($institution, PrivilegeKey::EditRole);
-        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForInstitutionUser($actingUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingUser);
 
         $response = $this
             ->withHeaders([
@@ -209,7 +210,7 @@ class RoleControllerTest extends TestCase
         )->create();
 
         $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($institution, PrivilegeKey::DeleteRole);
-        $accessToken = $this->generateAccessToken($this->makeTolkevaravClaimsForInstitutionUser($actingUser));
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingUser);
 
         $response = $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
@@ -236,15 +237,15 @@ class RoleControllerTest extends TestCase
             ->for(Institution::factory())
             ->for(User::factory())
             ->create();
-        $accessToken = $this->generateAccessToken([
-            ...$this->makeTolkevaravClaimsForInstitutionUser($actingUser),
-            'privileges' => [
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser(
+            $actingUser,
+            ['privileges' => [
                 PrivilegeKey::ViewRole->value,
                 PrivilegeKey::AddRole->value,
                 PrivilegeKey::EditRole->value,
                 PrivilegeKey::DeleteRole->value,
             ],
-        ]);
+            ]);
 
         $role = $roles[0];
         $roleId = $role->id;
