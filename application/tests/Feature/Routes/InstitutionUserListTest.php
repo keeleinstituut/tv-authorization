@@ -11,6 +11,7 @@ use App\Models\Privilege;
 use App\Models\Role;
 use Illuminate\Database\Eloquent\Factories\Sequence;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\EntityHelpers;
@@ -123,10 +124,13 @@ class InstitutionUserListTest extends TestCase
     public function test_list_of_institution_filtered_by_status(): void
     {
         $institution = $this->createInstitution();
-        InstitutionUser::factory(10)->state(new Sequence(
-            ['status' => InstitutionUserStatus::Created],
-            ['status' => InstitutionUserStatus::Activated],
-        ))->for($institution)->has(InstitutionUserRole::factory(2))
+        InstitutionUser::factory(9)
+            ->for($institution)
+            ->sequence(
+                ['deactivation_date' => Date::now()->subMonth()->format('Y-m-d')],
+                []
+            )
+            ->has(InstitutionUserRole::factory(2))
             ->create();
 
         $actingInstitutionUser = InstitutionUser::factory()
@@ -139,7 +143,7 @@ class InstitutionUserListTest extends TestCase
 
         $response = $this->queryInstitutionUsers(
             $accessToken,
-            ['status' => InstitutionUserStatus::Activated]
+            ['status' => InstitutionUserStatus::Active]
         );
 
         $response->assertStatus(Response::HTTP_OK)->assertJson([

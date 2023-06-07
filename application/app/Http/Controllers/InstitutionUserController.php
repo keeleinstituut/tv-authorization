@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\InstitutionUserStatus;
 use App\Http\Requests\GetInstitutionUserRequest;
 use App\Http\Requests\InstitutionUserListRequest;
 use App\Http\Requests\UpdateInstitutionUserRequest;
@@ -55,7 +56,7 @@ class InstitutionUserController extends Controller
                 $institutionUser->department()->associate($request->validated('department_id'));
             }
 
-            $institutionUser->save();
+            $institutionUser->saveOrFail();
             // TODO: audit log
 
             return new InstitutionUserResource($institutionUser->refresh());
@@ -136,7 +137,7 @@ class InstitutionUserController extends Controller
 
         $status = $request->validated('status');
         $institutionUsersQuery->when($status, function (Builder $query, string $status) {
-            $query->where('status', $status);
+            $query->status(InstitutionUserStatus::from($status));
         });
 
         return InstitutionUserResource::collection(
