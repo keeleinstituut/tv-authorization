@@ -47,6 +47,8 @@ class Department extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
 
+    protected $fillable = ['name'];
+
     public function institution(): BelongsTo
     {
         return $this->belongsTo(Institution::class);

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\PrivilegeController;
 use App\Http\Controllers\API\RoleController;
+use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\InstitutionUserController;
 use App\Http\Controllers\InstitutionUserImportController;
@@ -54,4 +55,15 @@ Route::prefix('/institution-users')
         Route::post('/import-csv', 'importCsv');
         Route::post('/validate-import-csv', 'validateCsv');
         Route::post('/validate-import-csv-row', 'validateCsvRow');
+    });
+
+Route::prefix('/departments')
+    ->controller(DepartmentController::class)
+    ->whereUuid('department_id')
+    ->group(function (): void {
+        Route::get('/', 'index');
+        Route::post('/', 'store');
+        Route::get('/{department_id}', 'show');
+        Route::put('/{department_id}', 'update');
+        Route::delete('/{department_id}', 'destroy');
     });
