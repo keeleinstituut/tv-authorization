@@ -18,16 +18,12 @@ class PrivilegeTest extends TestCase
     public function test_privilege_table_is_equal_to_enum(): void
     {
         $keysInDatabase = DB::table('privileges')
-            ->pluck('key')
-            ->sort()
-            ->toArray();
+            ->pluck('key');
 
         $keysInEnum = collect(PrivilegeKey::cases())
-            ->map(fn (PrivilegeKey $enum) => $enum->value)
-            ->sort()
-            ->toArray();
+            ->map(fn (PrivilegeKey $enum) => $enum->value);
 
-        $this->assertEquals($keysInEnum, $keysInDatabase);
+        $this->assertEqualsCanonicalizing($keysInEnum, $keysInDatabase);
     }
 
     public function test_adding_role_pivots(): void

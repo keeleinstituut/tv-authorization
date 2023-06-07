@@ -359,19 +359,19 @@ class InstitutionUserTest extends TestCase
                 ]),
         ];
 
-        $this->assertEquals(
-            collect($institutionUsersExpectedDeactivated)->pluck('id')->sort()->all(),
-            InstitutionUser::status(InstitutionUserStatus::Deactivated)->pluck('id')->sort()->all()
+        $this->assertEqualsCanonicalizing(
+            collect($institutionUsersExpectedDeactivated)->pluck('id'),
+            InstitutionUser::status(InstitutionUserStatus::Deactivated)->pluck('id')
         );
 
-        $this->assertEquals(
-            collect($institutionUsersExpectedActive)->pluck('id')->sort()->all(),
-            InstitutionUser::status(InstitutionUserStatus::Active)->pluck('id')->sort()->all()
+        $this->assertEqualsCanonicalizing(
+            collect($institutionUsersExpectedActive)->pluck('id'),
+            InstitutionUser::status(InstitutionUserStatus::Active)->pluck('id')
         );
 
-        $this->assertEquals(
-            collect($institutionUsersExpectedArchived)->pluck('id')->sort()->all(),
-            InstitutionUser::status(InstitutionUserStatus::Archived)->pluck('id')->sort()->all()
+        $this->assertEqualsCanonicalizing(
+            collect($institutionUsersExpectedArchived)->pluck('id'),
+            InstitutionUser::status(InstitutionUserStatus::Archived)->pluck('id')
         );
     }
 }
