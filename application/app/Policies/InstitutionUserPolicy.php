@@ -11,6 +11,7 @@ use KeycloakAuthGuard\Models\JwtPayloadUser;
 
 class InstitutionUserPolicy
 {
+    /** @noinspection PhpUnused PhpUnusedParameterInspection */
     public function viewAny(JwtPayloadUser $jwtPayloadUser): bool
     {
         return Auth::hasPrivilege(PrivilegeKey::ViewUser->value);
@@ -38,11 +39,13 @@ class InstitutionUserPolicy
             && $this->isInSameInstitutionAsCurrentUser($institutionUser);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function delete(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
     {
         throw new BadMethodCallException();
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function restore(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
     {
         throw new BadMethodCallException();
@@ -61,6 +64,27 @@ class InstitutionUserPolicy
     public function import()
     {
         return Auth::hasPrivilege(PrivilegeKey::AddUser->value);
+    }
+
+    /** @noinspection PhpUnused PhpUnusedParameterInspection */
+    public function deactivate(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
+    {
+        return Auth::hasPrivilege(PrivilegeKey::DeactivateUser->value)
+            && $this->isInSameInstitutionAsCurrentUser($institutionUser);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function activate(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
+    {
+        return Auth::hasPrivilege(PrivilegeKey::ActivateUser->value)
+            && $this->isInSameInstitutionAsCurrentUser($institutionUser);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function archive(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
+    {
+        return Auth::hasPrivilege(PrivilegeKey::ArchiveUser->value)
+            && $this->isInSameInstitutionAsCurrentUser($institutionUser);
     }
 
     public function isCurrentUser(InstitutionUser $institutionUser): bool

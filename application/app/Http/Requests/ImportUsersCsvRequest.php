@@ -16,7 +16,7 @@ class ImportUsersCsvRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'file' => ['required', File::types(['text/csv'])],
+            'file' => ['required', File::types(['text/plain', 'text/csv'])],
         ];
     }
 }

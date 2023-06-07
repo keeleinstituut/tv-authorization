@@ -44,6 +44,9 @@ Route::prefix('/institution-users')
         Route::get('/{institution_user_id}', 'show');
         Route::put('/{institution_user_id}', 'update');
         Route::get('/export-csv', 'exportCsv');
+        Route::post('/deactivate', 'deactivate');
+        Route::post('/activate', 'activate');
+        Route::post('/archive', 'archive');
     });
 
 Route::prefix('/institution-users')
