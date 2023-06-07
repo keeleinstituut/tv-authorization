@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  * @property string $institution_id
+ * @property boolean $is_root
  * @property string $name
  * @property-read Institution $institution
  * @property-read Collection<int, InstitutionUserRole> $institutionUserRoles
@@ -31,6 +32,8 @@ use Illuminate\Support\Carbon;
  * @property-read int|null $privilege_roles_count
  * @property-read Collection<int, Privilege> $privileges
  * @property-read int|null $privileges_count
+ * @property-read Collection<int, PrivilegeRole> $institutionUsers
+ * @property-read int|null $institution_users_count
  *
  * @method static RoleFactory factory($count = null, $state = [])
  * @method static Builder|Role newModelQuery()
@@ -75,5 +78,10 @@ class Role extends Model
     public function institution(): BelongsTo
     {
         return $this->belongsTo(Institution::class);
+    }
+
+    public function institutionUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(InstitutionUser::class, InstitutionUserRole::class);
     }
 }

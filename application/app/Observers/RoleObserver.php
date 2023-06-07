@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Exceptions\DeniedRootRoleDeleteException;
 use App\Models\Role;
 
 class RoleObserver
@@ -23,11 +24,21 @@ class RoleObserver
     }
 
     /**
+     * Handle the Role "deleting" event.
+     * @throws DeniedRootRoleDeleteException
+     */
+    public function deleting(Role $role): void
+    {
+        if ($role->is_root) {
+            throw new DeniedRootRoleDeleteException();
+        }
+    }
+
+    /**
      * Handle the Role "deleted" event.
      */
     public function deleted(Role $role): void
     {
-        //
         $role->privilegeRoles()->delete();
     }
 

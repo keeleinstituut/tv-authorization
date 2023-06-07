@@ -374,4 +374,39 @@ class InstitutionUserTest extends TestCase
             InstitutionUser::status(InstitutionUserStatus::Archived)->pluck('id')->sort()->all()
         );
     }
+
+    public function test_should_detect_as_only_user_with_root_role(): void
+    {
+
+        // GIVEN
+        $testInstitutionUserRole = InstitutionUserRole::factory()->create();
+        $testInstitutionUserRole->role->is_root = true;
+        $testInstitutionUserRole->role->save();
+        $testInstitutionUser = $testInstitutionUserRole->institutionUser;
+
+        // WHEN
+        $result = $testInstitutionUser->isOnlyUserWithRootRole();
+
+        // THEN
+        $this->assertTrue($result);
+    }
+
+    public function test_should_not_detect_as_only_user_with_root_role(): void
+    {
+
+        // GIVEN
+        $testInstitutionUserRole = InstitutionUserRole::factory()->create();
+        $testInstitutionUserRole->role->is_root = true;
+        $testInstitutionUserRole->role->save();
+        InstitutionUserRole::factory()->create([
+            'role_id' => $testInstitutionUserRole->role->id
+        ]);
+        $testInstitutionUser = $testInstitutionUserRole->institutionUser;
+
+        // WHEN
+        $result = $testInstitutionUser->isOnlyUserWithRootRole();
+
+        // THEN
+        $this->assertNotTrue($result);
+    }
 }

@@ -103,6 +103,7 @@ class InstitutionUser extends Model
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, InstitutionUserRole::class)
+            ->using(InstitutionUserRole::class)
             ->wherePivot('deleted_at', null)
             ->withTimestamps();
     }
@@ -163,5 +164,12 @@ class InstitutionUser extends Model
                 return $value;
             }
         );
+    }
+
+    public function isOnlyUserWithRootRole()
+    {
+        $rootRole = $this->roles()->where('is_root', true)->with('institutionUsers')->first();
+        $rootRoleInstitutionUserIds = collect($rootRole->institutionUsers)->pluck('id');
+        return $rootRoleInstitutionUserIds->count() < 2 && $rootRoleInstitutionUserIds->contains($this->id);
     }
 }

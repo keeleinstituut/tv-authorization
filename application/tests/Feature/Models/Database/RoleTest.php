@@ -3,6 +3,7 @@
 namespace Tests\Feature\Models\Database;
 
 use App\Enums\PrivilegeKey;
+use App\Exceptions\DeniedRootRoleDeleteException;
 use App\Models\Institution;
 use App\Models\Privilege;
 use App\Models\PrivilegeRole;
@@ -95,5 +96,19 @@ class RoleTest extends TestCase
             'privilege_id' => $viewUserPrivilege->id,
             'role_id' => $role->id,
         ]));
+    }
+
+    public function test_should_fail_is_root_role_delete(): void
+    {
+        // GIVEN
+        $testRole = Role::factory()->make();
+        $testRole->is_root = true;
+        $testRole->save();
+
+        // THEN
+        $this->expectException(DeniedRootRoleDeleteException::class);
+
+        // WHEN
+        $testRole->delete();
     }
 }
