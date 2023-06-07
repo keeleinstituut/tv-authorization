@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Models\Database;
 
-use App\Exceptions\DeniedRootDetachException;
+use App\Exceptions\OnlyUserUnderRootRoleException;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
 use App\Models\InstitutionUserRole;
@@ -86,7 +86,7 @@ class InstitutionUserRoleTest extends TestCase
         $testInstitutionUserRole->role->save();
 
         // THEN
-        $this->expectException(DeniedRootDetachException::class);
+        $this->expectException(OnlyUserUnderRootRoleException::class);
 
         // WHEN
         $testInstitutionUserRole->delete();
@@ -103,11 +103,10 @@ class InstitutionUserRoleTest extends TestCase
         ]);
 
         // THEN
-        $this->expectException(DeniedRootDetachException::class);
+        $this->expectException(OnlyUserUnderRootRoleException::class);
 
         // WHEN
         $testInstitutionUserRole->role_id = $testRole->id;
         $testInstitutionUserRole->save();
     }
-
 }

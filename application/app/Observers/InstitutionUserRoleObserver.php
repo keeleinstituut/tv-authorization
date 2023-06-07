@@ -2,7 +2,7 @@
 
 namespace App\Observers;
 
-use App\Exceptions\DeniedRootDetachException;
+use App\Exceptions\OnlyUserUnderRootRoleException;
 use App\Models\InstitutionUserRole;
 use App\Models\Role;
 
@@ -18,14 +18,14 @@ class InstitutionUserRoleObserver
 
     /**
      * Handle the InstitutionUserRole "updating" event.
-     * @throws DeniedRootDetachException
+     * @throws OnlyUserUnderRootRoleException
      */
     public function updating(InstitutionUserRole $institutionUserRole): void
     {
         if ($institutionUserRole->isDirty('role_id')) {
             $originalRole = Role::findOrFail($institutionUserRole->getOriginal('role_id'));
             if ($originalRole->is_root && $institutionUserRole->institutionUser->isOnlyUserWithRootRole()) {
-                throw new DeniedRootDetachException();
+                throw new OnlyUserUnderRootRoleException();
             }
         }
     }
@@ -39,12 +39,12 @@ class InstitutionUserRoleObserver
 
     /**
      * Handle the InstitutionUserRole "deleting" event.
-     * @throws DeniedRootDetachException
+     * @throws OnlyUserUnderRootRoleException
      */
     public function deleting(InstitutionUserRole $institutionUserRole): void
     {
         if ($institutionUserRole->role->is_root && $institutionUserRole->institutionUser->isOnlyUserWithRootRole()) {
-            throw new DeniedRootDetachException();
+            throw new OnlyUserUnderRootRoleException();
         }
     }
 

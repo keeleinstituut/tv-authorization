@@ -133,7 +133,7 @@ class InstitutionUser extends Model
 
     public function getStatus(): InstitutionUserStatus
     {
-        if (filled($this->archived_at)) {
+        if ($this->isArchived()) {
             return InstitutionUserStatus::Archived;
         }
 
@@ -142,6 +142,11 @@ class InstitutionUser extends Model
         }
 
         return InstitutionUserStatus::Active;
+    }
+
+    public function isArchived(): bool
+    {
+        return filled($this->archived_at);
     }
 
     public function isDeactivated(): bool
@@ -166,7 +171,7 @@ class InstitutionUser extends Model
         );
     }
 
-    public function isOnlyUserWithRootRole()
+    public function isOnlyUserWithRootRole(): bool
     {
         $rootRole = $this->roles()->where('is_root', true)->with('institutionUsers')->first();
         $rootRoleInstitutionUserIds = collect($rootRole->institutionUsers)->pluck('id');
