@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\InstitutionUserStatus;
 use App\Http\Requests\ImportUsersCsvRequest;
 use App\Http\Requests\ImportUsersCsvRowValidationRequest;
 use App\Models\Department;
@@ -96,7 +95,6 @@ class InstitutionUserImportController extends Controller
                 ], [
                     'email' => $attributes['email'],
                     'phone' => $attributes['phone'],
-                    'status' => InstitutionUserStatus::Created,
                 ]);
 
                 if (! $institutionUser->wasRecentlyCreated) {

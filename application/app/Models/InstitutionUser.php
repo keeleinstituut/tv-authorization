@@ -3,9 +3,16 @@
 namespace App\Models;
 
 use App\Enums\InstitutionUserStatus;
+use App\Models\Scopes\ExcludeArchivedInstitutionUsersScope;
+use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
+use App\Models\Scopes\ExcludeIfRelatedUserSoftDeletedScope;
+use App\Util\DateUtil;
+use Carbon\CarbonImmutable;
 use Database\Factories\InstitutionUserFactory;
+use DateTimeInterface;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,12 +22,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 
 /**
  * App\Models\InstitutionUser
  *
  * @property string $id
  * @property Carbon|null $created_at
+ * @property string|null $deactivation_date
+ * @property Carbon|null $archived_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  * @property string $institution_id
@@ -28,7 +38,6 @@ use Illuminate\Support\Carbon;
  * @property string $user_id
  * @property string $email
  * @property string $phone
- * @property InstitutionUserStatus $status
  * @property-read Institution $institution
  * @property-read Department $department
  * @property-read User $user
@@ -44,7 +53,6 @@ use Illuminate\Support\Carbon;
  * @method static Builder|InstitutionUser query()
  * @method static Builder|InstitutionUser whereId($value)
  * @method static Builder|InstitutionUser whereInstitutionId($value)
- * @method static Builder|InstitutionUser whereStatus($value)
  * @method static Builder|InstitutionUser whereUserId($value)
  * @method static Builder|InstitutionUser whereEmail($value)
  * @method static Builder|InstitutionUser wherePhone($value)
@@ -53,6 +61,7 @@ use Illuminate\Support\Carbon;
  * @method static Builder|InstitutionUser whereDeletedAt($value)
  * @method static Builder|InstitutionUser withTrashed()
  * @method static Builder|InstitutionUser withoutTrashed()
+ * @method static Builder|InstitutionUser status(InstitutionUserStatus $value)
  *
  * @mixin Eloquent
  */
@@ -60,16 +69,16 @@ class InstitutionUser extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
 
-    protected $fillable = ['institution_id', 'department_id', 'user_id', 'status', 'email', 'phone'];
+    protected $fillable = ['institution_id', 'department_id', 'user_id', 'email', 'phone'];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, mixed>
-     */
-    protected $casts = [
-        'status' => InstitutionUserStatus::class,
-    ];
+    protected $casts = ['archived_at' => 'datetime'];
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new ExcludeArchivedInstitutionUsersScope);
+        static::addGlobalScope(new ExcludeDeactivatedInstitutionUsersScope);
+        static::addGlobalScope(new ExcludeIfRelatedUserSoftDeletedScope);
+    }
 
     public function institution(): BelongsTo
     {
@@ -96,5 +105,63 @@ class InstitutionUser extends Model
         return $this->belongsToMany(Role::class, InstitutionUserRole::class)
             ->wherePivot('deleted_at', null)
             ->withTimestamps();
+    }
+
+    /** @noinspection PhpUnused */
+    public function scopeStatus(Builder $query, InstitutionUserStatus $status): void
+    {
+        match ($status) {
+            InstitutionUserStatus::Active => $query
+                ->whereNull('archived_at')
+                ->where(
+                    fn ($groupedClause) => $groupedClause
+                        ->whereNull('deactivation_date')
+                        ->orWhereDate('deactivation_date', '>', Date::now(DateUtil::ESTONIAN_TIMEZONE)->format('Y-m-d'))
+                ),
+            InstitutionUserStatus::Archived => $query
+                ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
+                ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
+                ->whereNotNull('archived_at'),
+            InstitutionUserStatus::Deactivated => $query
+                ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
+                ->whereNull('archived_at')
+                ->whereNotNull('deactivation_date')
+                ->whereDate('deactivation_date', '<=', Date::now(DateUtil::ESTONIAN_TIMEZONE)->format('Y-m-d'))
+        };
+    }
+
+    public function getStatus(): InstitutionUserStatus
+    {
+        if (filled($this->archived_at)) {
+            return InstitutionUserStatus::Archived;
+        }
+
+        if ($this->isDeactivated()) {
+            return InstitutionUserStatus::Deactivated;
+        }
+
+        return InstitutionUserStatus::Active;
+    }
+
+    public function isDeactivated(): bool
+    {
+        return filled($this->deactivation_date)
+            && ! Date::parse($this->deactivation_date, DateUtil::ESTONIAN_TIMEZONE)->isFuture();
+    }
+
+    /** @noinspection PhpUnused */
+    protected function deactivationDate(): Attribute
+    {
+        return Attribute::make(
+            set: function (DateTimeInterface|string|null $value): ?string {
+                if ($value instanceof DateTimeInterface) {
+                    return CarbonImmutable::parse($value)
+                        ->timezone(DateUtil::ESTONIAN_TIMEZONE)
+                        ->format('Y-m-d');
+                }
+
+                return $value;
+            }
+        );
     }
 }

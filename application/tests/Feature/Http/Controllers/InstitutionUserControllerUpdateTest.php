@@ -338,9 +338,9 @@ class InstitutionUserControllerUpdateTest extends TestCase
 
         // THEN the database state should not change
         $this->assertEquals($expectedEmail, InstitutionUser::findOrFail($createdInstitutionUser->id)->email);
-        $this->assertEquals(
-            collect($expectedRoles)->pluck('id')->toArray(),
-            InstitutionUser::findOrFail($createdInstitutionUser->id)->roles->pluck('id')->toArray()
+        $this->assertEqualsCanonicalizing(
+            collect($expectedRoles)->pluck('id'),
+            InstitutionUser::findOrFail($createdInstitutionUser->id)->roles->pluck('id')
         );
 
         // And request response should indicate validation errors
@@ -455,9 +455,9 @@ class InstitutionUserControllerUpdateTest extends TestCase
 
         // THEN database state should not change
         $this->assertEquals($expectedEmail, InstitutionUser::findOrFail($createdInstitutionUser->id)->email);
-        $this->assertEquals(
-            collect($expectedRoles)->pluck('id')->toArray(),
-            InstitutionUser::findOrFail($createdInstitutionUser->id)->roles->pluck('id')->toArray()
+        $this->assertEqualsCanonicalizing(
+            collect($expectedRoles)->pluck('id'),
+            InstitutionUser::findOrFail($createdInstitutionUser->id)->roles->pluck('id')
         );
         $this->assertDatabaseMissing(
             Role::class,

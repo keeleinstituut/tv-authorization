@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends Factory<PrivilegeRole>
+ *
+ * @method static PrivilegeRoleFactory forRole(array $state)
  */
 class PrivilegeRoleFactory extends Factory
 {

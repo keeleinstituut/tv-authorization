@@ -2,15 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\InstitutionUserStatus;
+use App\Http\Requests\ActivateInstitutionUserRequest;
+use App\Http\Requests\ArchiveInstitutionUserRequest;
+use App\Http\Requests\DeactivateInstitutionUserRequest;
 use App\Http\Requests\GetInstitutionUserRequest;
 use App\Http\Requests\InstitutionUserListRequest;
 use App\Http\Requests\UpdateInstitutionUserRequest;
 use App\Http\Resources\InstitutionUserResource;
 use App\Models\InstitutionUser;
+use App\Models\Role;
+use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Policies\InstitutionUserPolicy;
+use App\Util\DateUtil;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use League\Csv\CannotInsertRecord;
 use League\Csv\Exception;
@@ -55,7 +63,7 @@ class InstitutionUserController extends Controller
                 $institutionUser->department()->associate($request->validated('department_id'));
             }
 
-            $institutionUser->save();
+            $institutionUser->saveOrFail();
             // TODO: audit log
 
             return new InstitutionUserResource($institutionUser->refresh());
@@ -136,7 +144,7 @@ class InstitutionUserController extends Controller
 
         $status = $request->validated('status');
         $institutionUsersQuery->when($status, function (Builder $query, string $status) {
-            $query->where('status', $status);
+            $query->status(InstitutionUserStatus::from($status));
         });
 
         return InstitutionUserResource::collection(
@@ -144,6 +152,79 @@ class InstitutionUserController extends Controller
                 $request->validated('per_page', 10)
             )
         );
+    }
+
+    /** @throws AuthorizationException|Throwable */
+    public function deactivate(DeactivateInstitutionUserRequest $request): InstitutionUserResource
+    {
+        return DB::transaction(function () use ($request) {
+            /** @var $institutionUser InstitutionUser */
+            $institutionUser = $this->getBaseQuery()
+                ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
+                ->findOrFail($request->validated('institution_user_id'));
+
+            $this->authorize('deactivate', $institutionUser);
+
+            $institutionUser->deactivation_date = $request->validated('deactivation_date');
+            $institutionUser->saveOrFail();
+
+            if ($request->getValidatedDeactivationDateAtEstonianMidnight()?->isSameDay(Date::today(DateUtil::ESTONIAN_TIMEZONE))) {
+                $institutionUser->institutionUserRoles()->delete();
+            }
+
+            // TODO: audit log
+
+            return new InstitutionUserResource($institutionUser->refresh());
+        });
+    }
+
+    /** @throws AuthorizationException|Throwable */
+    public function activate(ActivateInstitutionUserRequest $request): InstitutionUserResource
+    {
+        return DB::transaction(function () use ($request) {
+            /** @var $institutionUser InstitutionUser */
+            $institutionUser = $this->getBaseQuery()
+                ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
+                ->findOrFail($request->validated('institution_user_id'));
+
+            $this->authorize('activate', $institutionUser);
+
+            $institutionUser->deactivation_date = null;
+            $institutionUser->saveOrFail();
+            $institutionUser->roles()->sync(
+                Role::findMany($request->validated('roles'))
+            );
+
+            // TODO: audit log
+
+            /** @noinspection PhpStatementHasEmptyBodyInspection */
+            if (filter_var($request->validated('notify_user'), FILTER_VALIDATE_BOOLEAN)) {
+                // TODO: queue email to user
+            }
+
+            return new InstitutionUserResource($institutionUser->refresh());
+        });
+    }
+
+    /** @throws AuthorizationException|Throwable */
+    public function archive(ArchiveInstitutionUserRequest $request): InstitutionUserResource
+    {
+        return DB::transaction(function () use ($request) {
+            /** @var $institutionUser InstitutionUser */
+            $institutionUser = $this->getBaseQuery()
+                ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
+                ->findOrFail($request->validated('institution_user_id'));
+
+            $this->authorize('archive', $institutionUser);
+
+            $institutionUser->archived_at = Date::now();
+            $institutionUser->institutionUserRoles()->delete();
+            $institutionUser->saveOrFail();
+
+            // TODO: audit log
+
+            return new InstitutionUserResource($institutionUser->refresh());
+        });
     }
 
     public function getBaseQuery(): Builder

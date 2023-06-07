@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Enums\InstitutionUserStatus;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
 use App\Models\User;
@@ -12,6 +11,9 @@ use Illuminate\Support\Str;
 
 /**
  * @extends Factory<InstitutionUser>
+ *
+ * @method static InstitutionUserFactory forUser(array $state)
+ * @method static InstitutionUserFactory forInstitution(array $state)
  */
 class InstitutionUserFactory extends Factory
 {
@@ -25,7 +27,6 @@ class InstitutionUserFactory extends Factory
         return [
             'institution_id' => Institution::factory(),
             'user_id' => User::factory(),
-            'status' => InstitutionUserStatus::Created,
             'email' => $this->faker->email,
             'phone' => $this->generateRandomEstonianPhoneNumber(),
         ];
