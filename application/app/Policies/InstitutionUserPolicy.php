@@ -60,8 +60,28 @@ class InstitutionUserPolicy
 
     public function import()
     {
-        /** @noinspection PhpUndefinedMethodInspection */
         return Auth::hasPrivilege(PrivilegeKey::AddUser->value);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function deactivate(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
+    {
+        return Auth::hasPrivilege(PrivilegeKey::DeactivateUser->value)
+            && $this->isInSameInstitutionAsCurrentUser($institutionUser);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function activate(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
+    {
+        return Auth::hasPrivilege(PrivilegeKey::ActivateUser->value)
+            && $this->isInSameInstitutionAsCurrentUser($institutionUser);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function archive(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
+    {
+        return Auth::hasPrivilege(PrivilegeKey::ArchiveUser->value)
+            && $this->isInSameInstitutionAsCurrentUser($institutionUser);
     }
 
     public function isCurrentUser(InstitutionUser $institutionUser): bool
