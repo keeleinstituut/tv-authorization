@@ -2,7 +2,7 @@
 
 namespace App\Observers;
 
-use App\Exceptions\DeniedRootRoleDeleteException;
+use App\Exceptions\DeniedRootRoleModifyException;
 use App\Models\Role;
 
 class RoleObserver
@@ -25,12 +25,12 @@ class RoleObserver
 
     /**
      * Handle the Role "deleting" event.
-     * @throws DeniedRootRoleDeleteException
+     * @throws DeniedRootRoleModifyException
      */
     public function deleting(Role $role): void
     {
         if ($role->is_root) {
-            throw new DeniedRootRoleDeleteException();
+            throw new DeniedRootRoleModifyException();
         }
     }
 

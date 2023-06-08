@@ -3,7 +3,7 @@
 namespace Tests\Feature\Models\Database;
 
 use App\Enums\PrivilegeKey;
-use App\Exceptions\DeniedRootRoleDeleteException;
+use App\Exceptions\DeniedRootRoleModifyException;
 use App\Models\Institution;
 use App\Models\Privilege;
 use App\Models\PrivilegeRole;
@@ -106,7 +106,7 @@ class RoleTest extends TestCase
         $testRole->save();
 
         // THEN
-        $this->expectException(DeniedRootRoleDeleteException::class);
+        $this->expectException(DeniedRootRoleModifyException::class);
 
         // WHEN
         $testRole->delete();

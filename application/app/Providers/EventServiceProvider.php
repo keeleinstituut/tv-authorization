@@ -28,6 +28,7 @@ class EventServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Models\Role::observe(Observers\RoleObserver::class);
+        Models\PrivilegeRole::observe(Observers\PrivilegeRoleObserver::class);
         Models\InstitutionUser::observe(Observers\InstitutionUserObserver::class);
         Models\InstitutionUserRole::observe(Observers\InstitutionUserRoleObserver::class);
     }

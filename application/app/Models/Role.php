@@ -72,7 +72,8 @@ class Role extends Model
 
     public function privileges(): BelongsToMany
     {
-        return $this->belongsToMany(Privilege::class, PrivilegeRole::class);
+        return $this->belongsToMany(Privilege::class, PrivilegeRole::class)
+            ->using(PrivilegeRole::class);
     }
 
     public function institution(): BelongsTo
