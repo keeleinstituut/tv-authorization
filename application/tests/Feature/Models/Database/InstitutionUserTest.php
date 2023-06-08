@@ -15,11 +15,9 @@ use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
-use function PHPUnit\Framework\assertEquals;
 
 class InstitutionUserTest extends TestCase
 {
@@ -446,7 +444,7 @@ class InstitutionUserTest extends TestCase
 
         // THEN
         $testInstitutionUser->refresh();
-        assertEquals($deactivationDate, $testInstitutionUser->deactivation_date);
+        $this->assertEquals($deactivationDate, $testInstitutionUser->deactivation_date);
     }
 
     public function test_should_fail_archiving_when_only_user_under_root_role(): void
@@ -482,7 +480,7 @@ class InstitutionUserTest extends TestCase
 
         // THEN
         $testInstitutionUser->refresh();
-        assertEquals($archivedAt, $testInstitutionUser->archived_at);
+        $this->assertEquals($archivedAt, $testInstitutionUser->archived_at);
     }
 
     public function test_should_fail_deletion_when_only_user_under_root_role(): void

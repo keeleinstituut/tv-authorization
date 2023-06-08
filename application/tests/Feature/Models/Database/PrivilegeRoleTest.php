@@ -10,7 +10,6 @@ use App\Models\Role;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
-use function PHPUnit\Framework\assertEquals;
 
 class PrivilegeRoleTest extends TestCase
 {
@@ -134,7 +133,7 @@ class PrivilegeRoleTest extends TestCase
         ]);
 
         // THEN
-        assertEquals($testPrivilegeRoleSecond->role_id, $testPrivilegeRole->role_id);
+        $this->assertEquals($testPrivilegeRoleSecond->role_id, $testPrivilegeRole->role_id);
     }
 
     public function test_should_allow_updating_privilege_id_when_is_not_root_role(): void {
@@ -150,6 +149,6 @@ class PrivilegeRoleTest extends TestCase
         ]);
 
         // THEN
-        assertEquals($testPrivilegeRoleSecond->privilege_id, $testPrivilegeRole->privilege_id);
+        $this->assertEquals($testPrivilegeRoleSecond->privilege_id, $testPrivilegeRole->privilege_id);
     }
 }

@@ -8,8 +8,6 @@ use App\Http\Requests\InstitutionUserListRequest;
 use App\Http\Requests\UpdateInstitutionUserRequest;
 use App\Http\Resources\InstitutionUserResource;
 use App\Models\InstitutionUser;
-use App\Models\InstitutionUserRole;
-use App\Models\Role;
 use App\Policies\InstitutionUserPolicy;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
@@ -149,7 +147,7 @@ class InstitutionUserController extends Controller
         );
     }
 
-    public function getBaseQuery()
+    public function getBaseQuery(): Builder
     {
         return InstitutionUser::getModel()
             ->withGlobalScope('policy', InstitutionUserPolicy::scope())
