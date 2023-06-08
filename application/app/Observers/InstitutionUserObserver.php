@@ -17,6 +17,7 @@ class InstitutionUserObserver
 
     /**
      * Handle the InstitutionUser "updating" event.
+     *
      * @throws OnlyUserUnderRootRoleException
      */
     public function updating(InstitutionUser $institutionUser): void
@@ -38,6 +39,7 @@ class InstitutionUserObserver
 
     /**
      * Handle the InstitutionUser "deleting" event.
+     *
      * @throws OnlyUserUnderRootRoleException
      */
     public function deleting(InstitutionUser $institutionUser): void

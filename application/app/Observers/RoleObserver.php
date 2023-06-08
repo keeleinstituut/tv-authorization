@@ -25,6 +25,7 @@ class RoleObserver
 
     /**
      * Handle the Role "deleting" event.
+     *
      * @throws DeniedRootRoleModifyException
      */
     public function deleting(Role $role): void

@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -25,7 +25,7 @@ return new class extends Migration
         // Initial roles created during Institution creation script
         // are marked as is_root.
         // Name value taken from \App\Enums\DefaultRole::InstitutionAdmin
-        DB::statement(<<<EOT
+        DB::statement(<<<'EOT'
             UPDATE roles SET is_root=true WHERE name = 'Asutuse peakasutaja'
         EOT);
     }

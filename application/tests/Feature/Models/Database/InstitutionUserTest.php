@@ -400,7 +400,7 @@ class InstitutionUserTest extends TestCase
         $testInstitutionUserRole->role->is_root = true;
         $testInstitutionUserRole->role->save();
         InstitutionUserRole::factory()->create([
-            'role_id' => $testInstitutionUserRole->role->id
+            'role_id' => $testInstitutionUserRole->role->id,
         ]);
         $testInstitutionUser = $testInstitutionUserRole->institutionUser;
 
@@ -418,7 +418,7 @@ class InstitutionUserTest extends TestCase
         $testInstitutionUserRole->role->is_root = true;
         $testInstitutionUserRole->role->save();
         $testInstitutionUser = $testInstitutionUserRole->institutionUser;
-        $deactivationDate = Date::parse("2000-01-01")->toDateString();
+        $deactivationDate = Date::parse('2000-01-01')->toDateString();
 
         // THEN
         $this->expectException(OnlyUserUnderRootRoleException::class);
@@ -436,7 +436,7 @@ class InstitutionUserTest extends TestCase
         $testInstitutionUserRole->role->save();
         InstitutionUserRole::factory()->create(['role_id' => $testInstitutionUserRole->role->id]);
         $testInstitutionUser = $testInstitutionUserRole->institutionUser;
-        $deactivationDate = Date::parse("2000-01-01")->toDateString();
+        $deactivationDate = Date::parse('2000-01-01')->toDateString();
 
         // WHEN
         $testInstitutionUser->deactivation_date = $deactivationDate;
@@ -454,7 +454,7 @@ class InstitutionUserTest extends TestCase
         $testInstitutionUserRole->role->is_root = true;
         $testInstitutionUserRole->role->save();
         $testInstitutionUser = $testInstitutionUserRole->institutionUser;
-        $archivedAt = Date::parse("2000-01-01");
+        $archivedAt = Date::parse('2000-01-01');
 
         // THEN
         $this->expectException(OnlyUserUnderRootRoleException::class);
@@ -472,7 +472,7 @@ class InstitutionUserTest extends TestCase
         $testInstitutionUserRole->role->save();
         InstitutionUserRole::factory()->create(['role_id' => $testInstitutionUserRole->role->id]);
         $testInstitutionUser = $testInstitutionUserRole->institutionUser;
-        $archivedAt = Date::parse("2000-01-01");
+        $archivedAt = Date::parse('2000-01-01');
 
         // WHEN
         $testInstitutionUser->archived_at = $archivedAt;

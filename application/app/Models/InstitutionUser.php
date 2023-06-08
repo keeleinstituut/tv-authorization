@@ -175,14 +175,15 @@ class InstitutionUser extends Model
     {
         $rootRole = $this->roles()->where('is_root', true)->with('institutionUsers')->first();
         $rootRoleInstitutionUserIds = collect($rootRole->institutionUsers)->pluck('id');
+
         return $rootRoleInstitutionUserIds->count() < 2 && $rootRoleInstitutionUserIds->contains($this->id);
     }
 
     public function hasRootRole(): bool
     {
         return $this->institutionUserRoles()
-                ->with('role')
-                ->whereRelation('role', 'is_root', true)
-                ->count() > 0;
+            ->with('role')
+            ->whereRelation('role', 'is_root', true)
+            ->count() > 0;
     }
 }

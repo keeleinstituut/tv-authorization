@@ -47,6 +47,7 @@ class PrivilegeRoleObserver
 
     /**
      * Handle the PrivilegeRole "deleting" event.
+     *
      * @throws DeniedRootRoleModifyException
      */
     public function deleting(PrivilegeRole $privilegeRole): void
