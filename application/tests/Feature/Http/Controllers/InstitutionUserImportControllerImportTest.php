@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Routes\InstitutionUserImport;
+namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\PrivilegeKey;
 use App\Http\Controllers\InstitutionUserImportController;
@@ -16,7 +16,7 @@ use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\TestCase;
 
-class ImportTest extends TestCase
+class InstitutionUserImportControllerImportTest extends TestCase
 {
     use RefreshDatabase, EntityHelpers;
 
@@ -52,7 +52,7 @@ class ImportTest extends TestCase
                 $csvRow,
             ]),
             $accessToken
-        )->assertStatus(Response::HTTP_OK);
+        )->assertOk();
 
         $user = User::where('personal_identification_code', $csvRow[0])->first();
         $this->assertNotEmpty($user);
@@ -105,7 +105,57 @@ class ImportTest extends TestCase
                 $csvRow,
             ]),
             $accessToken
-        )->assertStatus(Response::HTTP_OK);
+        )->assertOk();
+
+        $importedUser = User::where('personal_identification_code', $csvRow[0])->first();
+        $this->assertNotEmpty($importedUser);
+        $this->assertEquals($user->id, $importedUser->id);
+        $this->assertEquals($user->surname, $importedUser->surname);
+        $this->assertEquals($user->forename, $importedUser->forename);
+
+        $this->assertCount(1, $user->institutionUsers);
+        $importedInstitutionUser = $user->institutionUsers->first();
+        $this->assertEquals($institutionUser->email, $importedInstitutionUser->email);
+        $this->assertEquals($institutionUser->phone, $importedInstitutionUser->phone);
+
+        $this->assertCount(1, $importedInstitutionUser->institutionUserRoles);
+        $this->assertEquals($role->id, $importedInstitutionUser->institutionUserRoles->first()->role_id);
+    }
+
+    public function test_import_acting_user_dont_change_anything(): void
+    {
+        $institution = $this->createInstitution();
+        $newRole = $this->createRoleWithPrivileges($institution, [
+            PrivilegeKey::DeactivateUser,
+            PrivilegeKey::ActivateUser,
+        ]);
+
+        $role = Role::factory()->hasAttached(
+            Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
+        )->create();
+
+        $institutionUser = InstitutionUser::factory()
+            ->for($institution)
+            ->create();
+
+        $institutionUser->roles()->sync($role);
+        $user = $institutionUser->user;
+        $csvRow = [
+            $user->personal_identification_code,
+            implode(' ', ["prefix$user->surname", $user->forename]),
+            "prefix$institutionUser->email",
+            '+372 56789566',
+            '',
+            $newRole->name,
+        ];
+
+        $this->sendImportFileRequest(
+            $this->composeContent([
+                $this->getValidCsvHeader(),
+                $csvRow,
+            ]),
+            AuthHelpers::generateAccessTokenForInstitutionUser($institutionUser)
+        )->assertOk();
 
         $importedUser = User::where('personal_identification_code', $csvRow[0])->first();
         $this->assertNotEmpty($importedUser);
@@ -165,7 +215,7 @@ class ImportTest extends TestCase
             $accessToken
         );
 
-        $response->assertStatus(Response::HTTP_OK);
+        $response->assertOk();
 
         $users = User::where('personal_identification_code', $csvRow[0])->get();
         $this->assertCount(1, $users);

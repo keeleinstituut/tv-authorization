@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Routes\InstitutionUserImport;
+namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\PrivilegeKey;
 use App\Http\Controllers\InstitutionUserImportController;
@@ -15,7 +15,7 @@ use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\TestCase;
 
-class FileValidationTest extends TestCase
+class InstitutionUserImportControllerValidateCsvTest extends TestCase
 {
     use RefreshDatabase, EntityHelpers;
 
@@ -42,7 +42,7 @@ class FileValidationTest extends TestCase
                 $this->getValidCsvRow($role->name, $department->name),
             ]),
             $accessToken
-        )->assertStatus(Response::HTTP_OK)
+        )->assertOk()
             ->assertExactJson(['errors' => []]);
     }
 
@@ -153,7 +153,7 @@ class FileValidationTest extends TestCase
                 $csvRow,
             ]),
             $accessToken
-        )->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+        )->assertUnprocessable()
             ->assertJson([
                 'errors' => [
                     [
@@ -192,7 +192,7 @@ class FileValidationTest extends TestCase
                 $csvRow,
             ]),
             $accessToken
-        )->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+        )->assertUnprocessable()
             ->assertJson([
                 'errors' => [
                     [
@@ -231,7 +231,7 @@ class FileValidationTest extends TestCase
                 $csvRow,
             ]),
             $accessToken
-        )->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+        )->assertUnprocessable()
             ->assertJson([
                 'errors' => [
                     [
@@ -264,7 +264,7 @@ class FileValidationTest extends TestCase
                 $csvRow,
             ]),
             $accessToken
-        )->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+        )->assertUnprocessable()
             ->assertJson([
                 'errors' => [
                     [
@@ -300,7 +300,7 @@ class FileValidationTest extends TestCase
                 $csvRow,
             ]),
             $accessToken
-        )->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+        )->assertUnprocessable()
             ->assertJson([
                 'errors' => [
                     [
@@ -341,7 +341,28 @@ class FileValidationTest extends TestCase
                 $this->getValidCsvRow($roleColumnValue),
             ]),
             $accessToken
-        )->assertStatus(Response::HTTP_OK);
+        )->assertOk();
+    }
+
+    public function test_validation_with_file_that_has_empty_role_value()
+    {
+        $institution = $this->createInstitution();
+
+        $actingInstitutionUser = InstitutionUser::factory()
+            ->for($institution)
+            ->has(Role::factory()->hasAttached(
+                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
+            ))
+            ->create();
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
+
+        $this->sendImportFileValidationRequest(
+            $this->composeContent([
+                $this->getValidCsvHeader(),
+                $this->getValidCsvRow(','),
+            ]),
+            $accessToken
+        )->assertUnprocessable();
     }
 
     public function test_validation_with_file_that_has_role_from_another_institution_returned_422()
@@ -367,7 +388,7 @@ class FileValidationTest extends TestCase
                 $this->getValidCsvRow($roleFromAnotherInstitution->name),
             ]),
             $accessToken
-        )->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+        )->assertUnprocessable()
             ->assertJson([
                 'errors' => [
                     [

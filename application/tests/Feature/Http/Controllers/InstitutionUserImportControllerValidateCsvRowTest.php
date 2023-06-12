@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Routes\InstitutionUserImport;
+namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\PrivilegeKey;
 use App\Http\Controllers\InstitutionUserImportController;
@@ -14,7 +14,7 @@ use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\TestCase;
 
-class FileRowValidationTest extends TestCase
+class InstitutionUserImportControllerValidateCsvRowTest extends TestCase
 {
     use RefreshDatabase, EntityHelpers;
 
