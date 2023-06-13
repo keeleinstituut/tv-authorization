@@ -37,14 +37,14 @@ readonly class AuthHelpers
     public static function makeTolkevaravClaimsForInstitutionUser(InstitutionUser $institutionUser): array
     {
         return [
-            'personalIdentificationCode' => $institutionUser->user->personal_identification_code,
-            'userId' => $institutionUser->user->id,
+            'personalIdentificationCode' => $institutionUser->user?->personal_identification_code,
+            'userId' => $institutionUser->user_id,
             'institutionUserId' => $institutionUser->id,
-            'forename' => $institutionUser->user->forename,
-            'surname' => $institutionUser->user->surname,
+            'forename' => $institutionUser->user?->forename,
+            'surname' => $institutionUser->user?->surname,
             'selectedInstitution' => [
-                'id' => $institutionUser->institution->id,
-                'name' => $institutionUser->institution->name,
+                'id' => $institutionUser->institution_id,
+                'name' => $institutionUser->institution?->name,
             ],
             'privileges' => $institutionUser->institutionUserRoles
                 ->flatMap(fn (InstitutionUserRole $iuRole) => $iuRole->role?->privilegeRoles)

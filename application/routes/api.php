@@ -23,7 +23,15 @@ use Illuminate\Support\Facades\Route;
 Route::withoutMiddleware('auth:api')->get('/jwt-claims', [JwtClaimsController::class, 'show']);
 
 Route::get('/privileges', [PrivilegeController::class, 'index']);
-Route::get('/institutions', [InstitutionController::class, 'index']);
+
+Route::prefix('/institutions')
+    ->controller(InstitutionController::class)
+    ->whereUuid('institution_id')
+    ->group(function (): void {
+        Route::get('/', 'index');
+        Route::get('/{institution_id}', 'show');
+        Route::put('/{institution_id}', 'update');
+    });
 
 Route::prefix('/roles')
     ->controller(RoleController::class)
