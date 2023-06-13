@@ -54,11 +54,11 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
                 $this->getValidCsvHeader(),
                 [
                     $existingUser->personal_identification_code,
-                    $existingUser->forename . ' ' . $existingUser->surname,
+                    $existingUser->forename.' '.$existingUser->surname,
                     $existingInstitutionUser->email,
                     $existingInstitutionUser->phone,
                     '',
-                    $role->name
+                    $role->name,
                 ],
             ]),
             AuthHelpers::generateAccessTokenForInstitutionUser(
@@ -367,7 +367,7 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
     {
         $content = '';
         foreach ($rows as $row) {
-            $content .= implode(';', $row) . PHP_EOL;
+            $content .= implode(';', $row).PHP_EOL;
         }
 
         return $content;

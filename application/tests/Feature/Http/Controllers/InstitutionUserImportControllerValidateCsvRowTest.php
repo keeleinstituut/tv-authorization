@@ -4,12 +4,8 @@ namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\PrivilegeKey;
 use App\Http\Controllers\InstitutionUserImportController;
-use App\Models\InstitutionUser;
-use App\Models\Privilege;
-use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
-use Symfony\Component\HttpFoundation\Response;
 use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\TestCase;
@@ -57,7 +53,7 @@ class InstitutionUserImportControllerValidateCsvRowTest extends TestCase
 
         $row = [
             'personal_identification_code' => $existingUser->personal_identification_code,
-            'name' => $existingUser->forename . ' ' . $existingUser->surname,
+            'name' => $existingUser->forename.' '.$existingUser->surname,
             'email' => $existingInstitutionUser->email,
             'phone' => $existingInstitutionUser->phone,
             'department' => '',
@@ -70,7 +66,7 @@ class InstitutionUserImportControllerValidateCsvRowTest extends TestCase
                 $this->createRoleWithPrivileges($institution, [PrivilegeKey::AddUser])
             )
         ))->assertOk()->assertJson([
-            'isExistingInstitutionUser' => true
+            'isExistingInstitutionUser' => true,
         ]);
     }
 
@@ -88,10 +84,10 @@ class InstitutionUserImportControllerValidateCsvRowTest extends TestCase
         $institution = $this->createInstitution();
         $this->sendValidationRequest(
             $row, AuthHelpers::generateAccessTokenForInstitutionUser(
-            $this->createInstitutionUserWithRoles(
-                $institution,
-                $this->createRoleWithPrivileges($institution, [PrivilegeKey::AddUser])
-            ))
+                $this->createInstitutionUserWithRoles(
+                    $institution,
+                    $this->createRoleWithPrivileges($institution, [PrivilegeKey::AddUser])
+                ))
         )->assertUnprocessable()
             ->assertJson([
                 'errors' => [
