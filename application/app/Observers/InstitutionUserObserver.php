@@ -23,7 +23,7 @@ class InstitutionUserObserver
     public function updating(InstitutionUser $institutionUser): void
     {
         if ($institutionUser->isDirty(['archived_at', 'deactivation_date'])) {
-            if ($institutionUser->hasRootRole() && $institutionUser->isOnlyUserWithRootRole()) {
+            if ($institutionUser->isOnlyUserWithRootRole()) {
                 throw new OnlyUserUnderRootRoleException();
             }
         }
@@ -44,7 +44,7 @@ class InstitutionUserObserver
      */
     public function deleting(InstitutionUser $institutionUser): void
     {
-        if ($institutionUser->hasRootRole() && $institutionUser->isOnlyUserWithRootRole()) {
+        if ($institutionUser->isOnlyUserWithRootRole()) {
             throw new OnlyUserUnderRootRoleException();
         }
     }
