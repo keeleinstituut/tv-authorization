@@ -9,6 +9,7 @@ use App\Models\InstitutionUser;
 use App\Models\Role;
 use App\Models\User;
 use App\Policies\DepartmentPolicy;
+use App\Policies\InstitutionUserPolicy;
 use App\Policies\RolePolicy;
 use App\Rules\CsvContentValidator;
 use DB;
@@ -28,10 +29,10 @@ class InstitutionUserImportController extends Controller
     public function validateCsv(ImportUsersCsvRequest $request): JsonResponse
     {
         $this->authorize('import', InstitutionUser::class);
-
         $validator = $this->getCsvContentValidator($request->file('file'));
         try {
             $rowsWithErrors = [];
+            $rowsWithExistingInstitutionUsers = [];
             foreach ($validator->validatedRows() as $idx => $attributes) {
                 if (filled($attributes['errors'])) {
                     $rowsWithErrors[] = [
@@ -39,6 +40,10 @@ class InstitutionUserImportController extends Controller
                         'errors' => $attributes['errors'],
                     ];
                 }
+
+                $this->isExistingInstitutionUser(
+                    $attributes['personal_identification_code']
+                ) && $rowsWithExistingInstitutionUsers[] = $idx;
             }
         } catch (UnexpectedValueException) {
             return response()->json(
@@ -47,15 +52,10 @@ class InstitutionUserImportController extends Controller
             );
         }
 
-        if (! empty($rowsWithErrors)) {
-            return response()->json([
-                'errors' => $rowsWithErrors,
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
         return response()->json([
-            'errors' => [],
-        ], Response::HTTP_OK);
+            'errors' => $rowsWithErrors,
+            'rowsWithExistingInstitutionUsers' => $rowsWithExistingInstitutionUsers,
+        ], filled($rowsWithErrors) ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK);
     }
 
     /**
@@ -65,7 +65,6 @@ class InstitutionUserImportController extends Controller
     public function importCsv(ImportUsersCsvRequest $request): JsonResponse
     {
         $this->authorize('import', InstitutionUser::class);
-
         $institutionId = Auth::user()?->institutionId;
         $validator = $this->getCsvContentValidator($request->file('file'));
 
@@ -119,11 +118,7 @@ class InstitutionUserImportController extends Controller
                 );
             }
 
-            return response()->json([
-                'data' => [
-                    'warnings' => [],
-                ],
-            ], Response::HTTP_OK);
+            return response()->json(status: Response::HTTP_OK);
         });
     }
 
@@ -136,6 +131,9 @@ class InstitutionUserImportController extends Controller
 
         return response()->json([
             'data' => $request->validated(),
+            'isExistingInstitutionUser' => $this->isExistingInstitutionUser(
+                $request->validated('personal_identification_code')
+            ),
         ], Response::HTTP_OK);
     }
 
@@ -147,5 +145,13 @@ class InstitutionUserImportController extends Controller
             ])->setAttributesNames([
                 'personal_identification_code', 'name', 'email', 'phone', 'department', 'role',
             ])->setRules((new ImportUsersCsvRowValidationRequest)->rules());
+    }
+
+    private function isExistingInstitutionUser(string $pin): bool
+    {
+        return InstitutionUser::query()->whereRelation(
+            'user',
+            'personal_identification_code', $pin
+        )->withGlobalScope('policy', InstitutionUserPolicy::scope())->exists();
     }
 }

@@ -4,13 +4,13 @@ namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\PrivilegeKey;
 use App\Http\Controllers\InstitutionUserImportController;
+use App\Models\Institution;
 use App\Models\InstitutionUser;
 use App\Models\Privilege;
 use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Testing\TestResponse;
-use Symfony\Component\HttpFoundation\Response;
 use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\TestCase;
@@ -28,53 +28,76 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
             PrivilegeKey::ActivateUser,
         ]);
 
-        $actingInstitutionUser = InstitutionUser::factory()
-            ->for($institution)
-            ->has(Role::factory()->hasAttached(
-                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
-            ))
-            ->create();
-        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
-
         $this->sendImportFileValidationRequest(
-            $this->composeContent([
+            $this->composeCsvContent([
                 $this->getValidCsvHeader(),
                 $this->getValidCsvRow($role->name, $department->name),
             ]),
-            $accessToken
-        )->assertOk()
-            ->assertExactJson(['errors' => []]);
+            AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->getActingInstitutionUserWithAddUserPrivilege($institution)
+            )
+        )->assertOk()->assertExactJson(['errors' => [], 'rowsWithExistingInstitutionUsers' => []]);
+    }
+
+    public function test_validation_of_file_with_already_existing_user_returned_200(): void
+    {
+        $institution = $this->createInstitution();
+        $role = $this->createRoleWithPrivileges($institution, [
+            PrivilegeKey::DeactivateUser,
+            PrivilegeKey::ActivateUser,
+        ]);
+        $existingInstitutionUser = $this->createInstitutionUserWithRoles($institution, $role);
+        $existingUser = $existingInstitutionUser->user;
+
+        $this->sendImportFileValidationRequest(
+            $this->composeCsvContent([
+                $this->getValidCsvHeader(),
+                [
+                    $existingUser->personal_identification_code,
+                    $existingUser->forename . ' ' . $existingUser->surname,
+                    $existingInstitutionUser->email,
+                    $existingInstitutionUser->phone,
+                    '',
+                    $role->name
+                ],
+            ]),
+            AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->getActingInstitutionUserWithAddUserPrivilege($institution)
+            )
+        )->assertOk()->assertExactJson(['errors' => [], 'rowsWithExistingInstitutionUsers' => [0]]);
     }
 
     public function test_validation_without_auth_token_returned_403()
     {
         $this->sendImportFileValidationRequest(
-            $this->composeContent([
+            $this->composeCsvContent([
                 $this->getValidCsvHeader(),
                 $this->getValidCsvRow('some-name'),
             ]),
-        )->assertStatus(Response::HTTP_UNAUTHORIZED);
+        )->assertUnauthorized();
     }
 
     public function test_validation_without_corresponding_privilege_returned_403()
     {
-        $actingInstitutionUser = InstitutionUser::factory()
-            ->has(Role::factory()->hasAttached(
-                Privilege::firstWhere('key', PrivilegeKey::ActivateUser->value)
-            ))
-            ->create();
-        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
+        $institution = $this->createInstitution();
 
         $this->sendImportFileValidationRequest(
-            $this->composeContent([
+            $this->composeCsvContent([
                 $this->getValidCsvHeader(),
                 $this->getValidCsvRow('some-name'),
             ]),
-            $accessToken
-        )->assertStatus(Response::HTTP_FORBIDDEN);
+            AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->createInstitutionUserWithRoles(
+                    $institution,
+                    Role::factory()->hasAttached(
+                        Privilege::firstWhere('key', PrivilegeKey::ViewUser->value)
+                    )->create()
+                )
+            )
+        )->assertForbidden();
     }
 
-    public function test_validation_with_file_that_has_invalid_headers_returned_400()
+    public function test_validation_of_file_that_has_invalid_headers_returned_400()
     {
         $institution = $this->createInstitution();
         $role = $this->createRoleWithPrivileges($institution, [
@@ -82,24 +105,18 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
             PrivilegeKey::ActivateUser,
         ]);
 
-        $actingInstitutionUser = InstitutionUser::factory()
-            ->for($institution)
-            ->has(Role::factory()->hasAttached(
-                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
-            ))
-            ->create();
-        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
-
         $this->sendImportFileValidationRequest(
-            $this->composeContent([
+            $this->composeCsvContent([
                 ['Roll', 'Isikukood', 'Nimi', 'Meiliaadress', 'Telefoninumber', 'Üksus'],
                 $this->getValidCsvRow($role->name),
             ]),
-            $accessToken
-        )->assertStatus(Response::HTTP_BAD_REQUEST);
+            AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->getActingInstitutionUserWithAddUserPrivilege($institution)
+            )
+        )->assertBadRequest();
     }
 
-    public function test_validation_with_file_that_has_wrong_columns_count_returned_400()
+    public function test_validation_of_file_that_has_wrong_columns_count_returned_400()
     {
         $institution = $this->createInstitution();
         $role = $this->createRoleWithPrivileges($institution, [
@@ -110,24 +127,18 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
         $invalidCsvRow = $this->getValidCsvRow($role->name);
         $invalidCsvRow[] = 'some value';
 
-        $actingInstitutionUser = InstitutionUser::factory()
-            ->for($institution)
-            ->has(Role::factory()->hasAttached(
-                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
-            ))
-            ->create();
-        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
-
         $this->sendImportFileValidationRequest(
-            $this->composeContent([
+            $this->composeCsvContent([
                 $this->getValidCsvHeader(),
                 $invalidCsvRow,
             ]),
-            $accessToken
-        )->assertStatus(Response::HTTP_BAD_REQUEST);
+            AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->getActingInstitutionUserWithAddUserPrivilege($institution)
+            )
+        )->assertBadRequest();
     }
 
-    public function test_validation_with_file_that_has_wrong_email_column_value_stored_errors()
+    public function test_validation_of_file_that_has_wrong_email_column_value_returned_errors()
     {
         $institution = $this->createInstitution();
         $department = $this->createDepartment($institution);
@@ -139,20 +150,14 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
         $csvRow = $this->getValidCsvRow($role->name, $department->name);
         $csvRow[2] = 'wrongemail.com';
 
-        $actingInstitutionUser = InstitutionUser::factory()
-            ->for($institution)
-            ->has(Role::factory()->hasAttached(
-                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
-            ))
-            ->create();
-        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
-
         $this->sendImportFileValidationRequest(
-            $this->composeContent([
+            $this->composeCsvContent([
                 $this->getValidCsvHeader(),
                 $csvRow,
             ]),
-            $accessToken
+            AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->getActingInstitutionUserWithAddUserPrivilege($institution)
+            )
         )->assertUnprocessable()
             ->assertJson([
                 'errors' => [
@@ -166,7 +171,7 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
             ]);
     }
 
-    public function test_validation_with_file_that_has_wrong_phone_column_value_stored_errors()
+    public function test_validation_of_file_that_has_wrong_phone_column_value_returned_errors()
     {
         $institution = $this->createInstitution();
         $department = $this->createDepartment($institution);
@@ -178,20 +183,14 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
         $csvRow = $this->getValidCsvRow($role->name, $department->name);
         $csvRow[3] = '1234455678899';
 
-        $actingInstitutionUser = InstitutionUser::factory()
-            ->for($institution)
-            ->has(Role::factory()->hasAttached(
-                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
-            ))
-            ->create();
-        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
-
         $this->sendImportFileValidationRequest(
-            $this->composeContent([
+            $this->composeCsvContent([
                 $this->getValidCsvHeader(),
                 $csvRow,
             ]),
-            $accessToken
+            AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->getActingInstitutionUserWithAddUserPrivilege($institution)
+            )
         )->assertUnprocessable()
             ->assertJson([
                 'errors' => [
@@ -205,7 +204,7 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
             ]);
     }
 
-    public function test_validation_with_file_that_has_wrong_name_column_value_stored_errors()
+    public function test_validation_of_file_that_has_wrong_name_column_value_returned_errors()
     {
         $institution = $this->createInstitution();
         $department = $this->createDepartment($institution);
@@ -217,20 +216,14 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
         $csvRow = $this->getValidCsvRow($role->name, $department->name);
         $csvRow[1] = 'Wrong Username23';
 
-        $actingInstitutionUser = InstitutionUser::factory()
-            ->for($institution)
-            ->has(Role::factory()->hasAttached(
-                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
-            ))
-            ->create();
-        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
-
         $this->sendImportFileValidationRequest(
-            $this->composeContent([
+            $this->composeCsvContent([
                 $this->getValidCsvHeader(),
                 $csvRow,
             ]),
-            $accessToken
+            AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->getActingInstitutionUserWithAddUserPrivilege($institution)
+            )
         )->assertUnprocessable()
             ->assertJson([
                 'errors' => [
@@ -244,26 +237,20 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
             ]);
     }
 
-    public function test_validation_with_file_that_has_wrong_role_column_value_stored_errors()
+    public function test_validation_of_file_that_has_wrong_role_column_value_returned_errors()
     {
         $institution = $this->createInstitution();
         $department = $this->createDepartment($institution);
         $csvRow = $this->getValidCsvRow('role-name', $department->name);
 
-        $actingInstitutionUser = InstitutionUser::factory()
-            ->for($institution)
-            ->has(Role::factory()->hasAttached(
-                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
-            ))
-            ->create();
-        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
-
         $this->sendImportFileValidationRequest(
-            $this->composeContent([
+            $this->composeCsvContent([
                 $this->getValidCsvHeader(),
                 $csvRow,
             ]),
-            $accessToken
+            AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->getActingInstitutionUserWithAddUserPrivilege($institution)
+            )
         )->assertUnprocessable()
             ->assertJson([
                 'errors' => [
@@ -277,7 +264,7 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
             ]);
     }
 
-    public function test_validation_with_file_that_has_wrong_department_column_value_stored_errors()
+    public function test_validation_of_file_that_has_wrong_department_column_value_returned_errors()
     {
         $institution = $this->createInstitution();
         $role = $this->createRoleWithPrivileges($institution, [
@@ -285,21 +272,15 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
             PrivilegeKey::ActivateUser,
         ]);
 
-        $actingInstitutionUser = InstitutionUser::factory()
-            ->for($institution)
-            ->has(Role::factory()->hasAttached(
-                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
-            ))
-            ->create();
-        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
-
         $csvRow = $this->getValidCsvRow($role->name, 'wrong-department');
         $this->sendImportFileValidationRequest(
-            $this->composeContent([
+            $this->composeCsvContent([
                 $this->getValidCsvHeader(),
                 $csvRow,
             ]),
-            $accessToken
+            AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->getActingInstitutionUserWithAddUserPrivilege($institution)
+            )
         )->assertUnprocessable()
             ->assertJson([
                 'errors' => [
@@ -313,7 +294,7 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
             ]);
     }
 
-    public function test_validation_with_file_that_has_multiple_roles_value()
+    public function test_validation_of_file_that_has_multiple_roles_value()
     {
         $institution = $this->createInstitution();
 
@@ -326,46 +307,34 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
             PrivilegeKey::ActivateUser,
         ]);
 
-        $actingInstitutionUser = InstitutionUser::factory()
-            ->for($institution)
-            ->has(Role::factory()->hasAttached(
-                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
-            ))
-            ->create();
-        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
-
         $roleColumnValue = implode(', ', [$role1->name, $role2->name]);
         $this->sendImportFileValidationRequest(
-            $this->composeContent([
+            $this->composeCsvContent([
                 $this->getValidCsvHeader(),
                 $this->getValidCsvRow($roleColumnValue),
             ]),
-            $accessToken
+            AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->getActingInstitutionUserWithAddUserPrivilege($institution)
+            )
         )->assertOk();
     }
 
-    public function test_validation_with_file_that_has_empty_role_value()
+    public function test_validation_of_file_that_has_empty_role_value()
     {
         $institution = $this->createInstitution();
 
-        $actingInstitutionUser = InstitutionUser::factory()
-            ->for($institution)
-            ->has(Role::factory()->hasAttached(
-                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
-            ))
-            ->create();
-        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
-
         $this->sendImportFileValidationRequest(
-            $this->composeContent([
+            $this->composeCsvContent([
                 $this->getValidCsvHeader(),
                 $this->getValidCsvRow(','),
             ]),
-            $accessToken
+            AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->getActingInstitutionUserWithAddUserPrivilege($institution)
+            )
         )->assertUnprocessable();
     }
 
-    public function test_validation_with_file_that_has_role_from_another_institution_returned_422()
+    public function test_validation_of_file_that_has_role_from_another_institution_returned_422()
     {
         $roleFromAnotherInstitution = $this->createRoleWithPrivileges($this->createInstitution(), [
             PrivilegeKey::DeactivateUser,
@@ -373,21 +342,14 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
         ]);
 
         $institution = $this->createInstitution();
-
-        $actingInstitutionUser = InstitutionUser::factory()
-            ->for($institution)
-            ->has(Role::factory()->hasAttached(
-                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
-            ))
-            ->create();
-        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
-
         $this->sendImportFileValidationRequest(
-            $this->composeContent([
+            $this->composeCsvContent([
                 $this->getValidCsvHeader(),
                 $this->getValidCsvRow($roleFromAnotherInstitution->name),
             ]),
-            $accessToken
+            AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->getActingInstitutionUserWithAddUserPrivilege($institution)
+            )
         )->assertUnprocessable()
             ->assertJson([
                 'errors' => [
@@ -401,11 +363,11 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
             ]);
     }
 
-    private function composeContent($rows): string
+    private function composeCsvContent($rows): string
     {
         $content = '';
         foreach ($rows as $row) {
-            $content .= implode(';', $row).PHP_EOL;
+            $content .= implode(';', $row) . PHP_EOL;
         }
 
         return $content;
@@ -413,7 +375,7 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
 
     private function sendImportFileValidationRequest(string $fileContent, string $accessToken = ''): TestResponse
     {
-        if (! empty($accessToken)) {
+        if (filled($accessToken)) {
             $this->withHeaders([
                 'Authorization' => "Bearer $accessToken",
                 'Accept' => 'application/json',
@@ -439,5 +401,16 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
     private function getValidCsvHeader(): array
     {
         return ['Isikukood', 'Nimi', 'Meiliaadress', 'Telefoninumber', 'Üksus', 'Roll'];
+    }
+
+    private function getActingInstitutionUserWithAddUserPrivilege(Institution $institution): InstitutionUser
+    {
+        return $this->createInstitutionUserWithRoles(
+            $institution,
+            $this->createRoleWithPrivileges(
+                $institution,
+                [PrivilegeKey::AddUser]
+            )
+        );
     }
 }

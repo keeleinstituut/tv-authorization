@@ -27,13 +27,6 @@ class InstitutionUserImportControllerValidateCsvRowTest extends TestCase
             PrivilegeKey::ActivateUser,
         ]);
 
-        $actingInstitutionUser = InstitutionUser::factory()
-            ->for($institution)
-            ->has(Role::factory()->hasAttached(
-                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
-            ))
-            ->create();
-
         $row = [
             'personal_identification_code' => '39511267470',
             'name' => 'user name',
@@ -43,9 +36,42 @@ class InstitutionUserImportControllerValidateCsvRowTest extends TestCase
             'role' => $role->name,
         ];
 
-        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
-        $this->sendValidationRequest($row, $accessToken)
-            ->assertStatus(Response::HTTP_OK);
+        $this->sendValidationRequest($row, AuthHelpers::generateAccessTokenForInstitutionUser(
+            $this->createInstitutionUserWithRoles(
+                $institution,
+                $this->createRoleWithPrivileges($institution, [PrivilegeKey::AddUser])
+            )
+        ))->assertOk();
+    }
+
+    public function test_row_with_already_existing_user_returned_200(): void
+    {
+        $institution = $this->createInstitution();
+        $role = $this->createRoleWithPrivileges($institution, [
+            PrivilegeKey::DeactivateUser,
+            PrivilegeKey::ActivateUser,
+        ]);
+
+        $existingInstitutionUser = $this->createInstitutionUserWithRoles($institution, $role);
+        $existingUser = $existingInstitutionUser->user;
+
+        $row = [
+            'personal_identification_code' => $existingUser->personal_identification_code,
+            'name' => $existingUser->forename . ' ' . $existingUser->surname,
+            'email' => $existingInstitutionUser->email,
+            'phone' => $existingInstitutionUser->phone,
+            'department' => '',
+            'role' => $role->name,
+        ];
+
+        $this->sendValidationRequest($row, AuthHelpers::generateAccessTokenForInstitutionUser(
+            $this->createInstitutionUserWithRoles(
+                $institution,
+                $this->createRoleWithPrivileges($institution, [PrivilegeKey::AddUser])
+            )
+        ))->assertOk()->assertJson([
+            'isExistingInstitutionUser' => true
+        ]);
     }
 
     public function test_invalid_row_returned_422(): void
@@ -59,16 +85,14 @@ class InstitutionUserImportControllerValidateCsvRowTest extends TestCase
             'role' => 'wrong_role',
         ];
 
-        $actingInstitutionUser = InstitutionUser::factory()
-            ->has(Role::factory()->hasAttached(
-                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
+        $institution = $this->createInstitution();
+        $this->sendValidationRequest(
+            $row, AuthHelpers::generateAccessTokenForInstitutionUser(
+            $this->createInstitutionUserWithRoles(
+                $institution,
+                $this->createRoleWithPrivileges($institution, [PrivilegeKey::AddUser])
             ))
-            ->create();
-
-        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
-
-        $this->sendValidationRequest($row, $accessToken)
-            ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+        )->assertUnprocessable()
             ->assertJson([
                 'errors' => [
                     'personal_identification_code' => [],
@@ -83,7 +107,7 @@ class InstitutionUserImportControllerValidateCsvRowTest extends TestCase
     public function test_unauthorized_request_returned_403(): void
     {
         $this->sendValidationRequest([])
-            ->assertStatus(Response::HTTP_UNAUTHORIZED);
+            ->assertUnauthorized();
     }
 
     private function sendValidationRequest(array $row, string $accessToken = ''): TestResponse
