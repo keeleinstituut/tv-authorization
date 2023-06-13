@@ -111,4 +111,19 @@ class RoleTest extends TestCase
         // WHEN
         $testRole->delete();
     }
+
+    public function test_should_fail_updating_role_to_is_root_false(): void
+    {
+        // GIVEN
+        $testRole = Role::factory()->create();
+        $testRole->is_root = true;
+        $testRole->save();
+
+        // THEN
+        $this->expectException(DeniedRootRoleModifyException::class);
+
+        // WHEN
+        $testRole->is_root = false;
+        $testRole->save();
+    }
 }
