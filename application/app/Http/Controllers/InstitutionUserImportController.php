@@ -7,6 +7,9 @@ use App\Http\Requests\ImportUsersCsvRowValidationRequest;
 use App\Models\Department;
 use App\Models\InstitutionUser;
 use App\Models\Role;
+use App\Models\Scopes\ExcludeArchivedInstitutionUsersScope;
+use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
+use App\Models\Scopes\ExcludeIfRelatedUserSoftDeletedScope;
 use App\Models\User;
 use App\Policies\DepartmentPolicy;
 use App\Policies\InstitutionUserPolicy;
@@ -14,6 +17,7 @@ use App\Policies\RolePolicy;
 use App\Rules\CsvContentValidator;
 use DB;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
@@ -68,7 +72,7 @@ class InstitutionUserImportController extends Controller
         $institutionId = Auth::user()?->institutionId;
         $validator = $this->getCsvContentValidator($request->file('file'));
 
-        return DB::transaction(function () use ($validator, $institutionId) {
+        return DB::transaction(function () use ($validator, $institutionId): JsonResponse {
             $roles = Role::query()->withGlobalScope('policy', RolePolicy::scope())
                 ->pluck('id', 'name');
             $departments = Department::query()->withGlobalScope('policy', DepartmentPolicy::scope())
@@ -79,25 +83,24 @@ class InstitutionUserImportController extends Controller
                         throw new UnexpectedValueException('File contains unresolved errors');
                     }
 
+                    if ($this->isExistingInstitutionUser($attributes['personal_identification_code'])) {
+                        continue;
+                    }
+
                     $nameParts = explode(' ', $attributes['name']);
-                    $user = User::firstOrCreate([
+                    $user = User::withTrashed()->firstOrCreate([
                         'personal_identification_code' => $attributes['personal_identification_code'],
                     ], [
                         'forename' => $nameParts[0],
                         'surname' => $nameParts[1],
                     ]);
 
-                    $institutionUser = InstitutionUser::firstOrNew([
+                    $institutionUser = InstitutionUser::make([
                         'user_id' => $user->id,
                         'institution_id' => $institutionId,
-                    ], [
                         'email' => $attributes['email'],
                         'phone' => $attributes['phone'],
                     ]);
-
-                    if ($institutionUser->exists) {
-                        continue;
-                    }
                     $institutionUser->saveOrFail();
 
                     $roleIds = collect(explode(',', $attributes['role']))
@@ -112,10 +115,9 @@ class InstitutionUserImportController extends Controller
                     // TODO: add audit logs
                 }
             } catch (UnexpectedValueException) {
-                return response()->json(
-                    ['message' => 'The file contains unresolved errors'],
-                    Response::HTTP_BAD_REQUEST
-                );
+                return response()->json([
+                    'message' => 'The file contains unresolved errors',
+                ], Response::HTTP_BAD_REQUEST);
             }
 
             return response()->json(status: Response::HTTP_OK);
@@ -149,9 +151,12 @@ class InstitutionUserImportController extends Controller
 
     private function isExistingInstitutionUser(string $pin): bool
     {
-        return InstitutionUser::query()->whereRelation(
-            'user',
-            'personal_identification_code', $pin
-        )->withGlobalScope('policy', InstitutionUserPolicy::scope())->exists();
+        return InstitutionUser::withTrashed()->whereRelation('user',
+            fn (Builder $query) => $query->withTrashed()->where('personal_identification_code', $pin)
+        )->withGlobalScope('policy', InstitutionUserPolicy::scope())
+            ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
+            ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
+            ->withoutGlobalScope(ExcludeIfRelatedUserSoftDeletedScope::class)
+            ->exists();
     }
 }

@@ -10,10 +10,12 @@ use App\Models\Privilege;
 use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Testing\TestResponse;
 use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\TestCase;
+use Throwable;
 
 class InstitutionUserImportControllerValidateCsvTest extends TestCase
 {
@@ -39,7 +41,7 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
         )->assertOk()->assertExactJson(['errors' => [], 'rowsWithExistingInstitutionUsers' => []]);
     }
 
-    public function test_validation_of_file_with_already_existing_user_returned_200(): void
+    public function test_validation_of_file_with_already_existing_institution_user_returned_200(): void
     {
         $institution = $this->createInstitution();
         $role = $this->createRoleWithPrivileges($institution, [
@@ -57,6 +59,132 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
                     $existingUser->forename.' '.$existingUser->surname,
                     $existingInstitutionUser->email,
                     $existingInstitutionUser->phone,
+                    '',
+                    $role->name,
+                ],
+            ]),
+            AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->getActingInstitutionUserWithAddUserPrivilege($institution)
+            )
+        )->assertOk()->assertExactJson(['errors' => [], 'rowsWithExistingInstitutionUsers' => [0]]);
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function test_validation_of_file_with_archived_institution_user_returned_200(): void
+    {
+        $institution = $this->createInstitution();
+        $role = $this->createRoleWithPrivileges($institution, [
+            PrivilegeKey::DeactivateUser,
+            PrivilegeKey::ActivateUser,
+        ]);
+        $archivedInstitutionUser = $this->createInstitutionUserWithRoles($institution, $role);
+        $archivedInstitutionUser->archived_at = Carbon::now();
+        $archivedInstitutionUser->saveOrFail();
+
+        $archivedUser = $archivedInstitutionUser->user;
+        $this->sendImportFileValidationRequest(
+            $this->composeCsvContent([
+                $this->getValidCsvHeader(),
+                [
+                    $archivedUser->personal_identification_code,
+                    $archivedUser->forename.' '.$archivedUser->surname,
+                    $archivedInstitutionUser->email,
+                    $archivedInstitutionUser->phone,
+                    '',
+                    $role->name,
+                ],
+            ]),
+            AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->getActingInstitutionUserWithAddUserPrivilege($institution)
+            )
+        )->assertOk()->assertExactJson(['errors' => [], 'rowsWithExistingInstitutionUsers' => [0]]);
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function test_validation_of_file_with_deactivated_institution_user_returned_200(): void
+    {
+        $institution = $this->createInstitution();
+        $role = $this->createRoleWithPrivileges($institution, [
+            PrivilegeKey::DeactivateUser,
+            PrivilegeKey::ActivateUser,
+        ]);
+
+        $deactivatedInstitutionUser = $this->createInstitutionUserWithRoles($institution);
+        $deactivatedInstitutionUser->deactivation_date = Carbon::now()->subDay();
+        $deactivatedInstitutionUser->saveOrFail();
+
+        $deactivatedUser = $deactivatedInstitutionUser->user;
+        $this->sendImportFileValidationRequest(
+            $this->composeCsvContent([
+                $this->getValidCsvHeader(),
+                [
+                    $deactivatedUser->personal_identification_code,
+                    $deactivatedUser->forename.' '.$deactivatedUser->surname,
+                    $deactivatedInstitutionUser->email,
+                    $deactivatedInstitutionUser->phone,
+                    '',
+                    $role->name,
+                ],
+            ]),
+            AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->getActingInstitutionUserWithAddUserPrivilege($institution)
+            )
+        )->assertOk()->assertExactJson(['errors' => [], 'rowsWithExistingInstitutionUsers' => [0]]);
+    }
+
+    public function test_validation_of_file_with_deleted_user_returned_200(): void
+    {
+        $institution = $this->createInstitution();
+        $role = $this->createRoleWithPrivileges($institution, [
+            PrivilegeKey::DeactivateUser,
+            PrivilegeKey::ActivateUser,
+        ]);
+
+        $institutionUser = $this->createInstitutionUserWithRoles($institution);
+        $user = $institutionUser->user;
+        $user->delete();
+
+        $this->sendImportFileValidationRequest(
+            $this->composeCsvContent([
+                $this->getValidCsvHeader(),
+                [
+                    $user->personal_identification_code,
+                    $user->forename.' '.$user->surname,
+                    $institutionUser->email,
+                    $institutionUser->phone,
+                    '',
+                    $role->name,
+                ],
+            ]),
+            AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->getActingInstitutionUserWithAddUserPrivilege($institution)
+            )
+        )->assertOk()->assertExactJson(['errors' => [], 'rowsWithExistingInstitutionUsers' => [0]]);
+    }
+
+    public function test_validation_of_file_with_deleted_institution_user_returned_200(): void
+    {
+        $institution = $this->createInstitution();
+        $role = $this->createRoleWithPrivileges($institution, [
+            PrivilegeKey::DeactivateUser,
+            PrivilegeKey::ActivateUser,
+        ]);
+
+        $institutionUser = $this->createInstitutionUserWithRoles($institution);
+        $user = $institutionUser->user;
+        $institutionUser->delete();
+        $this->sendImportFileValidationRequest(
+            $this->composeCsvContent([
+                $this->getValidCsvHeader(),
+                [
+                    $user->personal_identification_code,
+                    $user->forename.' '.$user->surname,
+                    $institutionUser->email,
+                    $institutionUser->phone,
                     '',
                     $role->name,
                 ],
