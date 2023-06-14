@@ -22,8 +22,6 @@ enum PrivilegeKey: string
     case DeleteDepartment = 'DELETE_DEPARTMENT';
     case ViewVendorDatabase = 'VIEW_VENDOR_DB';
     case EditVendorDatabase = 'EDIT_VENDOR_DB';
-    case ViewInstitutionPriceRate = 'VIEW_INSTITUTION_PRICE_RATE';
-    case EditInstitutionPriceRate = 'EDIT_INSTITUTION_PRICE_RATE';
     case ViewGeneralPricelist = 'VIEW_GENERAL_PRICELIST';
     case ViewVendorTask = 'VIEW_VENDOR_TASK';
 }
