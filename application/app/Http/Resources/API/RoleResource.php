@@ -24,7 +24,8 @@ class RoleResource extends JsonResource
                 'name',
                 'institution_id',
                 'created_at',
-                'updated_at'
+                'updated_at',
+                'is_root',
             ),
             'privileges' => PrivilegeResource::collection($this->privileges),
         ];
