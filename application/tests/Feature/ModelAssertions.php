@@ -43,34 +43,61 @@ trait ModelAssertions
     /**
      * @param $action Closure(): TestResponse
      * @param $convertModelToArray Closure(Model): array
-     * @param $modelsWithExpectedChanges array<array{Model, array}>
-     * @param $expectedResponseDataModel Model
+     * @param $modelsWithExpectedChanges iterable<array{Model, array}>
+     * @param  Model|iterable<Model>  $expectedResponse
+     *
+     * @noinspection PhpDocSignatureInspection
      */
-    public function assertModelsInExpectedStateAfterActionAndCheckResponseContent(Closure $action,
+    public function assertModelsInExpectedStateAfterActionAndCheckResponseData(Closure $action,
         Closure $convertModelToArray,
-        array $modelsWithExpectedChanges,
-        Model $expectedResponseDataModel): void
+        iterable $modelsWithExpectedChanges,
+        Model|iterable $expectedResponse): void
     {
-        $this->assertModelsInExpectedStateAfterAction(
+        $testResponse = $this->assertModelsInExpectedStateAfterAction(
             $action,
             $convertModelToArray,
             $modelsWithExpectedChanges,
             Response::HTTP_OK
-        )->assertJsonFragment([
-            'data' => $convertModelToArray($expectedResponseDataModel->refresh()),
-        ]);
+        );
+
+        $expectedResponseData = is_iterable($expectedResponse)
+            ? collect($expectedResponse)
+                ->map(fn (Model $model) => $model->refresh())
+                ->map($convertModelToArray)
+                ->all()
+            : $convertModelToArray($expectedResponse->refresh());
+
+        $testResponse->assertJsonFragment(['data' => $expectedResponseData]);
     }
 
     /**
      * @param $action Closure(): TestResponse
      * @param $convertModelToArray Closure(Model): array
-     * @param $modelsWithExpectedChanges array<array{Model, array}>
+     * @param $models iterable<Model>
      * @param $expectedStatus int
-     * @return TestResponse
+     */
+    public function assertModelsWithoutChangeAfterAction(Closure $action,
+        Closure $convertModelToArray,
+        iterable $models,
+        int $expectedStatus = 200): TestResponse
+    {
+        return self::assertModelsInExpectedStateAfterAction(
+            $action,
+            $convertModelToArray,
+            collect($models)->map(fn ($model) => [$model, []]),
+            $expectedStatus
+        );
+    }
+
+    /**
+     * @param $action Closure(): TestResponse
+     * @param $convertModelToArray Closure(Model): array
+     * @param $modelsWithExpectedChanges iterable<array{Model, array}>
+     * @param $expectedStatus int
      */
     public function assertModelsInExpectedStateAfterAction(Closure $action,
         Closure $convertModelToArray,
-        array $modelsWithExpectedChanges,
+        iterable $modelsWithExpectedChanges,
         int $expectedStatus = 200): TestResponse
     {
         $expectedStateAfterAction = collect($modelsWithExpectedChanges)

@@ -20,4 +20,7 @@ enum PrivilegeKey: string
     case AddTag = 'ADD_TAG';
     case EditTag = 'EDIT_TAG';
     case DeleteTag = 'DELETE_TAG';
+    case AddDepartment = 'ADD_DEPARTMENT';
+    case EditDepartment = 'EDIT_DEPARTMENT';
+    case DeleteDepartment = 'DELETE_DEPARTMENT';
 }

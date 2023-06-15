@@ -2,9 +2,59 @@
 
 namespace App\Policies;
 
+use App\Enums\PrivilegeKey;
+use App\Models\Department;
+use App\Policies\Scope\DepartmentScope;
+use BadMethodCallException;
+use Illuminate\Support\Facades\Auth;
+use KeycloakAuthGuard\Models\JwtPayloadUser;
+
 class DepartmentPolicy
 {
-    public static function scope()
+    /** @noinspection PhpUnusedParameterInspection */
+    public function view(JwtPayloadUser $ignored, Department $department): bool
+    {
+        return $this->isInSameInstitutionAsCurrentUser($department);
+    }
+
+    public function create(): bool
+    {
+        return Auth::hasPrivilege(PrivilegeKey::AddDepartment->value);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function update(JwtPayloadUser $ignored, Department $department): bool
+    {
+        return $this->isInSameInstitutionAsCurrentUser($department)
+            && Auth::hasPrivilege(PrivilegeKey::EditDepartment->value);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function delete(JwtPayloadUser $ignored, Department $department): bool
+    {
+        return $this->isInSameInstitutionAsCurrentUser($department)
+            && Auth::hasPrivilege(PrivilegeKey::DeleteDepartment->value);
+    }
+
+    public function restore(): bool
+    {
+        throw new BadMethodCallException();
+    }
+
+    /** @noinspection PhpUnused */
+    public function forceDelete(): bool
+    {
+        throw new BadMethodCallException();
+    }
+
+    /** @noinspection PhpUnused */
+    public function isInSameInstitutionAsCurrentUser(Department $department): bool
+    {
+        return filled($currentInstitutionId = Auth::user()?->institutionId)
+            && $currentInstitutionId === $department->institution_id;
+    }
+
+    public static function scope(): DepartmentScope
     {
         return new Scope\DepartmentScope();
     }
@@ -26,6 +76,8 @@ class DepartmentScope implements IScope
      */
     public function apply(Builder $builder, Model $model): void
     {
-        $builder->where('institution_id', Auth::user()->institutionId);
+        $authenticatedInstitutionId = Auth::user()->institutionId;
+        abort_if(empty($authenticatedInstitutionId), 401);
+        $builder->where('institution_id', $authenticatedInstitutionId);
     }
 }

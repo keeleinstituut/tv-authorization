@@ -24,7 +24,6 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\AuthHelpers;
-use Tests\Feature\DataProviders;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
@@ -35,8 +34,7 @@ class InstitutionUserControllerDeactivateTest extends TestCase
 {
     use RefreshDatabase,
         InstitutionUserHelpers,
-        ModelAssertions,
-        DataProviders;
+        ModelAssertions;
 
     /** @return array<array{CarbonInterface, string, ?string}> */
     public static function provideTestNowsAndValidFutureDeactivationDates(): array
@@ -99,7 +97,7 @@ class InstitutionUserControllerDeactivateTest extends TestCase
             ]],
         ];
 
-        $this->assertModelsInExpectedStateAfterActionAndCheckResponseContent(
+        $this->assertModelsInExpectedStateAfterActionAndCheckResponseData(
             fn () => $this->sendDeactivateRequestWithExpectedPayloadAndHeaders(
                 $targetInstitutionUser,
                 $actingInstitutionUser,
@@ -173,7 +171,7 @@ class InstitutionUserControllerDeactivateTest extends TestCase
             ]],
         ];
 
-        $this->assertModelsInExpectedStateAfterActionAndCheckResponseContent(
+        $this->assertModelsInExpectedStateAfterActionAndCheckResponseData(
             fn () => $this->sendDeactivateRequestWithExpectedPayloadAndHeaders(
                 $targetInstitutionUser,
                 $actingInstitutionUser,
@@ -243,7 +241,7 @@ class InstitutionUserControllerDeactivateTest extends TestCase
             ]],
         ];
 
-        $this->assertModelsInExpectedStateAfterActionAndCheckResponseContent(
+        $this->assertModelsInExpectedStateAfterActionAndCheckResponseData(
             fn () => $this->sendDeactivateRequestWithExpectedPayloadAndHeaders(
                 $targetInstitutionUser,
                 $actingInstitutionUser,
@@ -427,10 +425,10 @@ class InstitutionUserControllerDeactivateTest extends TestCase
 
     /** @dataProvider providePayloadValuesInvalidators
      * @dataProvider providePayloadKeysInvalidators
-     * @dataProvider provideRandomInstitutionUserIdInvalidator
+     * @dataProvider \Tests\Feature\DataProviders::provideRandomInstitutionUserIdInvalidator
      *
      * @param $makePayloadInvalid Closure(array): array
-     * @param int $expectedStatusCode
+     *
      * @throws Throwable
      */
     public function test_nothing_is_changed_when_state_is_valid_but_payload_invalid(Closure $makePayloadInvalid, int $expectedStatusCode): void

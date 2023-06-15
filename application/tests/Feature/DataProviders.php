@@ -6,7 +6,7 @@ use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\AuthHelpers;
 
-trait DataProviders
+readonly class DataProviders
 {
     /** @return array<array{Closure(): array}> */
     public static function provideInvalidHeaderCreators(): array

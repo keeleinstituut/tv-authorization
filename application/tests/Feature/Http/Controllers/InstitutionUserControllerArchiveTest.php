@@ -15,7 +15,6 @@ use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\AuthHelpers;
@@ -105,7 +104,7 @@ class InstitutionUserControllerArchiveTest extends TestCase
             ]],
         ];
 
-        $this->assertModelsInExpectedStateAfterActionAndCheckResponseContent(
+        $this->assertModelsInExpectedStateAfterActionAndCheckResponseData(
             fn () => $this->sendArchiveRequestWithExpectedPayloadAndHeaders($targetInstitutionUser, $actingInstitutionUser),
             RepresentationHelpers::createInstitutionUserNestedRepresentation(...),
             $modelsWithExpectedChanges,
@@ -288,26 +287,12 @@ class InstitutionUserControllerArchiveTest extends TestCase
         ];
     }
 
-    /** @return array<array{Closure(array): array, int}> */
-    public static function provideRandomInstitutionUserIdInvalidator(): array
-    {
-        return [
-            'Random UUID: institution_user_id' => [
-                fn ($originalPayload) => [
-                    ...$originalPayload,
-                    'institution_user_id' => Str::orderedUuid()->toString(),
-                ],
-                Response::HTTP_NOT_FOUND,
-            ],
-        ];
-    }
-
     /** @dataProvider providePayloadValuesInvalidators
      * @dataProvider providePayloadKeysInvalidator
-     * @dataProvider provideRandomInstitutionUserIdInvalidator
+     * @dataProvider \Tests\Feature\DataProviders::provideRandomInstitutionUserIdInvalidator
      *
      * @param $makePayloadInvalid Closure(array): array
-     * @param int $expectedStatusCode
+     *
      * @throws Throwable
      */
     public function test_nothing_is_changed_when_state_is_valid_but_payload_invalid(Closure $makePayloadInvalid, int $expectedStatusCode): void

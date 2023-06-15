@@ -83,7 +83,7 @@ class InstitutionUserControllerActivateTest extends TestCase
             ]],
         ];
 
-        $this->assertModelsInExpectedStateAfterActionAndCheckResponseContent(
+        $this->assertModelsInExpectedStateAfterActionAndCheckResponseData(
             fn () => $this->sendActivateRequestWithExpectedPayloadAndHeaders(
                 $targetInstitutionUser,
                 $actingInstitutionUser,
@@ -169,7 +169,7 @@ class InstitutionUserControllerActivateTest extends TestCase
      * @dataProvider provideNonexistentInstitutionUserIdInvalidator
      *
      * @param $makePayloadInvalid Closure(array): array
-     * @param int $expectedStatusCode
+     *
      * @throws Throwable
      */
     public function test_nothing_is_changed_when_state_valid_but_payload_invalid(Closure $makePayloadInvalid, int $expectedStatusCode): void
@@ -243,7 +243,7 @@ class InstitutionUserControllerActivateTest extends TestCase
 
     /** @dataProvider provideTargetInstitutionUserInvalidators
      * @param $makeTargetInstitutionUserStateInvalid Closure(InstitutionUser): void
-     * @param int $expectedStatusCode
+     *
      * @throws Throwable
      */
     public function test_nothing_is_changed_when_target_has_invalid_state(Closure $makeTargetInstitutionUserStateInvalid,
@@ -291,7 +291,7 @@ class InstitutionUserControllerActivateTest extends TestCase
 
     /** @dataProvider provideActingInstitutionUserInvalidators
      * @param $modifyActingInstitutionUser Closure(InstitutionUser): void
-     * @param int $expectedStatusCode
+     *
      * @throws Throwable
      */
     public function test_nothing_is_changed_when_acting_user_has_invalid_state(Closure $modifyActingInstitutionUser, int $expectedStatusCode): void
@@ -424,11 +424,7 @@ class InstitutionUserControllerActivateTest extends TestCase
     }
 
     /**
-     * @param InstitutionUser $targetInstitutionUser
-     * @param InstitutionUser $actingInstitutionUser
-     * @param Collection<Role> $roles
-     * @param bool $notifyUser
-     * @return TestResponse
+     * @param  Collection<Role>  $roles
      */
     private function sendActivateRequestWithExpectedPayloadAndHeaders(InstitutionUser $targetInstitutionUser,
         InstitutionUser $actingInstitutionUser,
