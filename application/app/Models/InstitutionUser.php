@@ -103,6 +103,7 @@ class InstitutionUser extends Model
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, InstitutionUserRole::class)
+            ->using(InstitutionUserRole::class)
             ->wherePivot('deleted_at', null)
             ->withTimestamps();
     }
@@ -132,7 +133,7 @@ class InstitutionUser extends Model
 
     public function getStatus(): InstitutionUserStatus
     {
-        if (filled($this->archived_at)) {
+        if ($this->isArchived()) {
             return InstitutionUserStatus::Archived;
         }
 
@@ -141,6 +142,11 @@ class InstitutionUser extends Model
         }
 
         return InstitutionUserStatus::Active;
+    }
+
+    public function isArchived(): bool
+    {
+        return filled($this->archived_at);
     }
 
     public function isDeactivated(): bool
@@ -163,5 +169,20 @@ class InstitutionUser extends Model
                 return $value;
             }
         );
+    }
+
+    public function isOnlyUserWithRootRole(): bool
+    {
+        return $this->roles()
+            ->where('is_root', true)
+            ->has('institutionUsers', '=', 1)
+            ->exists();
+    }
+
+    public function hasRootRole(): bool
+    {
+        return $this->roles()
+            ->where('is_root', true)
+            ->exists();
     }
 }

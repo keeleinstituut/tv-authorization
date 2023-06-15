@@ -17,9 +17,16 @@ enum PrivilegeKey: string
     case ArchiveUser = 'ARCHIVE_USER';
     case EditUserWorktime = 'EDIT_USER_WORKTIME';
     case EditUserVacation = 'EDIT_USER_VACATION';
+    case AddTag = 'ADD_TAG';
+    case EditTag = 'EDIT_TAG';
+    case DeleteTag = 'DELETE_TAG';
     case AddDepartment = 'ADD_DEPARTMENT';
     case EditDepartment = 'EDIT_DEPARTMENT';
     case DeleteDepartment = 'DELETE_DEPARTMENT';
+    case ViewVendorDatabase = 'VIEW_VENDOR_DB';
+    case EditVendorDatabase = 'EDIT_VENDOR_DB';
+    case ViewGeneralPricelist = 'VIEW_GENERAL_PRICELIST';
+    case ViewVendorTask = 'VIEW_VENDOR_TASK';
     case EditInstitution = 'EDIT_INSTITUTION';
     case EditInstitutionWorktime = 'EDIT_INSTITUTION_WORKTIME';
 }

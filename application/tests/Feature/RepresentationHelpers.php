@@ -33,7 +33,7 @@ class RepresentationHelpers
         return [
             ...Arr::only(
                 $role->toArray(),
-                ['id', 'name', 'institution_id', 'created_at', 'updated_at']
+                ['id', 'name', 'institution_id', 'created_at', 'updated_at', 'is_root']
             ),
             'privileges' => $role->privileges
                 ->map(fn (Privilege $privilege) => ['key' => $privilege->key->value])

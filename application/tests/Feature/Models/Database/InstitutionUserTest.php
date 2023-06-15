@@ -5,6 +5,7 @@
 namespace Tests\Feature\Models\Database;
 
 use App\Enums\InstitutionUserStatus;
+use App\Exceptions\OnlyUserUnderRootRoleException;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
 use App\Models\InstitutionUserRole;
@@ -373,5 +374,143 @@ class InstitutionUserTest extends TestCase
             collect($institutionUsersExpectedArchived)->pluck('id'),
             InstitutionUser::status(InstitutionUserStatus::Archived)->pluck('id')
         );
+    }
+
+    public function test_should_detect_as_only_user_with_root_role(): void
+    {
+
+        // GIVEN
+        $testInstitutionUserRole = InstitutionUserRole::factory()->create();
+        $testInstitutionUserRole->role->is_root = true;
+        $testInstitutionUserRole->role->save();
+        $testInstitutionUser = $testInstitutionUserRole->institutionUser;
+
+        // WHEN
+        $result = $testInstitutionUser->isOnlyUserWithRootRole();
+
+        // THEN
+        $this->assertTrue($result);
+    }
+
+    public function test_should_not_detect_as_only_user_with_root_role(): void
+    {
+
+        // GIVEN
+        $testInstitutionUserRole = InstitutionUserRole::factory()->create();
+        $testInstitutionUserRole->role->is_root = true;
+        $testInstitutionUserRole->role->save();
+        InstitutionUserRole::factory()->create([
+            'role_id' => $testInstitutionUserRole->role->id,
+        ]);
+        $testInstitutionUser = $testInstitutionUserRole->institutionUser;
+
+        // WHEN
+        $result = $testInstitutionUser->isOnlyUserWithRootRole();
+
+        // THEN
+        $this->assertNotTrue($result);
+    }
+
+    public function test_should_fail_deactivating_when_only_user_under_root_role(): void
+    {
+        // GIVEN
+        $testInstitutionUserRole = InstitutionUserRole::factory()->create();
+        $testInstitutionUserRole->role->is_root = true;
+        $testInstitutionUserRole->role->save();
+        $testInstitutionUser = $testInstitutionUserRole->institutionUser;
+        $deactivationDate = Date::parse('2000-01-01')->toDateString();
+
+        // THEN
+        $this->expectException(OnlyUserUnderRootRoleException::class);
+
+        // WHEN
+        $testInstitutionUser->deactivation_date = $deactivationDate;
+        $testInstitutionUser->save();
+    }
+
+    public function test_should_allow_deactivating_when_multiple_user_under_root_role(): void
+    {
+        // GIVEN
+        $testInstitutionUserRole = InstitutionUserRole::factory()->create();
+        $testInstitutionUserRole->role->is_root = true;
+        $testInstitutionUserRole->role->save();
+        InstitutionUserRole::factory()->create(['role_id' => $testInstitutionUserRole->role->id]);
+        $testInstitutionUser = $testInstitutionUserRole->institutionUser;
+        $deactivationDate = Date::parse('2000-01-01')->toDateString();
+
+        // WHEN
+        $testInstitutionUser->deactivation_date = $deactivationDate;
+        $testInstitutionUser->save();
+
+        // THEN
+        $testInstitutionUser->refresh();
+        $this->assertEquals($deactivationDate, $testInstitutionUser->deactivation_date);
+    }
+
+    public function test_should_fail_archiving_when_only_user_under_root_role(): void
+    {
+        // GIVEN
+        $testInstitutionUserRole = InstitutionUserRole::factory()->create();
+        $testInstitutionUserRole->role->is_root = true;
+        $testInstitutionUserRole->role->save();
+        $testInstitutionUser = $testInstitutionUserRole->institutionUser;
+        $archivedAt = Date::parse('2000-01-01');
+
+        // THEN
+        $this->expectException(OnlyUserUnderRootRoleException::class);
+
+        // WHEN
+        $testInstitutionUser->archived_at = $archivedAt;
+        $testInstitutionUser->save();
+    }
+
+    public function test_should_allow_archiving_when_multiple_user_under_root_role(): void
+    {
+        // GIVEN
+        $testInstitutionUserRole = InstitutionUserRole::factory()->create();
+        $testInstitutionUserRole->role->is_root = true;
+        $testInstitutionUserRole->role->save();
+        InstitutionUserRole::factory()->create(['role_id' => $testInstitutionUserRole->role->id]);
+        $testInstitutionUser = $testInstitutionUserRole->institutionUser;
+        $archivedAt = Date::parse('2000-01-01');
+
+        // WHEN
+        $testInstitutionUser->archived_at = $archivedAt;
+        $testInstitutionUser->save();
+
+        // THEN
+        $testInstitutionUser->refresh();
+        $this->assertEquals($archivedAt, $testInstitutionUser->archived_at);
+    }
+
+    public function test_should_fail_deletion_when_only_user_under_root_role(): void
+    {
+        // GIVEN
+        $testInstitutionUserRole = InstitutionUserRole::factory()->create();
+        $testInstitutionUserRole->role->is_root = true;
+        $testInstitutionUserRole->role->save();
+        $testInstitutionUser = $testInstitutionUserRole->institutionUser;
+
+        // THEN
+        $this->expectException(OnlyUserUnderRootRoleException::class);
+
+        // WHEN
+        $testInstitutionUser->delete();
+    }
+
+    public function test_should_allow_deletion_when_multiple_user_under_root_role(): void
+    {
+        // GIVEN
+        $testInstitutionUserRole = InstitutionUserRole::factory()->create();
+        $testInstitutionUserRole->role->is_root = true;
+        $testInstitutionUserRole->role->save();
+        InstitutionUserRole::factory()->create(['role_id' => $testInstitutionUserRole->role->id]);
+        $testInstitutionUser = $testInstitutionUserRole->institutionUser;
+
+        // WHEN
+        $testInstitutionUser->delete();
+
+        // THEN
+        $this->assertSoftDeleted($testInstitutionUser);
     }
 }

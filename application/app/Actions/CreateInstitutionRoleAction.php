@@ -27,10 +27,11 @@ class CreateInstitutionRoleAction
         }
 
         return DB::transaction(function () use ($roleData): Role {
-            $role = Role::create([
-                'name' => $roleData->name,
-                'institution_id' => $roleData->institutionId,
-            ]);
+            $role = new Role();
+            $role->name = $roleData->name;
+            $role->institution_id = $roleData->institutionId;
+            $role->is_root = true;
+            $role->save();
 
             foreach ($roleData->privilegeKeys as $privilegeKey) {
                 $privilege = Privilege::where('key', $privilegeKey)->firstOrFail();

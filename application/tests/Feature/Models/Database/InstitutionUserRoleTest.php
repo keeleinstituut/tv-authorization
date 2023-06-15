@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Models\Database;
 
+use App\Exceptions\OnlyUserUnderRootRoleException;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
 use App\Models\InstitutionUserRole;
@@ -75,5 +76,37 @@ class InstitutionUserRoleTest extends TestCase
             ->for($referenceRole)
             ->for($referenceInstitutionUser)
             ->create();
+    }
+
+    public function test_should_fail_deleting_with_is_root_role_reference(): void
+    {
+        // GIVEN
+        $testInstitutionUserRole = InstitutionUserRole::factory()->create();
+        $testInstitutionUserRole->role->is_root = true;
+        $testInstitutionUserRole->role->save();
+
+        // THEN
+        $this->expectException(OnlyUserUnderRootRoleException::class);
+
+        // WHEN
+        $testInstitutionUserRole->delete();
+    }
+
+    public function test_should_fail_updating_with_is_root_role_reference(): void
+    {
+        // GIVEN
+        $testInstitutionUserRole = InstitutionUserRole::factory()->create();
+        $testInstitutionUserRole->role->is_root = true;
+        $testInstitutionUserRole->role->save();
+        $testRole = Role::factory()->create([
+            'institution_id' => $testInstitutionUserRole->role->institution_id,
+        ]);
+
+        // THEN
+        $this->expectException(OnlyUserUnderRootRoleException::class);
+
+        // WHEN
+        $testInstitutionUserRole->role_id = $testRole->id;
+        $testInstitutionUserRole->save();
     }
 }

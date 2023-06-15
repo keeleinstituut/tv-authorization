@@ -330,6 +330,7 @@ class RoleControllerTest extends TestCase
                 ])->toArray(),
             'created_at' => $role->created_at->toIsoString(),
             'updated_at' => $role->updated_at->toIsoString(),
+            'is_root' => $role->is_root,
         ];
     }
 }
