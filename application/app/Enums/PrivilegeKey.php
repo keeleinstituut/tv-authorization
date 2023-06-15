@@ -17,6 +17,9 @@ enum PrivilegeKey: string
     case ArchiveUser = 'ARCHIVE_USER';
     case EditUserWorkTime = 'EDIT_USER_WORKTIME';
     case EditUserVacation = 'EDIT_USER_VACATION';
+    case AddTag = 'ADD_TAG';
+    case EditTag = 'EDIT_TAG';
+    case DeleteTag = 'DELETE_TAG';
     case AddDepartment = 'ADD_DEPARTMENT';
     case EditDepartment = 'EDIT_DEPARTMENT';
     case DeleteDepartment = 'DELETE_DEPARTMENT';
