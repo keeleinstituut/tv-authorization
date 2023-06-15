@@ -5,7 +5,6 @@ namespace App\Http\Requests;
 use App\Rules\PhoneNumberRule;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class UpdateInstitutionRequest extends FormRequest
@@ -24,24 +23,18 @@ class UpdateInstitutionRequest extends FormRequest
             ],
             'phone' => [
                 'nullable',
-                Rule::when(
-                    $this->input('phone') !== null,
-                    ['string', 'filled', new PhoneNumberRule]
-                ),
+                'string',
+                new PhoneNumberRule,
             ],
             'email' => [
                 'nullable',
-                Rule::when(
-                    $this->input('email') !== null,
-                    ['string', 'filled', 'email']
-                ),
+                'string',
+                'email',
             ],
             'short_name' => [
                 'nullable',
-                Rule::when(
-                    $this->input('short_name') !== null,
-                    ['string', 'filled', 'max:3']
-                ),
+                'string',
+                'max:3',
             ],
         ];
     }
