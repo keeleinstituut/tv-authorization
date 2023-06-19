@@ -1,20 +1,16 @@
 <?php
 
-namespace Tests\Feature\Routes\InstitutionUserImport;
+namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\PrivilegeKey;
 use App\Http\Controllers\InstitutionUserImportController;
-use App\Models\InstitutionUser;
-use App\Models\Privilege;
-use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
-use Symfony\Component\HttpFoundation\Response;
 use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\TestCase;
 
-class FileRowValidationTest extends TestCase
+class InstitutionUserImportControllerValidateCsvRowTest extends TestCase
 {
     use RefreshDatabase, EntityHelpers;
 
@@ -27,13 +23,6 @@ class FileRowValidationTest extends TestCase
             PrivilegeKey::ActivateUser,
         ]);
 
-        $actingInstitutionUser = InstitutionUser::factory()
-            ->for($institution)
-            ->has(Role::factory()->hasAttached(
-                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
-            ))
-            ->create();
-
         $row = [
             'personal_identification_code' => '39511267470',
             'name' => 'user name',
@@ -43,9 +32,42 @@ class FileRowValidationTest extends TestCase
             'role' => $role->name,
         ];
 
-        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
-        $this->sendValidationRequest($row, $accessToken)
-            ->assertStatus(Response::HTTP_OK);
+        $this->sendValidationRequest($row, AuthHelpers::generateAccessTokenForInstitutionUser(
+            $this->createInstitutionUserWithRoles(
+                $institution,
+                $this->createRoleWithPrivileges($institution, [PrivilegeKey::AddUser])
+            )
+        ))->assertOk();
+    }
+
+    public function test_row_with_already_existing_user_returned_200(): void
+    {
+        $institution = $this->createInstitution();
+        $role = $this->createRoleWithPrivileges($institution, [
+            PrivilegeKey::DeactivateUser,
+            PrivilegeKey::ActivateUser,
+        ]);
+
+        $existingInstitutionUser = $this->createInstitutionUserWithRoles($institution, $role);
+        $existingUser = $existingInstitutionUser->user;
+
+        $row = [
+            'personal_identification_code' => $existingUser->personal_identification_code,
+            'name' => $existingUser->forename.' '.$existingUser->surname,
+            'email' => $existingInstitutionUser->email,
+            'phone' => $existingInstitutionUser->phone,
+            'department' => '',
+            'role' => $role->name,
+        ];
+
+        $this->sendValidationRequest($row, AuthHelpers::generateAccessTokenForInstitutionUser(
+            $this->createInstitutionUserWithRoles(
+                $institution,
+                $this->createRoleWithPrivileges($institution, [PrivilegeKey::AddUser])
+            )
+        ))->assertOk()->assertJson([
+            'isExistingInstitutionUser' => true,
+        ]);
     }
 
     public function test_invalid_row_returned_422(): void
@@ -59,16 +81,14 @@ class FileRowValidationTest extends TestCase
             'role' => 'wrong_role',
         ];
 
-        $actingInstitutionUser = InstitutionUser::factory()
-            ->has(Role::factory()->hasAttached(
-                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
-            ))
-            ->create();
-
-        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
-
-        $this->sendValidationRequest($row, $accessToken)
-            ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+        $institution = $this->createInstitution();
+        $this->sendValidationRequest(
+            $row, AuthHelpers::generateAccessTokenForInstitutionUser(
+                $this->createInstitutionUserWithRoles(
+                    $institution,
+                    $this->createRoleWithPrivileges($institution, [PrivilegeKey::AddUser])
+                ))
+        )->assertUnprocessable()
             ->assertJson([
                 'errors' => [
                     'personal_identification_code' => [],
@@ -83,7 +103,7 @@ class FileRowValidationTest extends TestCase
     public function test_unauthorized_request_returned_403(): void
     {
         $this->sendValidationRequest([])
-            ->assertStatus(Response::HTTP_UNAUTHORIZED);
+            ->assertUnauthorized();
     }
 
     private function sendValidationRequest(array $row, string $accessToken = ''): TestResponse
