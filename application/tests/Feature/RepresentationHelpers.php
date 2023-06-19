@@ -32,7 +32,7 @@ class RepresentationHelpers
         return [
             ...Arr::only(
                 $role->toArray(),
-                ['id', 'name', 'institution_id', 'created_at', 'updated_at']
+                ['id', 'name', 'institution_id', 'created_at', 'updated_at', 'is_root']
             ),
             'privileges' => $role->privileges
                 ->map(fn (Privilege $privilege) => ['key' => $privilege->key->value])
@@ -51,17 +51,20 @@ class RepresentationHelpers
     public static function createUserFlatRepresentation(?User $user): array
     {
         return Arr::only(
-            $user->toArray(),
+            $user?->toArray() ?? [],
             ['id', 'personal_identification_code', 'forename', 'surname', 'updated_at', 'created_at']
         );
     }
 
     public static function createInstitutionUserFlatRepresentation(InstitutionUser $institutionUser): array
     {
-        return Arr::only(
-            $institutionUser->toArray(),
-            ['id', 'email', 'phone', 'status', 'updated_at', 'created_at']
-        );
+        return [
+            ...Arr::only(
+                $institutionUser->toArray(),
+                ['id', 'email', 'phone', 'updated_at', 'created_at', 'archived_at', 'deactivation_date']
+            ),
+            'status' => $institutionUser->getStatus()->value,
+        ];
     }
 
     public static function createInstitutionFlatRepresentation(Institution $institution): array

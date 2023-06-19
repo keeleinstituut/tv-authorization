@@ -1,15 +1,18 @@
 <?php
 
-namespace Feature\Routes\InstitutionUserImport;
+namespace Tests\Feature\Routes\InstitutionUserImport;
 
 use App\Enums\PrivilegeKey;
 use App\Http\Controllers\InstitutionUserImportController;
-use App\Models\Institution;
+use App\Models\InstitutionUser;
+use App\Models\Privilege;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\TestCase;
 
@@ -30,6 +33,14 @@ class ImportTest extends TestCase
             PrivilegeKey::ActivateUser,
         ]);
 
+        $actingInstitutionUser = InstitutionUser::factory()
+            ->for($institution)
+            ->has(Role::factory()->hasAttached(
+                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
+            ))
+            ->create();
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
+
         $csvRow = $this->getValidCsvRow(
             implode(', ', [$role1->name, $role2->name]),
             $department->name
@@ -40,7 +51,7 @@ class ImportTest extends TestCase
                 $this->getValidCsvHeader(),
                 $csvRow,
             ]),
-            $this->getAccessToken([PrivilegeKey::AddUser], $institution)
+            $accessToken
         )->assertStatus(Response::HTTP_OK);
 
         $user = User::where('personal_identification_code', $csvRow[0])->first();
@@ -80,12 +91,20 @@ class ImportTest extends TestCase
             $newRole->name,
         ];
 
+        $actingInstitutionUser = InstitutionUser::factory()
+            ->for($institution)
+            ->has(Role::factory()->hasAttached(
+                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
+            ))
+            ->create();
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
+
         $this->sendImportFileRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $csvRow,
             ]),
-            $this->getAccessToken([PrivilegeKey::AddUser], $institution)
+            $accessToken
         )->assertStatus(Response::HTTP_OK);
 
         $importedUser = User::where('personal_identification_code', $csvRow[0])->first();
@@ -130,12 +149,20 @@ class ImportTest extends TestCase
             $role->name,
         ];
 
+        $actingInstitutionUser = InstitutionUser::factory()
+            ->for($institution)
+            ->has(Role::factory()->hasAttached(
+                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
+            ))
+            ->create();
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
+
         $response = $this->sendImportFileRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $csvRow,
             ]),
-            $this->getAccessToken([PrivilegeKey::AddUser], $institution)
+            $accessToken
         );
 
         $response->assertStatus(Response::HTTP_OK);
@@ -153,12 +180,19 @@ class ImportTest extends TestCase
 
     public function test_import_file_with_errors(): void
     {
+        $actingInstitutionUser = InstitutionUser::factory()
+            ->has(Role::factory()->hasAttached(
+                Privilege::firstWhere('key', PrivilegeKey::AddUser->value)
+            ))
+            ->create();
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
+
         $this->sendImportFileRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $this->getValidCsvRow('wrong-role'),
             ]),
-            $this->getAccessToken([PrivilegeKey::AddUser])
+            $accessToken
         )->assertStatus(Response::HTTP_BAD_REQUEST);
     }
 
@@ -174,12 +208,19 @@ class ImportTest extends TestCase
 
     public function test_import_without_corresponding_privilege_returned_403()
     {
+        $actingInstitutionUser = InstitutionUser::factory()
+            ->has(Role::factory()->hasAttached(
+                Privilege::firstWhere('key', PrivilegeKey::ActivateUser->value)
+            ))
+            ->create();
+        $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
+
         $this->sendImportFileRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $this->getValidCsvRow('some-name'),
             ]),
-            $this->getAccessToken([PrivilegeKey::ActivateUser])
+            $accessToken
         )->assertStatus(Response::HTTP_FORBIDDEN);
     }
 
@@ -211,23 +252,6 @@ class ImportTest extends TestCase
         }
 
         return $content;
-    }
-
-    private function getAccessToken(array $privileges, ?Institution $institution = null): string
-    {
-        $institution = $institution ?: $this->createInstitution();
-        $institutionUser = $this->createInstitutionUserWithRoles(
-            $institution,
-            $this->createRoleWithPrivileges($institution, $privileges)
-        );
-
-        return $this->generateAccessToken([
-            'selectedInstitution' => [
-                'id' => $institution->id,
-            ],
-            'institutionUserId' => $institutionUser->id,
-            'privileges' => array_map(fn (PrivilegeKey $key) => $key->value, $privileges),
-        ]);
     }
 
     private function getValidCsvRow(string $roleName, string $departmentName = ''): array

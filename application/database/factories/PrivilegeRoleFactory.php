@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends Factory<PrivilegeRole>
+ *
+ * @method static PrivilegeRoleFactory forRole(array $state)
  */
 class PrivilegeRoleFactory extends Factory
 {
@@ -21,7 +23,7 @@ class PrivilegeRoleFactory extends Factory
     {
         return [
             'role_id' => Role::factory(),
-            'privilege_id' => fake()->unique()->randomElement(Privilege::all()->pluck('id')),
+            'privilege_id' => $this->faker->unique()->randomElement(Privilege::all()->pluck('id')),
         ];
     }
 }

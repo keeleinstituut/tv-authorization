@@ -8,6 +8,7 @@ use App\Models\InstitutionUser;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\Json\ResourceCollection;
+use Illuminate\Support\Carbon;
 
 /**
  * @mixin InstitutionUser
@@ -19,13 +20,15 @@ class InstitutionUserResource extends JsonResource
      *     id: string,
      *     user: UserResource,
      *     institution: InstitutionResource,
-     *     department: DepartmentResource,
+     *     department: ?DepartmentResource,
      *     roles: ResourceCollection<RoleResource>,
      *     phone: string,
      *     email: string,
      *     status: InstitutionUserStatus,
      *     updated_at: Carbon,
-     *     created_at: Carbon
+     *     created_at: Carbon,
+     *     deactivation_date: ?string,
+     *     archived_at: ?Carbon
      * }
      */
     public function toArray(Request $request): array
@@ -35,10 +38,12 @@ class InstitutionUserResource extends JsonResource
                 'id',
                 'email',
                 'phone',
-                'status',
                 'created_at',
                 'updated_at',
+                'archived_at',
+                'deactivation_date',
             ),
+            'status' => $this->getStatus(),
             'user' => new UserResource($this->user),
             'institution' => new InstitutionResource($this->institution),
             'department' => new DepartmentResource($this->department),

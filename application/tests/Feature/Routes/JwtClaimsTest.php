@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\TestCase;
 use Throwable;
@@ -117,9 +118,7 @@ class JwtClaimsTest extends TestCase
             ->firstOrFail();
         $this->assertNotEquals($normallyAcceptedAzp, config('api.sso_internal_client_id'));
 
-        $accessToken = $this->generateAccessToken(
-            azp: $normallyAcceptedAzp
-        );
+        $accessToken = AuthHelpers::generateAccessToken(azp: $normallyAcceptedAzp);
 
         $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
@@ -140,7 +139,7 @@ class JwtClaimsTest extends TestCase
             $this->createRoleWithPrivileges($institution, self::PRIVILEGES_A)
         );
 
-        $accessToken = $this->generateAccessToken();
+        $accessToken = AuthHelpers::generateAccessToken();
 
         $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
@@ -279,8 +278,6 @@ class JwtClaimsTest extends TestCase
 
     public function generateInternalClientAccessToken(): string
     {
-        return $this->generateAccessToken(
-            azp: config('api.sso_internal_client_id')
-        );
+        return AuthHelpers::generateAccessToken(azp: config('api.sso_internal_client_id'));
     }
 }

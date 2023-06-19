@@ -11,15 +11,14 @@ use App\Models\Privilege;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Arr;
 use Illuminate\Testing\TestResponse;
 use League\Csv\Reader;
-use Tests\Feature\ModelHelpers;
+use Tests\AuthHelpers;
 use Tests\TestCase;
 
 class InstitutionUserControllerExportTest extends TestCase
 {
-    use RefreshDatabase, ModelHelpers;
+    use RefreshDatabase;
 
     public function test_exporting_institution_with_multiple_users(): void
     {
@@ -42,11 +41,8 @@ class InstitutionUserControllerExportTest extends TestCase
             ->create()
         );
 
-        // WHEN request sent to endpoint with the first institution id in access token
-        $response = $this->sendGetRequest(
-            $firstInstitution->id,
-            $firstInstitutionUser->user->personal_identification_code
-        );
+        // WHEN request sent to endpoint with the token authenticating the first institution user
+        $response = $this->sendGetRequestWithTokenFor($firstInstitutionUser);
 
         // THEN request should be a download
         $response
@@ -75,7 +71,7 @@ class InstitutionUserControllerExportTest extends TestCase
     {
         // GIVEN there is an institution with a single user
         $singleInstitutionUser = InstitutionUser::factory()
-            ->for($institutionWithSingleUser = Institution::factory()->create())
+            ->for(Institution::factory())
             ->has(User::factory())
             ->has(Role::factory()->hasAttached(
                 Privilege::firstWhere('key', PrivilegeKey::ExportUser->value)
@@ -96,10 +92,7 @@ class InstitutionUserControllerExportTest extends TestCase
             ->create();
 
         // WHEN request sent to endpoint with the single-user institution id in access token
-        $response = $this->sendGetRequest(
-            $institutionWithSingleUser->id,
-            $singleInstitutionUser->user->personal_identification_code
-        );
+        $response = $this->sendGetRequestWithTokenFor($singleInstitutionUser);
 
         // THEN request should be a download
         $response
@@ -141,17 +134,15 @@ class InstitutionUserControllerExportTest extends TestCase
         ($softDeletedInstitutionUser = $institution->institutionUsers()->firstOrFail())->delete();
         $this->assertSoftDeleted($softDeletedInstitutionUser);
 
+        /** @var InstitutionUser $currentInstitutionUser */
         $currentInstitutionUser = $institution->refresh()->institutionUsers()->firstOrFail();
         $currentInstitutionUser->roles()->attach(Role::factory()
             ->hasAttached(Privilege::firstWhere('key', PrivilegeKey::ExportUser->value))
             ->create()
         );
 
-        // WHEN request sent to endpoint with the created institution id in access token
-        $response = $this->sendGetRequest(
-            $institution->id,
-            $currentInstitutionUser->user->personal_identification_code
-        );
+        // WHEN request sent to endpoint with the token authenticating current institution user
+        $response = $this->sendGetRequestWithTokenFor($currentInstitutionUser);
 
         // THEN request should be a download
         $response
@@ -182,17 +173,15 @@ class InstitutionUserControllerExportTest extends TestCase
         ($softDeletedUser = $institution->institutionUsers()->firstOrFail()->user)->delete();
         $this->assertSoftDeleted($softDeletedUser);
 
+        /** @var InstitutionUser $currentInstitutionUser */
         $currentInstitutionUser = $institution->refresh()->institutionUsers()->whereHas('user')->firstOrFail();
         $currentInstitutionUser->roles()->attach(Role::factory()
             ->hasAttached(Privilege::firstWhere('key', PrivilegeKey::ExportUser->value))
             ->create()
         );
 
-        // WHEN request sent to endpoint with the created institution id in access token
-        $response = $this->sendGetRequest(
-            $institution->id,
-            $currentInstitutionUser->user->personal_identification_code
-        );
+        // WHEN request sent to endpoint with the token authenticating current institution user
+        $response = $this->sendGetRequestWithTokenFor($currentInstitutionUser);
 
         // THEN request should be a download
         $response
@@ -219,6 +208,7 @@ class InstitutionUserControllerExportTest extends TestCase
             )
             ->create();
 
+        /** @var InstitutionUser $currentInstitutionUser */
         $currentInstitutionUser = $institution->refresh()->institutionUsers()->firstOrFail();
         $currentInstitutionUser->roles()->attach(Role::factory()
             ->hasAttached(Privilege::firstWhere('key', PrivilegeKey::ViewUser->value))
@@ -226,11 +216,7 @@ class InstitutionUserControllerExportTest extends TestCase
         );
 
         // WHEN request sent to endpoint without the EXPORT_USER privilege in access token
-        $response = $this->sendGetRequest(
-            $institution->id,
-            $currentInstitutionUser->user->personal_identification_code,
-            [PrivilegeKey::ViewUser]
-        );
+        $response = $this->sendGetRequestWithTokenFor($currentInstitutionUser);
 
         // THEN response should indicate action is forbidden
         $response->assertForbidden();
@@ -260,19 +246,11 @@ class InstitutionUserControllerExportTest extends TestCase
         $response->assertUnauthorized();
     }
 
-    /**
-     * @param  array<PrivilegeKey>  $tokenPrivileges
-     */
-    private function sendGetRequest(
-        string $tokenInstitutionId,
-        string $tokenUserPic,
-        array $tokenPrivileges = [PrivilegeKey::ExportUser]): TestResponse
+    private function sendGetRequestWithTokenFor(
+        InstitutionUser $institutionUser,
+        array $tolkevaravClaimsOverride = []): TestResponse
     {
-        $token = $this->generateAccessToken([
-            'selectedInstitution' => ['id' => $tokenInstitutionId],
-            'personalIdentificationCode' => $tokenUserPic,
-            'privileges' => Arr::map($tokenPrivileges, fn ($privilege) => $privilege->value),
-        ]);
+        $token = AuthHelpers::generateAccessTokenForInstitutionUser($institutionUser, $tolkevaravClaimsOverride);
 
         return $this
             ->withHeaders(['Authorization' => "Bearer $token"])

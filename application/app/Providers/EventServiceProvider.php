@@ -7,7 +7,6 @@ use App\Observers;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Event;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -28,8 +27,10 @@ class EventServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Models\Role::observe(Observers\RoleObserver::class);
-        Models\Institution::observe(Observers\InstitutionObserver::class);
+        Models\PrivilegeRole::observe(Observers\PrivilegeRoleObserver::class);
         Models\InstitutionUser::observe(Observers\InstitutionUserObserver::class);
+        Models\InstitutionUserRole::observe(Observers\InstitutionUserRoleObserver::class);
+        Models\Institution::observe(Observers\InstitutionObserver::class);
     }
 
     /**

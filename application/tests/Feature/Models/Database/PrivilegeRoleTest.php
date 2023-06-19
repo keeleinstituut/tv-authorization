@@ -1,8 +1,9 @@
 <?php
 
-namespace Feature\Models\Database;
+namespace Tests\Feature\Models\Database;
 
 use App\Enums\PrivilegeKey;
+use App\Exceptions\DeniedRootRoleModifyException;
 use App\Models\Privilege;
 use App\Models\PrivilegeRole;
 use App\Models\Role;
@@ -55,5 +56,105 @@ class PrivilegeRoleTest extends TestCase
             ->for($referencePrivilege)
             ->for($referenceRole)
             ->create();
+    }
+
+    public function test_should_fail_deleting_when_is_root_role(): void
+    {
+        // GIVEN
+        $testPrivilegeRole = PrivilegeRole::factory()->create();
+        $testPrivilegeRole->role->is_root = true;
+        $testPrivilegeRole->role->save();
+
+        // THEN
+        $this->expectException(DeniedRootRoleModifyException::class);
+
+        // WHEN
+        $testPrivilegeRole->delete();
+    }
+
+    public function test_should_fail_updating_privilege_id_when_is_root_role(): void
+    {
+        // GIVEN
+        $testPrivilegeRole = PrivilegeRole::factory()->create();
+        $testPrivilegeRole->role->is_root = true;
+        $testPrivilegeRole->role->save();
+        $testPrivilegeRoleSecond = PrivilegeRole::factory()->create();
+
+        // THEN
+        $this->expectException(DeniedRootRoleModifyException::class);
+
+        // WHEN
+        $testPrivilegeRole->update([
+            'privilege_id' => $testPrivilegeRoleSecond->privilege_id,
+        ]);
+    }
+
+    public function test_should_fail_updating_role_id_when_is_root_role(): void
+    {
+        // GIVEN
+        $testPrivilegeRole = PrivilegeRole::factory()->create();
+        $testPrivilegeRole->role->is_root = true;
+        $testPrivilegeRole->role->save();
+        $testPrivilegeRoleSecond = PrivilegeRole::factory()->create();
+
+        // THEN
+        $this->expectException(DeniedRootRoleModifyException::class);
+
+        // WHEN
+        $testPrivilegeRole->update([
+            'role_id' => $testPrivilegeRoleSecond->role_id,
+        ]);
+    }
+
+    public function test_should_fail_updating_role_id_and_privilege_id_when_is_root_role(): void
+    {
+        // GIVEN
+        $testPrivilegeRole = PrivilegeRole::factory()->create();
+        $testPrivilegeRole->role->is_root = true;
+        $testPrivilegeRole->role->save();
+        $testPrivilegeRoleSecond = PrivilegeRole::factory()->create();
+
+        // THEN
+        $this->expectException(DeniedRootRoleModifyException::class);
+
+        // WHEN
+        $testPrivilegeRole->update([
+            'role_id' => $testPrivilegeRoleSecond->role_id,
+            'privilege_id' => $testPrivilegeRoleSecond->privilege_id,
+        ]);
+    }
+
+    public function test_should_allow_updating_role_id_when_is_not_root_role(): void
+    {
+        // GIVEN
+        $testPrivilegeRole = PrivilegeRole::factory()->create();
+        $testPrivilegeRole->role->is_root = false;
+        $testPrivilegeRole->role->save();
+        $testPrivilegeRoleSecond = PrivilegeRole::factory()->create();
+
+        // WHEN
+        $testPrivilegeRole->update([
+            'role_id' => $testPrivilegeRoleSecond->role_id,
+        ]);
+
+        // THEN
+        $this->assertEquals($testPrivilegeRoleSecond->role_id, $testPrivilegeRole->role_id);
+    }
+
+    public function test_should_allow_updating_privilege_id_when_is_not_root_role(): void
+    {
+        // GIVEN
+        $testPrivilegeRole = PrivilegeRole::factory()->create();
+        $testPrivilegeRole->role->is_root = false;
+        $testPrivilegeRole->role->save();
+        $testPrivilegeRoleSecond = PrivilegeRole::factory()->create();
+
+        // WHEN
+        $testPrivilegeRole->update([
+            'privilege_id' => $testPrivilegeRoleSecond->privilege_id,
+        ]);
+
+        // THEN
+        $this->assertEquals($testPrivilegeRoleSecond->privilege_id, $testPrivilegeRole->privilege_id);
     }
 }
