@@ -17,6 +17,7 @@ class RoleObserver
 
     /**
      * Handle the Role "updating" event.
+     *
      * @throws DeniedRootRoleModifyException
      */
     public function updating(Role $role): void
