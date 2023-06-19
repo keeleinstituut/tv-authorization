@@ -99,7 +99,7 @@ readonly class AuthHelpers
         return static::createJwt($payload->toArray());
     }
 
-    protected static function createJwt(array $payload): string
+    public static function createJwt(array $payload): string
     {
         $privateKeyPem = static::getPrivateKey();
 

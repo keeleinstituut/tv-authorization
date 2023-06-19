@@ -9,6 +9,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\AuthHelpers;
 use Tests\EntityHelpers;
 use Tests\TestCase;
 
@@ -124,7 +125,8 @@ class InstitutionSyncControllerTest extends TestCase
     public function generateServiceAccountAccessToken(?string $role = null): string
     {
         $azp = explode(',', config('keycloak.service_accounts_accepted_authorized_parties'))[0];
-        return $this->createJwt([
+
+        return AuthHelpers::createJwt([
             'iss' => config('keycloak.base_url').'/realms/'.config('keycloak.realm'),
             'azp' => $azp,
             'realm_access' => [

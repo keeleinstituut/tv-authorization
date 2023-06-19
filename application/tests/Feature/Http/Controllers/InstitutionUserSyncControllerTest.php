@@ -9,7 +9,9 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\AuthHelpers;
 use Tests\EntityHelpers;
+use Tests\Feature\RepresentationHelpers;
 use Tests\TestCase;
 
 class InstitutionUserSyncControllerTest extends TestCase
@@ -52,7 +54,7 @@ class InstitutionUserSyncControllerTest extends TestCase
         $institutionUser = InstitutionUser::factory()->create();
         $this->queryInstitutionUserForSync($institutionUser->id, $this->generateServiceAccountAccessToken())
             ->assertStatus(Response::HTTP_OK)
-            ->assertJson(['data' => $this->createInstitutionUserRepresentation($institutionUser)]);
+            ->assertJson(['data' => RepresentationHelpers::createInstitutionUserNestedRepresentation($institutionUser)]);
     }
 
     public function test_single_deleted_institution_user_returned(): void
@@ -60,7 +62,7 @@ class InstitutionUserSyncControllerTest extends TestCase
         $institutionUser = InstitutionUser::factory()->trashed()->create();
         $this->queryInstitutionUserForSync($institutionUser->id, $this->generateServiceAccountAccessToken())
             ->assertStatus(Response::HTTP_OK)
-            ->assertJson(['data' => $this->createInstitutionUserRepresentation($institutionUser)]);
+            ->assertJson(['data' => RepresentationHelpers::createInstitutionUserNestedRepresentation($institutionUser)]);
     }
 
     public function test_receiving_single_institution_user_with_wrong_uuid_value_returned_404(): void
@@ -81,7 +83,7 @@ class InstitutionUserSyncControllerTest extends TestCase
 
         return [
             'data' => $institutionUsers->map(
-                fn (InstitutionUser $institutionUser) => $this->createInstitutionUserRepresentation(
+                fn (InstitutionUser $institutionUser) => RepresentationHelpers::createInstitutionUserNestedRepresentation(
                     $institutionUser
                 )
             )->toArray(),
@@ -91,35 +93,6 @@ class InstitutionUserSyncControllerTest extends TestCase
                 'per_page' => InstitutionUserSyncController::PER_PAGE,
                 'total' => $institutionUsers->count(),
             ],
-        ];
-    }
-
-    private function createInstitutionUserRepresentation(InstitutionUser $institutionUser): array
-    {
-        return [
-            'id' => $institutionUser->id,
-            'email' => $institutionUser->email,
-            'phone' => $institutionUser->phone,
-            'status' => $institutionUser->status->value,
-            'created_at' => $institutionUser->created_at->toISOString(),
-            'updated_at' => $institutionUser->updated_at->toISOString(),
-            'deleted_at' => $institutionUser->deleted_at?->toISOString(),
-            'user' => [
-                'id' => $institutionUser->user->id,
-                'personal_identification_code' => $institutionUser->user->personal_identification_code,
-                'forename' => $institutionUser->user->forename,
-                'surname' => $institutionUser->user->surname,
-                'updated_at' => $institutionUser->user->updated_at->toISOString(),
-                'created_at' => $institutionUser->user->created_at->toISOString(),
-            ],
-            'department' => filled($institutionUser->department) ? [
-                'id' => $institutionUser->department->id,
-                'institution_id' => $institutionUser->department->institution_id,
-                'name' => $institutionUser->department->name,
-                'created_at' => $institutionUser->department->created_at->toISOString(),
-                'updated_at' => $institutionUser->department->updated_at->toISOString(),
-            ] : null,
-            'institution_id' => $institutionUser->institution_id,
         ];
     }
 
@@ -148,7 +121,8 @@ class InstitutionUserSyncControllerTest extends TestCase
     public function generateServiceAccountAccessToken(?string $role = null): string
     {
         $azp = explode(',', config('keycloak.service_accounts_accepted_authorized_parties'))[0];
-        return $this->createJwt([
+
+        return AuthHelpers::createJwt([
             'iss' => config('keycloak.base_url').'/realms/'.config('keycloak.realm'),
             'azp' => $azp,
             'realm_access' => [

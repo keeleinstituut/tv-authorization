@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\Sync\InstitutionUserSyncResource;
 use App\Models\InstitutionUser;
+use App\Models\Scopes\ExcludeArchivedInstitutionUsersScope;
+use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
+use App\Models\Scopes\ExcludeIfRelatedUserSoftDeletedScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use KeycloakAuthGuard\Middleware\EnsureJwtBelongsToServiceAccountWithSyncRole;
@@ -20,14 +24,22 @@ class InstitutionUserSyncController extends Controller
     public function index(): AnonymousResourceCollection
     {
         return InstitutionUserSyncResource::collection(
-            InstitutionUser::withTrashed()->paginate(self::PER_PAGE)
+            $this->getBaseQuery()->paginate(self::PER_PAGE)
         );
     }
 
     public function show(Request $request): InstitutionUserSyncResource
     {
         return new InstitutionUserSyncResource(
-            InstitutionUser::withTrashed()->whereId($request->route('id'))->firstOrFail()
+            $this->getBaseQuery()->where('id', $request->route('id'))->firstOrFail()
         );
+    }
+
+    private function getBaseQuery(): Builder
+    {
+        return InstitutionUser::withTrashed()
+            ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
+            ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
+            ->withoutGlobalScope(ExcludeIfRelatedUserSoftDeletedScope::class);
     }
 }
