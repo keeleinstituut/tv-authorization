@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Routes;
+namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\InstitutionUserStatus;
 use App\Enums\PrivilegeKey;
@@ -19,7 +19,7 @@ use Tests\EntityHelpers;
 use Tests\Feature\RepresentationHelpers;
 use Tests\TestCase;
 
-class InstitutionUserListTest extends TestCase
+class InstitutionUserControllerIndexTest extends TestCase
 {
     use RefreshDatabase, EntityHelpers;
 
