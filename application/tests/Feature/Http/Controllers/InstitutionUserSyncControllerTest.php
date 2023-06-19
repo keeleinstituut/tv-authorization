@@ -54,7 +54,7 @@ class InstitutionUserSyncControllerTest extends TestCase
         $institutionUser = InstitutionUser::factory()->create();
         $this->queryInstitutionUserForSync($institutionUser->id, $this->generateServiceAccountAccessToken())
             ->assertStatus(Response::HTTP_OK)
-            ->assertJson(['data' => RepresentationHelpers::createInstitutionUserNestedRepresentation($institutionUser)]);
+            ->assertJson(['data' => $this->createInstitutionUserNestedRepresentation($institutionUser)]);
     }
 
     public function test_single_deleted_institution_user_returned(): void
@@ -62,7 +62,7 @@ class InstitutionUserSyncControllerTest extends TestCase
         $institutionUser = InstitutionUser::factory()->trashed()->create();
         $this->queryInstitutionUserForSync($institutionUser->id, $this->generateServiceAccountAccessToken())
             ->assertStatus(Response::HTTP_OK)
-            ->assertJson(['data' => RepresentationHelpers::createInstitutionUserNestedRepresentation($institutionUser)]);
+            ->assertJson(['data' => $this->createInstitutionUserNestedRepresentation($institutionUser)]);
     }
 
     public function test_receiving_single_institution_user_with_wrong_uuid_value_returned_404(): void
@@ -83,7 +83,7 @@ class InstitutionUserSyncControllerTest extends TestCase
 
         return [
             'data' => $institutionUsers->map(
-                fn (InstitutionUser $institutionUser) => RepresentationHelpers::createInstitutionUserNestedRepresentation(
+                fn(InstitutionUser $institutionUser) => $this->createInstitutionUserNestedRepresentation(
                     $institutionUser
                 )
             )->toArray(),
@@ -100,7 +100,7 @@ class InstitutionUserSyncControllerTest extends TestCase
     {
         if (filled($token)) {
             $this->withHeaders([
-                'Authorization' => 'Bearer '.$token,
+                'Authorization' => 'Bearer ' . $token,
             ]);
         }
 
@@ -111,7 +111,7 @@ class InstitutionUserSyncControllerTest extends TestCase
     {
         if (filled($token)) {
             $this->withHeaders([
-                'Authorization' => 'Bearer '.$token,
+                'Authorization' => 'Bearer ' . $token,
             ]);
         }
 
@@ -123,11 +123,19 @@ class InstitutionUserSyncControllerTest extends TestCase
         $azp = explode(',', config('keycloak.service_accounts_accepted_authorized_parties'))[0];
 
         return AuthHelpers::createJwt([
-            'iss' => config('keycloak.base_url').'/realms/'.config('keycloak.realm'),
+            'iss' => config('keycloak.base_url') . '/realms/' . config('keycloak.realm'),
             'azp' => $azp,
             'realm_access' => [
                 'roles' => filled($role) ? [$role] : [config('keycloak.service_account_sync_role')],
             ],
         ]);
+    }
+
+    private function createInstitutionUserNestedRepresentation(InstitutionUser $institutionUser): array
+    {
+        return [
+            ...RepresentationHelpers::createInstitutionUserNestedRepresentation($institutionUser),
+            'deleted_at' => $institutionUser->deleted_at?->toISOString()
+        ];
     }
 }
