@@ -2,9 +2,9 @@
 
 namespace App\Observers;
 
+use App\Events\Publishers\InstitutionUserEventsPublisher;
 use App\Exceptions\OnlyUserUnderRootRoleException;
 use App\Models\InstitutionUser;
-use SyncTools\AmqpPublisher;
 
 class InstitutionUserObserver
 {
@@ -13,7 +13,7 @@ class InstitutionUserObserver
      */
     public bool $afterCommit = true;
 
-    public function __construct(private readonly AmqpPublisher $publisher)
+    public function __construct(private readonly InstitutionUserEventsPublisher $publisher)
     {
     }
 
@@ -36,7 +36,7 @@ class InstitutionUserObserver
      */
     public function saved(InstitutionUser $institutionUser): void
     {
-        $this->publishEvent($institutionUser, 'institution-user.saved');
+        $this->publisher->publishChangedEvent($institutionUser->id);
     }
 
     /**
@@ -56,7 +56,7 @@ class InstitutionUserObserver
      */
     public function deleted(InstitutionUser $institutionUser): void
     {
-        $this->publishEvent($institutionUser, 'institution-user.saved');
+        $this->publisher->publishChangedEvent($institutionUser->id);
     }
 
     /**
@@ -64,7 +64,7 @@ class InstitutionUserObserver
      */
     public function restored(InstitutionUser $institutionUser): void
     {
-        //
+        $this->publisher->publishChangedEvent($institutionUser->id);
     }
 
     /**
@@ -72,15 +72,6 @@ class InstitutionUserObserver
      */
     public function forceDeleted(InstitutionUser $institutionUser): void
     {
-        $this->publishEvent($institutionUser, 'institution-user.deleted');
-    }
-
-    private function publishEvent(InstitutionUser $institutionUser, string $routingKey = ''): void
-    {
-        $this->publisher->publish(
-            ['id' => $institutionUser->id],
-            'institution-user',
-            $routingKey
-        );
+        $this->publisher->publishDeletedEvent($institutionUser->id);
     }
 }

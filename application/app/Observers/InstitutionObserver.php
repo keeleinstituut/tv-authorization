@@ -2,8 +2,9 @@
 
 namespace App\Observers;
 
+use App\Events\Publishers\InstitutionEventsPublisher;
+use App\Events\Publishers\InstitutionUserEventsPublisher;
 use App\Models\Institution;
-use SyncTools\AmqpPublisher;
 
 class InstitutionObserver
 {
@@ -12,8 +13,10 @@ class InstitutionObserver
      */
     public bool $afterCommit = true;
 
-    public function __construct(private readonly AmqpPublisher $publisher)
-    {
+    public function __construct(
+        private readonly InstitutionEventsPublisher $institutionPublisher,
+        private readonly InstitutionUserEventsPublisher $institutionUserPublisher
+    ) {
     }
 
     /**
@@ -21,12 +24,14 @@ class InstitutionObserver
      */
     public function saved(Institution $institution): void
     {
-        $this->publishEvent($institution, 'institution.saved');
+        $this->institutionPublisher->publishSavedEvent($institution->id);
+        $this->publishAffectedInstitutionUsers($institution);
     }
 
     public function deleted(Institution $institution): void
     {
-        $this->publishEvent($institution, 'institution.saved');
+        $this->institutionPublisher->publishSavedEvent($institution->id);
+        $this->publishAffectedInstitutionUsers($institution);
     }
 
     /**
@@ -34,15 +39,13 @@ class InstitutionObserver
      */
     public function forceDeleted(Institution $institution): void
     {
-        $this->publishEvent($institution, 'institution.deleted');
+        $this->institutionPublisher->publishDeletedEvent($institution->id);
+        $this->publishAffectedInstitutionUsers($institution);
     }
 
-    private function publishEvent(Institution $institution, string $routingKey = ''): void
+    private function publishAffectedInstitutionUsers(Institution $institution): void
     {
-        $this->publisher->publish(
-            ['id' => $institution->id],
-            'institution',
-            $routingKey
-        );
+        $institution->institutionUsers()->pluck('id')
+            ->each(fn (string $institutionUserId) => $this->institutionUserPublisher->publishChangedEvent($institutionUserId));
     }
 }

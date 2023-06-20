@@ -94,8 +94,6 @@ class InstitutionSyncControllerTest extends TestCase
             'phone' => $institution->phone,
             'email' => $institution->email,
             'logo_url' => $institution->logo_url,
-            'created_at' => $institution->created_at->toISOString(),
-            'updated_at' => $institution->updated_at->toISOString(),
             'deleted_at' => $institution->deleted_at?->toISOString(),
         ];
     }

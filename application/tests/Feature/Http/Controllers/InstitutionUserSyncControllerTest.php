@@ -3,8 +3,14 @@
 namespace Tests\Feature\Http\Controllers;
 
 use App\Http\Controllers\InstitutionUserSyncController;
+use App\Models\Department;
+use App\Models\Institution;
 use App\Models\InstitutionUser;
+use App\Models\Privilege;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
@@ -24,7 +30,7 @@ class InstitutionUserSyncControllerTest extends TestCase
             ->create();
 
         $this->queryInstitutionUsersForSync($this->generateServiceAccountAccessToken())
-            ->assertStatus(Response::HTTP_OK)
+            ->assertOk()
             ->assertJson($this->buildExpectedListResponse($institutionUsers));
     }
 
@@ -33,27 +39,27 @@ class InstitutionUserSyncControllerTest extends TestCase
         $institutionUsers = InstitutionUser::factory(5)->trashed()->create();
 
         $this->queryInstitutionUsersForSync($this->generateServiceAccountAccessToken())
-            ->assertStatus(Response::HTTP_OK)
+            ->assertOk()
             ->assertJson($this->buildExpectedListResponse($institutionUsers));
     }
 
     public function test_unauthorized_access_to_list_of_institution_users_returned_401(): void
     {
         $this->queryInstitutionUsersForSync()
-            ->assertStatus(Response::HTTP_UNAUTHORIZED);
+            ->assertUnauthorized();
     }
 
     public function test_access_with_incorrect_role_to_list_of_institution_users_returned_403(): void
     {
         $this->queryInstitutionUsersForSync($this->generateServiceAccountAccessToken('wrong-role'))
-            ->assertStatus(Response::HTTP_FORBIDDEN);
+            ->assertForbidden();
     }
 
     public function test_single_institution_user_returned(): void
     {
         $institutionUser = InstitutionUser::factory()->create();
         $this->queryInstitutionUserForSync($institutionUser->id, $this->generateServiceAccountAccessToken())
-            ->assertStatus(Response::HTTP_OK)
+            ->assertOk()
             ->assertJson(['data' => $this->createInstitutionUserNestedRepresentation($institutionUser)]);
     }
 
@@ -61,20 +67,20 @@ class InstitutionUserSyncControllerTest extends TestCase
     {
         $institutionUser = InstitutionUser::factory()->trashed()->create();
         $this->queryInstitutionUserForSync($institutionUser->id, $this->generateServiceAccountAccessToken())
-            ->assertStatus(Response::HTTP_OK)
+            ->assertOk()
             ->assertJson(['data' => $this->createInstitutionUserNestedRepresentation($institutionUser)]);
     }
 
     public function test_receiving_single_institution_user_with_wrong_uuid_value_returned_404(): void
     {
         $this->queryInstitutionUserForSync('some-string', $this->generateServiceAccountAccessToken())
-            ->assertStatus(Response::HTTP_NOT_FOUND);
+            ->assertNotFound();
     }
 
     public function test_receiving_single_institution_user_with_not_existing_uuid_value_returned_404(): void
     {
         $this->queryInstitutionUserForSync(Str::orderedUuid(), $this->generateServiceAccountAccessToken())
-            ->assertStatus(Response::HTTP_NOT_FOUND);
+            ->assertNotFound();
     }
 
     private function buildExpectedListResponse(Collection $institutionUsers): array
@@ -83,7 +89,7 @@ class InstitutionUserSyncControllerTest extends TestCase
 
         return [
             'data' => $institutionUsers->map(
-                fn(InstitutionUser $institutionUser) => $this->createInstitutionUserNestedRepresentation(
+                fn (InstitutionUser $institutionUser) => $this->createInstitutionUserNestedRepresentation(
                     $institutionUser
                 )
             )->toArray(),
@@ -100,7 +106,7 @@ class InstitutionUserSyncControllerTest extends TestCase
     {
         if (filled($token)) {
             $this->withHeaders([
-                'Authorization' => 'Bearer ' . $token,
+                'Authorization' => 'Bearer '.$token,
             ]);
         }
 
@@ -111,7 +117,7 @@ class InstitutionUserSyncControllerTest extends TestCase
     {
         if (filled($token)) {
             $this->withHeaders([
-                'Authorization' => 'Bearer ' . $token,
+                'Authorization' => 'Bearer '.$token,
             ]);
         }
 
@@ -123,7 +129,7 @@ class InstitutionUserSyncControllerTest extends TestCase
         $azp = explode(',', config('keycloak.service_accounts_accepted_authorized_parties'))[0];
 
         return AuthHelpers::createJwt([
-            'iss' => config('keycloak.base_url') . '/realms/' . config('keycloak.realm'),
+            'iss' => config('keycloak.base_url').'/realms/'.config('keycloak.realm'),
             'azp' => $azp,
             'realm_access' => [
                 'roles' => filled($role) ? [$role] : [config('keycloak.service_account_sync_role')],
@@ -134,8 +140,60 @@ class InstitutionUserSyncControllerTest extends TestCase
     private function createInstitutionUserNestedRepresentation(InstitutionUser $institutionUser): array
     {
         return [
-            ...RepresentationHelpers::createInstitutionUserNestedRepresentation($institutionUser),
-            'deleted_at' => $institutionUser->deleted_at?->toISOString()
+            ...Arr::only(
+                $institutionUser->toArray(),
+                ['id', 'email', 'phone', 'archived_at', 'deactivation_date']
+            ),
+            'user' => $this->createUserFlatRepresentation($institutionUser->user),
+            'institution' => $this->createInstitutionFlatRepresentation($institutionUser->institution),
+            'department' => empty($institutionUser->department)
+                ? null
+                : $this->createDepartmentFlatRepresentation($institutionUser->department),
+            'roles' => $institutionUser->roles
+                ->map($this->createRoleNestedRepresentation(...))
+                ->toArray(),
+            'deleted_at' => $institutionUser->deleted_at?->toISOString(),
+        ];
+    }
+
+    private function createUserFlatRepresentation(?User $user): array
+    {
+        return Arr::only(
+            $user?->toArray() ?? [],
+            ['id', 'personal_identification_code', 'forename', 'surname']
+        );
+    }
+
+    private function createInstitutionFlatRepresentation(Institution $institution): array
+    {
+        return Arr::only($institution->toArray(), [
+            'id',
+            'name',
+            'logo_url',
+            'short_name',
+            'phone',
+            'email',
+        ]);
+    }
+
+    private function createDepartmentFlatRepresentation(Department $department): array
+    {
+        return Arr::only(
+            $department->toArray(),
+            ['id', 'institution_id', 'name']
+        );
+    }
+
+    private function createRoleNestedRepresentation(Role $role): array
+    {
+        return [
+            ...Arr::only(
+                $role->toArray(),
+                ['id', 'name', 'institution_id']
+            ),
+            'privileges' => $role->privileges
+                ->map(fn (Privilege $privilege) => ['key' => $privilege->key->value])
+                ->toArray(),
         ];
     }
 }

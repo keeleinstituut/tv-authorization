@@ -2,18 +2,23 @@
 
 namespace App\Observers;
 
+use App\Events\Publishers\InstitutionUserEventsPublisher;
 use App\Exceptions\OnlyUserUnderRootRoleException;
 use App\Models\InstitutionUserRole;
 use App\Models\Role;
 
 class InstitutionUserRoleObserver
 {
+    public function __construct(private readonly InstitutionUserEventsPublisher $publisher)
+    {
+    }
+
     /**
      * Handle the InstitutionUserRole "created" event.
      */
     public function created(InstitutionUserRole $institutionUserRole): void
     {
-        //
+        $this->publishAffectedInstitutionUser($institutionUserRole);
     }
 
     /**
@@ -36,7 +41,7 @@ class InstitutionUserRoleObserver
      */
     public function updated(InstitutionUserRole $institutionUserRole): void
     {
-        //
+        $this->publishAffectedInstitutionUser($institutionUserRole);
     }
 
     /**
@@ -56,7 +61,7 @@ class InstitutionUserRoleObserver
      */
     public function deleted(InstitutionUserRole $institutionUserRole): void
     {
-        //
+        $this->publishAffectedInstitutionUser($institutionUserRole);
     }
 
     /**
@@ -64,7 +69,7 @@ class InstitutionUserRoleObserver
      */
     public function restored(InstitutionUserRole $institutionUserRole): void
     {
-        //
+        $this->publishAffectedInstitutionUser($institutionUserRole);
     }
 
     /**
@@ -72,6 +77,11 @@ class InstitutionUserRoleObserver
      */
     public function forceDeleted(InstitutionUserRole $institutionUserRole): void
     {
-        //
+        $this->publishAffectedInstitutionUser($institutionUserRole);
+    }
+
+    private function publishAffectedInstitutionUser(InstitutionUserRole $institutionUserRole): void
+    {
+        $this->publisher->publishChangedEvent($institutionUserRole->institution_user_id);
     }
 }
