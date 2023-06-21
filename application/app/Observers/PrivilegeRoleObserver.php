@@ -7,9 +7,9 @@ use App\Exceptions\DeniedRootRoleModifyException;
 use App\Models\PrivilegeRole;
 use App\Models\Role;
 
-class PrivilegeRoleObserver
+readonly class PrivilegeRoleObserver
 {
-    public function __construct(private readonly InstitutionUserEventsPublisher $publisher)
+    public function __construct(private InstitutionUserEventsPublisher $publisher)
     {
     }
 
@@ -75,7 +75,6 @@ class PrivilegeRoleObserver
      */
     public function restored(PrivilegeRole $privilegeRole): void
     {
-        $this->publishAffectedInstitutionUsers($privilegeRole);
     }
 
     /**
@@ -83,7 +82,6 @@ class PrivilegeRoleObserver
      */
     public function forceDeleted(PrivilegeRole $privilegeRole): void
     {
-        $this->publishAffectedInstitutionUsers($privilegeRole);
     }
 
     private function publishAffectedInstitutionUsers(PrivilegeRole $privilegeRole): void

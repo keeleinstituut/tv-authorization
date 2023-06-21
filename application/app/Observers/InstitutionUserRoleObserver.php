@@ -7,9 +7,9 @@ use App\Exceptions\OnlyUserUnderRootRoleException;
 use App\Models\InstitutionUserRole;
 use App\Models\Role;
 
-class InstitutionUserRoleObserver
+readonly class InstitutionUserRoleObserver
 {
-    public function __construct(private readonly InstitutionUserEventsPublisher $publisher)
+    public function __construct(private InstitutionUserEventsPublisher $publisher)
     {
     }
 
@@ -69,7 +69,6 @@ class InstitutionUserRoleObserver
      */
     public function restored(InstitutionUserRole $institutionUserRole): void
     {
-        $this->publishAffectedInstitutionUser($institutionUserRole);
     }
 
     /**
@@ -77,7 +76,6 @@ class InstitutionUserRoleObserver
      */
     public function forceDeleted(InstitutionUserRole $institutionUserRole): void
     {
-        $this->publishAffectedInstitutionUser($institutionUserRole);
     }
 
     private function publishAffectedInstitutionUser(InstitutionUserRole $institutionUserRole): void

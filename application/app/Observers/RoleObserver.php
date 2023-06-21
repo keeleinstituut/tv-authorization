@@ -6,9 +6,9 @@ use App\Events\Publishers\InstitutionUserEventsPublisher;
 use App\Exceptions\DeniedRootRoleModifyException;
 use App\Models\Role;
 
-class RoleObserver
+readonly class RoleObserver
 {
-    public function __construct(private readonly InstitutionUserEventsPublisher $publisher)
+    public function __construct(private InstitutionUserEventsPublisher $publisher)
     {
     }
 
@@ -68,7 +68,6 @@ class RoleObserver
      */
     public function restored(Role $role): void
     {
-        $this->publishAffectedInstitutionUsers($role);
     }
 
     /**
@@ -84,7 +83,6 @@ class RoleObserver
      */
     public function forceDeleted(Role $role): void
     {
-        $this->publishAffectedInstitutionUsers($role);
     }
 
     private function publishAffectedInstitutionUsers(Role $role): void

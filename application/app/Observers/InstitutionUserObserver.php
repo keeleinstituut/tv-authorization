@@ -64,7 +64,6 @@ class InstitutionUserObserver
      */
     public function restored(InstitutionUser $institutionUser): void
     {
-        $this->publisher->publishSyncEvent($institutionUser->id);
     }
 
     /**

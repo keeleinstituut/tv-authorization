@@ -5,9 +5,9 @@ namespace App\Observers;
 use App\Events\Publishers\InstitutionUserEventsPublisher;
 use App\Models\Department;
 
-class DepartmentObserver
+readonly class DepartmentObserver
 {
-    public function __construct(private readonly InstitutionUserEventsPublisher $institutionUserPublisher)
+    public function __construct(private InstitutionUserEventsPublisher $institutionUserPublisher)
     {
     }
 
@@ -40,7 +40,6 @@ class DepartmentObserver
      */
     public function restored(Department $department): void
     {
-        $this->publishAffectedInstitutionUsers($department);
     }
 
     /**
@@ -48,7 +47,6 @@ class DepartmentObserver
      */
     public function forceDeleted(Department $department): void
     {
-        $this->publishAffectedInstitutionUsers($department);
     }
 
     private function publishAffectedInstitutionUsers(Department $department): void
