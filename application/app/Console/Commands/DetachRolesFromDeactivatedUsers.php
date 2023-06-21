@@ -20,10 +20,7 @@ class DetachRolesFromDeactivatedUsers extends Command implements Isolatable
     protected $description = 'Detach roles from institution users who have been deactivated.';
 
     /**
-     * Note: process also will trigger publishing of the InstitutionUserChanged event that is needed for data sync.
-     * In case changing of the logic put the publishing of events when user become deactivated in separate background process.
      * @throws Throwable
-     * @see InstitutionUserRoleObserver
      */
     public function handle(InstitutionUserEventsPublisher $publisher)
     {

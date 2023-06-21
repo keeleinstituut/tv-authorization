@@ -14,10 +14,8 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
-use Symfony\Component\HttpFoundation\Response;
 use Tests\AuthHelpers;
 use Tests\EntityHelpers;
-use Tests\Feature\RepresentationHelpers;
 use Tests\TestCase;
 
 class InstitutionUserSyncControllerTest extends TestCase
@@ -144,7 +142,6 @@ class InstitutionUserSyncControllerTest extends TestCase
                 $institutionUser->toArray(),
                 ['id', 'email', 'phone', 'archived_at', 'deactivation_date']
             ),
-            'status' => $institutionUser->getStatus()->value,
             'user' => $this->createUserFlatRepresentation($institutionUser->user),
             'institution' => $this->createInstitutionFlatRepresentation($institutionUser->institution),
             'department' => empty($institutionUser->department)
