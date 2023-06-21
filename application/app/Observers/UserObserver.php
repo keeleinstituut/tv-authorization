@@ -54,7 +54,7 @@ class UserObserver
     private function publishAffectedInstitutionUsers(User $user): void
     {
         $user->institutionUsers()->pluck('id')
-            ->each(fn(string $institutionUserId) => $this->institutionUserPublisher->publishSyncEvent(
+            ->each(fn (string $institutionUserId) => $this->institutionUserPublisher->publishSyncEvent(
                 $institutionUserId
             ));
     }
