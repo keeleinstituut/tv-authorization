@@ -36,7 +36,7 @@ class InstitutionUserObserver
      */
     public function saved(InstitutionUser $institutionUser): void
     {
-        $this->publisher->publishChangedEvent($institutionUser->id);
+        $this->publisher->publishSyncEvent($institutionUser->id);
     }
 
     /**
@@ -56,7 +56,7 @@ class InstitutionUserObserver
      */
     public function deleted(InstitutionUser $institutionUser): void
     {
-        $this->publisher->publishChangedEvent($institutionUser->id);
+        $this->publisher->publishSyncEvent($institutionUser->id);
     }
 
     /**
@@ -64,7 +64,7 @@ class InstitutionUserObserver
      */
     public function restored(InstitutionUser $institutionUser): void
     {
-        $this->publisher->publishChangedEvent($institutionUser->id);
+        $this->publisher->publishSyncEvent($institutionUser->id);
     }
 
     /**
@@ -72,6 +72,6 @@ class InstitutionUserObserver
      */
     public function forceDeleted(InstitutionUser $institutionUser): void
     {
-        $this->publisher->publishDeletedEvent($institutionUser->id);
+        $this->publisher->publishDeleteEvent($institutionUser->id);
     }
 }

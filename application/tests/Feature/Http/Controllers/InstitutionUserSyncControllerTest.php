@@ -144,6 +144,7 @@ class InstitutionUserSyncControllerTest extends TestCase
                 $institutionUser->toArray(),
                 ['id', 'email', 'phone', 'archived_at', 'deactivation_date']
             ),
+            'status' => $institutionUser->getStatus()->value,
             'user' => $this->createUserFlatRepresentation($institutionUser->user),
             'institution' => $this->createInstitutionFlatRepresentation($institutionUser->institution),
             'department' => empty($institutionUser->department)

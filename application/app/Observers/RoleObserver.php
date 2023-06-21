@@ -90,6 +90,6 @@ class RoleObserver
     private function publishAffectedInstitutionUsers(Role $role): void
     {
         $role->institutionUserRoles()->pluck('institution_user_id')
-            ->each(fn (string $institutionUserId) => $this->publisher->publishChangedEvent($institutionUserId));
+            ->each(fn (string $institutionUserId) => $this->publisher->publishSyncEvent($institutionUserId));
     }
 }

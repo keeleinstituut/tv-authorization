@@ -82,6 +82,6 @@ class InstitutionUserRoleObserver
 
     private function publishAffectedInstitutionUser(InstitutionUserRole $institutionUserRole): void
     {
-        $this->publisher->publishChangedEvent($institutionUserRole->institution_user_id);
+        $this->publisher->publishSyncEvent($institutionUserRole->institution_user_id);
     }
 }

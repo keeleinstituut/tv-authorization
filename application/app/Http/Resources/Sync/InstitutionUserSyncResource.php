@@ -21,6 +21,7 @@ class InstitutionUserSyncResource extends JsonResource
                 'archived_at',
                 'deactivation_date',
             ),
+            'status' => $this->getStatus(),
             'user' => new UserSyncResource($this->user),
             'institution' => new InstitutionSyncResource($this->institution),
             'department' => new DepartmentSyncResource($this->department),

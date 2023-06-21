@@ -10,12 +10,12 @@ readonly class InstitutionUserEventsPublisher
     {
     }
 
-    public function publishChangedEvent(string $institutionUserId): void
+    public function publishSyncEvent(string $institutionUserId): void
     {
         $this->publishEvent($institutionUserId, 'institution-user.saved');
     }
 
-    public function publishDeletedEvent(string $institutionUserId): void
+    public function publishDeleteEvent(string $institutionUserId): void
     {
         $this->publishEvent($institutionUserId, 'institution-user.deleted');
     }
