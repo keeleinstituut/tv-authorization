@@ -5,6 +5,7 @@
     "keywords": ["framework", "laravel"],
     "require": {
         "php": "^8.2",
+        "darkaonline/l5-swagger": "^8.5",
         "guzzlehttp/guzzle": "^7.2",
         "keeleinstituut/tv-common-laravel-security": "0.0.11",
         "laravel/framework": "^10.0",

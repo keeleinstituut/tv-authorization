@@ -10,7 +10,24 @@ use Carbon\CarbonInterface;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Date;
+use OpenApi\Attributes as OA;
 
+#[OA\RequestBody(
+    request: self::class,
+    required: true,
+    content: new OA\JsonContent(
+        required: ['institution_user_id', 'deactivation_date'],
+        properties: [
+            new OA\Property(
+                property: 'institution_user_id',
+                description: 'UUID of institution user whose deactivation date is being set',
+                type: 'string',
+                format: 'uuid'
+            ),
+            new OA\Property(property: 'deactivation_date', type: 'string', format: 'date'),
+        ]
+    )
+)]
 class DeactivateInstitutionUserRequest extends FormRequest
 {
     use FindsInstitutionUsersWithAnyStatus;

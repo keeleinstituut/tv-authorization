@@ -11,7 +11,23 @@ use App\Rules\PhoneNumberRule;
 use App\Rules\UserFullNameRule;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use OpenApi\Attributes as OA;
 
+#[OA\RequestBody(
+    request: self::class,
+    required: true,
+    content: new OA\JsonContent(
+        required: ['personal_identification_code', 'name', 'phone', 'email', 'role'],
+        properties: [
+            new OA\Property(property: 'personal_identification_code', type: 'string'),
+            new OA\Property(property: 'name', type: 'string'),
+            new OA\Property(property: 'phone', type: 'string', format: 'phone'),
+            new OA\Property(property: 'email', type: 'string', format: 'email'),
+            new OA\Property(property: 'department', type: 'string', nullable: true),
+            new OA\Property(property: 'role', type: 'string', example: 'Tõlk,Tõlkekorraldaja,Peakasutaja'),
+        ]
+    )
+)]
 class ImportUsersCsvRowValidationRequest extends FormRequest
 {
     /**

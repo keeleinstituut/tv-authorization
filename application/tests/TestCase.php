@@ -4,6 +4,7 @@ namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Arr;
+use Illuminate\Testing\AssertableJsonString;
 use Illuminate\Testing\TestResponse;
 
 abstract class TestCase extends BaseTestCase
@@ -21,5 +22,11 @@ abstract class TestCase extends BaseTestCase
     {
         $actualFragment = Arr::only($actual, array_keys($expectedFragment));
         $this->assertEquals($expectedFragment, $actualFragment);
+    }
+
+    public function assertEqualAsJsonIgnoringOrderRecursively(array $expected, array $actual): void
+    {
+        $assertableJsonString = new AssertableJsonString($actual);
+        $assertableJsonString->assertSimilar($expected);
     }
 }

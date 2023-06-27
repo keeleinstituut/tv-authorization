@@ -105,15 +105,15 @@ trait ModelAssertions
                 ...$convertModelToArray($model->refresh()),
                 ...$expectedChange,
             ])
-            ->toArray();
+            ->all();
 
         $response = $action();
 
         $actualStateAfterAction = collect($modelsWithExpectedChanges)
             ->mapSpread(fn (Model $model) => $convertModelToArray($model->refresh()))
-            ->toArray();
+            ->all();
 
-        $this->assertEquals($expectedStateAfterAction, $actualStateAfterAction);
+        $this->assertEqualAsJsonIgnoringOrderRecursively($expectedStateAfterAction, $actualStateAfterAction);
         $response->assertStatus($expectedStatus);
 
         return $response;

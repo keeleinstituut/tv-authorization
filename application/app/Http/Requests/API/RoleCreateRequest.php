@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\API;
 
+use App\Enums\PrivilegeKey;
 use App\Models\Institution;
 use App\Models\Privilege;
 use App\Models\Role;
@@ -9,7 +10,25 @@ use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use OpenApi\Attributes as OA;
 
+#[OA\RequestBody(
+    request: self::class,
+    required: true,
+    content: new OA\JsonContent(
+        required: ['institution_id', 'privileges', 'name'],
+        properties: [
+            new OA\Property(property: 'institution_id', type: 'string', format: 'uuid'),
+            new OA\Property(
+                property: 'privileges',
+                type: 'array',
+                items: new OA\Items(enum: PrivilegeKey::class),
+                minItems: 1
+            ),
+            new OA\Property(property: 'name', type: 'string'),
+        ]
+    )
+)]
 class RoleCreateRequest extends FormRequest
 {
     /**

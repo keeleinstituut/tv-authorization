@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\OpenApiHelpers as OAH;
 use App\Http\Requests\API\RoleCreateRequest;
 use App\Http\Requests\API\RoleDeleteRequest;
 use App\Http\Requests\API\RoleListRequest;
@@ -13,12 +14,23 @@ use App\Models\Privilege;
 use App\Models\Role;
 use App\Policies\RolePolicy;
 use Illuminate\Support\Facades\DB;
+use OpenApi\Attributes as OA;
+use Symfony\Component\HttpFoundation\Response;
 
 class RoleController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+    #[OA\Get(
+        path: '/roles',
+        summary: 'List existing roles',
+        parameters: [
+            new OA\QueryParameter(name: 'institution_id', schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
+    )]
+    #[OAH\CollectionResponse(itemsRef: RoleResource::class, description: 'Roles belonging to the specified institution')]
     public function index(RoleListRequest $request)
     {
         $params = collect($request->validated());
@@ -40,6 +52,13 @@ class RoleController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    #[OA\Post(
+        path: '/roles',
+        summary: 'Create a new role',
+        requestBody: new OAH\RequestBody(RoleCreateRequest::class),
+        responses: [new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
+    )]
+    #[OAH\ResourceResponse(dataRef: RoleResource::class, description: 'Created role', response: Response::HTTP_CREATED)]
     public function store(RoleCreateRequest $request)
     {
         $params = $request->validated();
@@ -67,6 +86,13 @@ class RoleController extends Controller
     /**
      * Display the specified resource.
      */
+    #[OA\Get(
+        path: '/roles/{role_id}',
+        summary: 'Get information about the role with the given UUID',
+        parameters: [new OAH\UuidPath('role_id')],
+        responses: [new OAH\NotFound, new OAH\Forbidden, new OAH\Unauthorized]
+    )]
+    #[OAH\ResourceResponse(dataRef: RoleResource::class, description: 'Role with given UUID')]
     public function show(RoleShowRequest $request)
     {
         $id = $request->route('role_id');
@@ -83,6 +109,14 @@ class RoleController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    #[OA\Put(
+        path: '/roles/{role_id}',
+        summary: 'Update the role with the given UUID',
+        requestBody: new OAH\RequestBody(RoleUpdateRequest::class),
+        parameters: [new OAH\UuidPath('role_id')],
+        responses: [new OAH\NotFound, new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
+    )]
+    #[OAH\ResourceResponse(dataRef: RoleResource::class, description: 'Updated role')]
     public function update(RoleUpdateRequest $request)
     {
         $id = $request->route('role_id');
@@ -114,6 +148,13 @@ class RoleController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    #[OA\Delete(
+        path: '/roles/{role_id}',
+        summary: 'Mark the role with the given UUID as deleted',
+        parameters: [new OAH\UuidPath('role_id')],
+        responses: [new OAH\NotFound, new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
+    )]
+    #[OAH\ResourceResponse(dataRef: RoleResource::class, description: 'Role which has been marked as deleted')]
     public function destroy(RoleDeleteRequest $request)
     {
         $id = $request->route('role_id');
