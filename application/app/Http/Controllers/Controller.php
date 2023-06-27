@@ -15,7 +15,7 @@ use OpenApi\Attributes as OA;
 #[OA\Info(
     version: '0.0.1',
     title: 'Tõlkevärav Authorization Service API',
-    contact: new OA\Contact(url: 'https://github.com/keeleinstituut/tv-tolkevarav')
+    contact: new OA\Contact(url: 'https://github.com/keeleinstituut/tv-authorization')
 )]
 #[OA\ExternalDocumentation(url: 'https://github.com/keeleinstituut/tv-tolkevarav/wiki')]
 #[OA\SecurityScheme(
