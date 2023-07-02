@@ -21,9 +21,9 @@ class Invalid extends OA\Response
                 ],
                 type: 'object',
                 example: [
-                    'message' => 'Date is later than one year from the current calendar date in Estonia.',
+                    'message' => 'Request contents were not invalid because of <some reason>.',
                     'errors' => [
-                        'deactivation_date' => ['Date is later than one year from the current calendar date in Estonia.'],
+                        'field_1' => ['The value of field_1 needs to satisfy <some requirement>.'],
                     ],
                 ]
             ),
