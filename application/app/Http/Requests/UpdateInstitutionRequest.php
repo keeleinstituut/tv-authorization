@@ -5,7 +5,6 @@ namespace App\Http\Requests;
 use App\Rules\PhoneNumberRule;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Validator;
 
 class UpdateInstitutionRequest extends FormRequest
 {
@@ -36,17 +35,6 @@ class UpdateInstitutionRequest extends FormRequest
                 'string',
                 'max:3',
             ],
-        ];
-    }
-
-    public function after(): array
-    {
-        return [
-            function (Validator $validator): void {
-                if (! $this->hasAny(['name', 'phone', 'email', 'short_name'])) {
-                    $validator->errors()->add('.', 'At least one field to update is required.');
-                }
-            },
         ];
     }
 }

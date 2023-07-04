@@ -182,7 +182,6 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
             'phone: "512 8756"' => [[...static::createExampleValidPayload(), 'phone' => '512 8756']],
             'phone: "+4951234567"' => [[...static::createExampleValidPayload(), 'phone' => '+4951234567']],
             'short_name: "ABCD"' => [[...static::createExampleValidPayload(), 'short_name' => 'ABCD']],
-            'Empty payload' => [[]],
         ];
     }
 
