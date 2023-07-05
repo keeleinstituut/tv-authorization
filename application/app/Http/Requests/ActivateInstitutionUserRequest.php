@@ -4,7 +4,6 @@ namespace App\Http\Requests;
 
 use App\Enums\InstitutionUserStatus;
 use App\Http\Requests\Traits\FindsInstitutionUsersWithAnyStatus;
-use App\Http\Resources\API\RoleResource;
 use App\Models\InstitutionUser;
 use App\Models\Role;
 use App\Rules\ModelBelongsToInstitutionRule;
@@ -28,7 +27,7 @@ use OpenApi\Attributes as OA;
             new OA\Property(
                 property: 'roles',
                 type: 'array',
-                items: new OA\Items(ref: RoleResource::class),
+                items: new OA\Items(type: 'string', format: 'uuid'),
                 minItems: 1
             ),
         ]
