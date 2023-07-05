@@ -23,7 +23,8 @@ class RepresentationHelpers
                 : self::createDepartmentFlatRepresentation($institutionUser->department),
             'roles' => $institutionUser->roles
                 ->map(self::createRoleNestedRepresentation(...))
-                ->toArray(),
+                ->sortBy('id')
+                ->all(),
         ];
     }
 

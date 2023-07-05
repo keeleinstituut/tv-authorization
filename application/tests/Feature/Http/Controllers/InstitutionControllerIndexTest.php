@@ -13,7 +13,7 @@ use Tests\AuthHelpers;
 use Tests\Feature\RepresentationHelpers;
 use Tests\TestCase;
 
-class InstitutionControllerTest extends TestCase
+class InstitutionControllerIndexTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -98,7 +98,7 @@ class InstitutionControllerTest extends TestCase
             ]);
     }
 
-    public function test_soft_deleted_user_is_excluded(): void
+    public function test_soft_deleted_user_in_access_token_gives_empty_response(): void
     {
         // GIVEN there’s a user connected to an institution in the database, but the user has been soft deleted
         InstitutionUser::factory()
@@ -116,7 +116,7 @@ class InstitutionControllerTest extends TestCase
             ->assertJsonPath('data', []);
     }
 
-    public function test_requesting_nonexistent_user(): void
+    public function test_unknown_user_in_access_token_gives_empty_response(): void
     {
         // GIVEN the following data is in database
         InstitutionUser::factory()
@@ -139,7 +139,7 @@ class InstitutionControllerTest extends TestCase
             ->assertJsonPath('data', []);
     }
 
-    public function test_updating_user_without_access_token(): void
+    public function test_request_without_access_token(): void
     {
         // GIVEN the following data is in database
         InstitutionUser::factory()
@@ -156,7 +156,7 @@ class InstitutionControllerTest extends TestCase
         $response->assertUnauthorized();
     }
 
-    public function test_updating_user_when_tolkevarav_claims_empty(): void
+    public function test_request_when_tolkevarav_claims_empty(): void
     {
         // GIVEN the following data is in database
         InstitutionUser::factory()
