@@ -30,6 +30,9 @@ class EventServiceProvider extends ServiceProvider
         Models\PrivilegeRole::observe(Observers\PrivilegeRoleObserver::class);
         Models\InstitutionUser::observe(Observers\InstitutionUserObserver::class);
         Models\InstitutionUserRole::observe(Observers\InstitutionUserRoleObserver::class);
+        Models\Institution::observe(Observers\InstitutionObserver::class);
+        Models\User::observe(Observers\UserObserver::class);
+        Models\Department::observe(Observers\DepartmentObserver::class);
     }
 
     /**

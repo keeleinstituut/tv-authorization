@@ -4,8 +4,10 @@ use App\Http\Controllers\API\PrivilegeController;
 use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\InstitutionController;
+use App\Http\Controllers\InstitutionSyncController;
 use App\Http\Controllers\InstitutionUserController;
 use App\Http\Controllers\InstitutionUserImportController;
+use App\Http\Controllers\InstitutionUserSyncController;
 use App\Http\Controllers\JwtClaimsController;
 use Illuminate\Support\Facades\Route;
 
@@ -75,3 +77,10 @@ Route::prefix('/departments')
         Route::put('/{department_id}', 'update');
         Route::delete('/{department_id}', 'destroy');
     });
+
+Route::withoutMiddleware(['auth:api', 'throttle:api'])->group(function () {
+    Route::get('/sync/institutions', [InstitutionSyncController::class, 'index']);
+    Route::get('/sync/institutions/{id}', [InstitutionSyncController::class, 'show'])->whereUuid('id');
+    Route::get('/sync/institution-users', [InstitutionUserSyncController::class, 'index']);
+    Route::get('/sync/institution-users/{id}', [InstitutionUserSyncController::class, 'show'])->whereUuid('id');
+});
