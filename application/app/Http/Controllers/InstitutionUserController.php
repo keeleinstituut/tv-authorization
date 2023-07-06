@@ -112,7 +112,7 @@ class InstitutionUserController extends Controller
     {
         $this->authorize('viewAny', InstitutionUser::class);
 
-        $institutionUsersQuery = $this->getBaseQuery()->with([
+        $institutionUsersQuery = $this->getBaseQuery()->select('institution_users.*')->with([
             'user',
             'institutionUserRoles.role',
         ]);
