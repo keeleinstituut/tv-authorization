@@ -4,7 +4,6 @@ namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Arr;
-use Illuminate\Testing\AssertableJsonString;
 use Illuminate\Testing\TestResponse;
 
 abstract class TestCase extends BaseTestCase
@@ -13,22 +12,26 @@ abstract class TestCase extends BaseTestCase
 
     public function assertResponseJsonDataEqualsIgnoringOrder(array $expectedData, TestResponse $actualResponse): void
     {
-        $this->assertEqualAsJsonIgnoringOrder($expectedData, $actualResponse->json('data'));
+        $this->assertArraysEqualIgnoringOrder($expectedData, $actualResponse->json('data'));
     }
 
-    public function assertArrayHasSpecifiedFragmentIgnoringOrder(array $expectedFragment, array $actual): void
+    public function assertArrayHasSpecifiedFragmentIgnoringOrder(?array $expectedFragment, ?array $actual): void
     {
+        $this->assertNotNull($expectedFragment);
+        $this->assertNotNull($actual);
+
         $actualFragment = Arr::only($actual, array_keys($expectedFragment));
+        $this->assertArraysEqualIgnoringOrder($expectedFragment, $actualFragment);
+    }
+
+    public function assertArraysEqualIgnoringOrder(?array $expected, ?array $actual): void
+    {
+        $this->assertNotNull($expected);
+        $this->assertNotNull($actual);
 
         $this->assertEquals(
-            Arr::sortRecursive($expectedFragment),
-            Arr::sortRecursive($actualFragment)
+            Arr::sortRecursive($expected),
+            Arr::sortRecursive($actual)
         );
-    }
-
-    public function assertEqualAsJsonIgnoringOrder(array $expected, array $actual): void
-    {
-        $assertableJsonString = new AssertableJsonString($actual);
-        $assertableJsonString->assertSimilar($expected);
     }
 }

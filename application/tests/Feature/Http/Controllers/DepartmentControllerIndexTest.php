@@ -68,11 +68,10 @@ class DepartmentControllerIndexTest extends DepartmentControllerTestCase
             ->map(RepresentationHelpers::createDepartmentFlatRepresentation(...))
             ->all();
 
-        $this->sendIndexRequestWithExpectedHeaders($actingInstitutionUser)
-            ->assertOk()
-            ->assertSimilarJson([
-                'data' => $expectedResponseData,
-            ]);
+        $response = $this->sendIndexRequestWithExpectedHeaders($actingInstitutionUser);
+
+        $this->assertResponseJsonDataEqualsIgnoringOrder($expectedResponseData, $response);
+        $response->assertOk();
     }
 
     /** @dataProvider \Tests\Feature\DataProviders::provideInvalidHeaderCreators

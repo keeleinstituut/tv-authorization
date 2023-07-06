@@ -134,7 +134,10 @@ trait ModelAssertions
             ->mapSpread(fn (Model $model) => $convertModelToArray($model->refresh()))
             ->all();
 
-        $this->assertEqualAsJsonIgnoringOrder($expectedStateAfterAction, $actualStateAfterAction);
+        collect($expectedStateAfterAction)
+            ->zip($actualStateAfterAction)
+            ->eachSpread($this->assertArraysEqualIgnoringOrder(...));
+
         $response->assertStatus($expectedStatus);
 
         return $response;

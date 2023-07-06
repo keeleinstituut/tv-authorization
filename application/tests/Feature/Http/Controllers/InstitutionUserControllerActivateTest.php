@@ -79,7 +79,6 @@ class InstitutionUserControllerActivateTest extends TestCase
                 'status' => InstitutionUserStatus::Active->value,
                 'roles' => $roles
                     ->map(fn (Role $role) => RepresentationHelpers::createRoleNestedRepresentation($role->refresh()))
-                    ->sortBy('id')
                     ->all(),
             ]],
         ];
