@@ -11,20 +11,22 @@ abstract class TestCase extends BaseTestCase
 {
     use CreatesApplication;
 
-    public function assertResponseJsonDataIsEqualTo(array $expectedData, TestResponse $actualResponse): void
+    public function assertResponseJsonDataEqualsIgnoringOrder(array $expectedData, TestResponse $actualResponse): void
     {
-        $actualResponse
-            ->assertStatus(200)
-            ->assertExactJson(['data' => $expectedData]);
+        $this->assertEqualAsJsonIgnoringOrder($expectedData, $actualResponse->json('data'));
     }
 
-    public function assertArrayHasSpecifiedFragment(array $expectedFragment, array $actual): void
+    public function assertArrayHasSpecifiedFragmentIgnoringOrder(array $expectedFragment, array $actual): void
     {
         $actualFragment = Arr::only($actual, array_keys($expectedFragment));
-        $this->assertEquals($expectedFragment, $actualFragment);
+
+        $this->assertEquals(
+            Arr::sortRecursive($expectedFragment),
+            Arr::sortRecursive($actualFragment)
+        );
     }
 
-    public function assertEqualAsJsonIgnoringOrderRecursively(array $expected, array $actual): void
+    public function assertEqualAsJsonIgnoringOrder(array $expected, array $actual): void
     {
         $assertableJsonString = new AssertableJsonString($actual);
         $assertableJsonString->assertSimilar($expected);

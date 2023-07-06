@@ -88,7 +88,7 @@ trait ModelAssertions
                 ->all()
             : $convertModelToArray($expectedResponse->refresh());
 
-        $testResponse->assertJsonFragment(['data' => $expectedResponseData]);
+        $this->assertResponseJsonDataEqualsIgnoringOrder($expectedResponseData, $testResponse);
     }
 
     /**
@@ -134,7 +134,7 @@ trait ModelAssertions
             ->mapSpread(fn (Model $model) => $convertModelToArray($model->refresh()))
             ->all();
 
-        $this->assertEqualAsJsonIgnoringOrderRecursively($expectedStateAfterAction, $actualStateAfterAction);
+        $this->assertEqualAsJsonIgnoringOrder($expectedStateAfterAction, $actualStateAfterAction);
         $response->assertStatus($expectedStatus);
 
         return $response;
