@@ -286,6 +286,58 @@ class InstitutionUserControllerIndexTest extends TestCase
         $response->assertOk();
     }
 
+    public function test_paginating_filtered_institution_users(): void
+    {
+        $institution = Institution::factory()->create();
+        $actingInstitutionUser = $this->createUserInGivenInstitutionWithGivenPrivilege($institution, PrivilegeKey::ViewUser);
+
+        InstitutionUser::factory(11)->for($institution)->create();
+        InstitutionUser::factory(11)->for($institution)->create(['deactivation_date' => Date::yesterday()]);
+        InstitutionUser::factory(11)->for($institution)->create(['archived_at' => Date::yesterday()]);
+
+        $queryParameters = [
+            'per_page' => 10,
+            'statuses' => [
+                InstitutionUserStatus::Deactivated->value,
+                InstitutionUserStatus::Archived->value,
+            ],
+        ];
+        $firstPageResponse = $this
+            ->sendIndexRequestWithExpectedHeaders($queryParameters, $actingInstitutionUser)
+            ->assertOk();
+        $this->assertCount(10, $firstPageResponse->json('data'));
+        $this->assertArrayHasSpecifiedFragment(
+            ['total' => 22, 'current_page' => 1, 'last_page' => 3, 'from' => 1, 'to' => 10],
+            $firstPageResponse->json('meta')
+        );
+        $nextUrl = parse_url($firstPageResponse->json('links.next'));
+
+        $secondPageResponse = $this
+            ->sendCustomRequestWithExpectedHeaders("{$nextUrl['path']}?{$nextUrl['query']}", $actingInstitutionUser)
+            ->assertOk();
+        $this->assertCount(10, $secondPageResponse->json('data'));
+        $this->assertArrayHasSpecifiedFragment(
+            ['total' => 22, 'current_page' => 2, 'last_page' => 3, 'from' => 11, 'to' => 20],
+            $secondPageResponse->json('meta')
+        );
+        $nextUrl = parse_url($secondPageResponse->json('links.next'));
+
+        $thirdPageResponse = $this
+            ->sendCustomRequestWithExpectedHeaders("{$nextUrl['path']}?{$nextUrl['query']}", $actingInstitutionUser)
+            ->assertOk();
+        $this->assertCount(2, $thirdPageResponse->json('data'));
+        $this->assertArrayHasSpecifiedFragment(
+            ['total' => 22, 'current_page' => 3, 'last_page' => 3, 'from' => 21, 'to' => 22],
+            $thirdPageResponse->json('meta')
+        );
+
+        $this->assertEmpty(array_intersect(
+            $firstPageResponse->json('data.*.id'),
+            $secondPageResponse->json('data.*.id'),
+            $thirdPageResponse->json('data.*.id'),
+        ));
+    }
+
     public function test_list_of_institution_filtered_by_role(): void
     {
         $institution = $this->createInstitution();
@@ -493,15 +545,21 @@ class InstitutionUserControllerIndexTest extends TestCase
 
     private function sendIndexRequestWithExpectedHeaders(array $queryParameters, InstitutionUser $actingUser): TestResponse
     {
+        return $this->sendCustomRequestWithExpectedHeaders(
+            action(
+                [InstitutionUserController::class, 'index'],
+                $queryParameters
+            ),
+            $actingUser
+        );
+
+    }
+
+    private function sendCustomRequestWithExpectedHeaders(string $uri, InstitutionUser $actingUser): TestResponse
+    {
         return $this
             ->withHeaders(AuthHelpers::createHeadersForInstitutionUser($actingUser))
-            ->getJson(
-                action(
-                    [InstitutionUserController::class, 'index'],
-                    $queryParameters
-                ),
-            );
-
+            ->getJson($uri);
     }
 
     public function createExampleQueryParameters($roles, $departments): array

@@ -159,9 +159,9 @@ class InstitutionUserController extends Controller
         );
 
         return InstitutionUserResource::collection(
-            $institutionUsersQuery->paginate(
-                $request->validated('per_page', 10)
-            )
+            $institutionUsersQuery
+                ->paginate($request->validated('per_page', 10))
+                ->appends($request->validated())
         );
     }
 
