@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Events\Publishers\InstitutionUserEventsPublisher;
 use App\Models\InstitutionUserRole;
 use App\Util\DateUtil;
 use Illuminate\Console\Command;
@@ -21,17 +22,19 @@ class DetachRolesFromDeactivatedUsers extends Command implements Isolatable
     /**
      * @throws Throwable
      */
-    public function handle()
+    public function handle(InstitutionUserEventsPublisher $publisher)
     {
-        return DB::transaction(function () {
+        DB::transaction(function () use ($publisher) {
             InstitutionUserRole::query()
                 ->whereIn(
                     'institution_user_id',
                     DB::table('institution_users')
                         ->select('id')
                         ->whereDate('deactivation_date', '<=', Date::now(DateUtil::ESTONIAN_TIMEZONE)->format('Y-m-d'))
-                )
-                ->delete();
+                )->each(function (InstitutionUserRole $institutionUserRole) use ($publisher) {
+                    $institutionUserRole->deleteQuietly();
+                    $publisher->publishSyncEvent($institutionUserRole->institution_user_id);
+                });
 
             // TODO: audit log
         });

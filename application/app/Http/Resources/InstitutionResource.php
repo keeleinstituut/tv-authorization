@@ -32,10 +32,10 @@ class InstitutionResource extends JsonResource
      * @return array{
      *     id: string,
      *     name: string,
-     *     phone: string,
-     *     email: string,
-     *     short_name: string,
-     *     logo_url: string,
+     *     phone: string|null,
+     *     email: string|null,
+     *     short_name: string|null,
+     *     logo_url: string|null,
      *     updated_at: Carbon,
      *     created_at: Carbon
      * }

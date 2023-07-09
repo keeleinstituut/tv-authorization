@@ -2,11 +2,16 @@
 
 namespace App\Observers;
 
+use App\Events\Publishers\InstitutionUserEventsPublisher;
 use App\Exceptions\DeniedRootRoleModifyException;
 use App\Models\Role;
 
-class RoleObserver
+readonly class RoleObserver
 {
+    public function __construct(private InstitutionUserEventsPublisher $publisher)
+    {
+    }
+
     /**
      * Handle the Role "created" event.
      */
@@ -34,7 +39,7 @@ class RoleObserver
      */
     public function updated(Role $role): void
     {
-        //
+        $this->publishAffectedInstitutionUsers($role);
     }
 
     /**
@@ -55,6 +60,7 @@ class RoleObserver
     public function deleted(Role $role): void
     {
         $role->privilegeRoles()->delete();
+        $this->publishAffectedInstitutionUsers($role);
     }
 
     /**
@@ -62,7 +68,6 @@ class RoleObserver
      */
     public function restored(Role $role): void
     {
-        //
     }
 
     /**
@@ -78,6 +83,11 @@ class RoleObserver
      */
     public function forceDeleted(Role $role): void
     {
-        //
+    }
+
+    private function publishAffectedInstitutionUsers(Role $role): void
+    {
+        $role->institutionUserRoles()->pluck('institution_user_id')
+            ->each(fn (string $institutionUserId) => $this->publisher->publishSyncEvent($institutionUserId));
     }
 }

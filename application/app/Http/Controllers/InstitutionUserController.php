@@ -141,7 +141,8 @@ class InstitutionUserController extends Controller
         path: '/institution-users',
         summary: 'List and optionally filter institution users belonging to the current institution (inferred from JWT)',
         parameters: [
-            new OA\QueryParameter(name: 'per_page', schema: new OA\Schema(type: 'integer', enum: [10, 50, 100])),
+            new OA\QueryParameter(name: 'page', schema: new OA\Schema(type: 'integer', default: 1)),
+            new OA\QueryParameter(name: 'per_page', schema: new OA\Schema(type: 'integer', default: 10, enum: [10, 50, 100])),
             new OA\QueryParameter(name: 'role_id', schema: new OA\Schema(type: 'string', format: 'uuid')),
             new OA\QueryParameter(name: 'status', schema: new OA\Schema(type: 'string', enum: InstitutionUserStatus::class)),
             new OA\QueryParameter(name: 'sort_by', schema: new OA\Schema(type: 'string', enum: ['name', 'created_at'])),
@@ -155,7 +156,7 @@ class InstitutionUserController extends Controller
     {
         $this->authorize('viewAny', InstitutionUser::class);
 
-        $institutionUsersQuery = $this->getBaseQuery()->with([
+        $institutionUsersQuery = $this->getBaseQuery()->select('institution_users.*')->with([
             'user',
             'institutionUserRoles.role',
         ]);

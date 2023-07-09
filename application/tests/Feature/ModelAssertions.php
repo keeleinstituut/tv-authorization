@@ -43,6 +43,27 @@ trait ModelAssertions
     /**
      * @param $action Closure(): TestResponse
      * @param $convertModelToArray Closure(Model): array
+     * @param $model Model
+     * @param $expectedChanges array
+     *
+     * @noinspection PhpDocSignatureInspection
+     */
+    public function assertModelInExpectedStateAfterActionAndCheckResponseData(Closure $action,
+        Closure $convertModelToArray,
+        Model $model,
+        array $expectedChanges): void
+    {
+        $this->assertModelsInExpectedStateAfterActionAndCheckResponseData(
+            $action,
+            $convertModelToArray,
+            [[$model, $expectedChanges]],
+            $model
+        );
+    }
+
+    /**
+     * @param $action Closure(): TestResponse
+     * @param $convertModelToArray Closure(Model): array
      * @param $modelsWithExpectedChanges iterable<array{Model, array}>
      * @param  Model|iterable<Model>  $expectedResponse
      *

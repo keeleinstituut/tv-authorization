@@ -4,9 +4,7 @@ namespace App\Http\Resources;
 
 use App\Enums\InstitutionUserStatus;
 use App\Http\Resources\API\RoleResource;
-use App\Models\Institution;
 use App\Models\InstitutionUser;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\Json\ResourceCollection;

@@ -2,17 +2,19 @@
 
 namespace App\Observers;
 
+use App\Events\Publishers\InstitutionUserEventsPublisher;
 use App\Exceptions\OnlyUserUnderRootRoleException;
 use App\Models\InstitutionUser;
 
 class InstitutionUserObserver
 {
     /**
-     * Handle the InstitutionUser "created" event.
+     * Handle events after all transactions are committed.
      */
-    public function created(InstitutionUser $institutionUser): void
+    public bool $afterCommit = true;
+
+    public function __construct(private readonly InstitutionUserEventsPublisher $publisher)
     {
-        //
     }
 
     /**
@@ -30,11 +32,11 @@ class InstitutionUserObserver
     }
 
     /**
-     * Handle the InstitutionUser "updated" event.
+     * Handle the InstitutionUser "saved" event.
      */
-    public function updated(InstitutionUser $institutionUser): void
+    public function saved(InstitutionUser $institutionUser): void
     {
-        //
+        $this->publisher->publishSyncEvent($institutionUser->id);
     }
 
     /**
@@ -54,7 +56,7 @@ class InstitutionUserObserver
      */
     public function deleted(InstitutionUser $institutionUser): void
     {
-        //
+        $this->publisher->publishSyncEvent($institutionUser->id);
     }
 
     /**
@@ -62,7 +64,6 @@ class InstitutionUserObserver
      */
     public function restored(InstitutionUser $institutionUser): void
     {
-        //
     }
 
     /**
@@ -70,6 +71,6 @@ class InstitutionUserObserver
      */
     public function forceDeleted(InstitutionUser $institutionUser): void
     {
-        //
+        $this->publisher->publishDeleteEvent($institutionUser->id);
     }
 }
