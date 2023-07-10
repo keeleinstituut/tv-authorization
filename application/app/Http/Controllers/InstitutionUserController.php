@@ -151,7 +151,7 @@ class InstitutionUserController extends Controller
         ],
         responses: [new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
     )]
-    #[OAH\CollectionResponse(itemsRef: InstitutionUserResource::class, description: 'Filtered institution users of current institution')]
+    #[OAH\PaginatedCollectionResponse(itemsRef: InstitutionUserResource::class, description: 'Filtered institution users of current institution')]
     public function index(InstitutionUserListRequest $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', InstitutionUser::class);
