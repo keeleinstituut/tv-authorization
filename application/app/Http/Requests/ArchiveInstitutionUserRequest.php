@@ -6,7 +6,23 @@ use App\Enums\InstitutionUserStatus;
 use App\Http\Requests\Traits\FindsInstitutionUsersWithAnyStatus;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
+use OpenApi\Attributes as OA;
 
+#[OA\RequestBody(
+    request: self::class,
+    required: true,
+    content: new OA\JsonContent(
+        required: ['institution_user_id'],
+        properties: [
+            new OA\Property(
+                property: 'institution_user_id',
+                description: 'UUID of the institution user to archive',
+                type: 'string',
+                format: 'uuid'
+            ),
+        ]
+    )
+)]
 class ArchiveInstitutionUserRequest extends FormRequest
 {
     use FindsInstitutionUsersWithAnyStatus;

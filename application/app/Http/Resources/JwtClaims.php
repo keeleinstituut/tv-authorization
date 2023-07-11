@@ -8,11 +8,46 @@ use App\Models\PrivilegeRole;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use OpenApi\Attributes as OA;
 use UnexpectedValueException;
 
 /**
  * @mixin InstitutionUser|User
  */
+#[OA\Schema(
+    oneOf: [
+        new OA\Schema(
+            description: 'Represention of an institution user',
+            required: ['personalIdentificationCode', 'userId', 'institutionUserId', 'forename', 'surname', 'selectedInstitution', 'privileges'],
+            properties: [
+                new OA\Property(property: 'personalIdentificationCode', type: 'string'),
+                new OA\Property(property: 'userId', type: 'string', format: 'uuid'),
+                new OA\Property(property: 'institutionUserId', type: 'string', format: 'uuid'),
+                new OA\Property(property: 'forename', type: 'string'),
+                new OA\Property(property: 'surname', type: 'string'),
+                new OA\Property(
+                    property: 'selectedInstitution',
+                    properties: [
+                        new OA\Property(property: 'id', type: 'string', format: 'uuid'),
+                        new OA\Property(property: 'name', type: 'string'),
+                    ],
+                    type: 'object'
+                ),
+                new OA\Property(property: 'privileges', type: 'array', items: new OA\Items(type: 'string')),
+            ],
+        ),
+        new OA\Schema(
+            description: 'Represention of an user without knowing their institution',
+            required: ['personalIdentificationCode', 'userId', 'forename', 'surname'],
+            properties: [
+                new OA\Property(property: 'personalIdentificationCode', type: 'string'),
+                new OA\Property(property: 'userId', type: 'string', format: 'uuid'),
+                new OA\Property(property: 'forename', type: 'string'),
+                new OA\Property(property: 'surname', type: 'string'),
+            ],
+        ),
+    ]
+)]
 class JwtClaims extends JsonResource
 {
     public static $wrap = null;

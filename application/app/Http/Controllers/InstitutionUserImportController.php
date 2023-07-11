@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\OpenApiHelpers as OAH;
 use App\Http\Requests\ImportUsersCsvRequest;
 use App\Http\Requests\ImportUsersCsvRowValidationRequest;
 use App\Models\Department;
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 use UnexpectedValueException;
@@ -30,6 +32,59 @@ class InstitutionUserImportController extends Controller
     /**
      * @throws Throwable
      */
+    #[OA\Post(
+        path: '/institution-users/validate-import-csv',
+        summary: 'Check the supplied intitution users CSV for validation errors',
+        requestBody: new OAH\RequestBody(ImportUsersCsvRequest::class),
+        responses: [new OAH\Forbidden, new OAH\Unauthorized]
+    )]
+    #[OA\Response(
+        response: Response::HTTP_OK,
+        description: 'The supplied CSV contents had no validation errors',
+        content: new OA\JsonContent(
+            required: ['errors', 'rowsWithExistingInstitutionUsers'],
+            properties: [
+                new OA\Property(property: 'errors', type: 'array', items: new OA\Items, maxItems: 0),
+                new OA\Property(
+                    property: 'rowsWithExistingInstitutionUsers',
+                    type: 'array',
+                    items: new OA\Items(type: 'integer')
+                ),
+            ],
+            type: 'object',
+        )
+    )]
+    #[OA\Response(
+        response: Response::HTTP_UNPROCESSABLE_ENTITY,
+        description: 'Validation errors found in supplied CSV contents',
+        content: new OA\JsonContent(
+            required: ['errors', 'rowsWithExistingInstitutionUsers'],
+            properties: [
+                new OA\Property(
+                    property: 'errors',
+                    type: 'array',
+                    items: new OA\Items(
+                        required: ['row', 'errors'],
+                        properties: [
+                            new OA\Property(property: 'row', type: 'integer'),
+                            new OA\Property(property: 'errors', type: 'object', example: '{"role":["The role with the name \'role-name\' does not exist."], "email":["The email field must be a valid email address."]}'),
+                        ],
+                        type: 'object'
+                    )
+                ),
+                new OA\Property(
+                    property: 'rowsWithExistingInstitutionUsers',
+                    type: 'array',
+                    items: new OA\Items(type: 'integer')
+                ),
+            ],
+            type: 'object'
+        )
+    )]
+    #[OA\Response(
+        response: Response::HTTP_BAD_REQUEST,
+        description: 'Unable to check for validation errors because the supplied CSV was in an incorrect format'
+    )]
     public function validateCsv(ImportUsersCsvRequest $request): JsonResponse
     {
         $this->authorize('import', InstitutionUser::class);
@@ -66,6 +121,14 @@ class InstitutionUserImportController extends Controller
      * @throws AuthorizationException
      * @throws Throwable
      */
+    #[OA\Post(
+        path: '/institution-users/import-csv',
+        summary: 'Import institution users into the database from the supplied CSV file',
+        requestBody: new OAH\RequestBody(ImportUsersCsvRequest::class),
+        responses: [new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
+    )]
+    #[OA\Response(response: Response::HTTP_OK, description: 'Import was successful')]
+    #[OA\Response(response: Response::HTTP_BAD_REQUEST, description: 'Import was unsuccessful; CSV had unresolved errors')]
     public function importCsv(ImportUsersCsvRequest $request): JsonResponse
     {
         $this->authorize('import', InstitutionUser::class);
@@ -127,6 +190,36 @@ class InstitutionUserImportController extends Controller
     /**
      * @throws AuthorizationException
      */
+    #[OA\Post(
+        path: '/institution-users/validate-import-csv-row',
+        summary: 'Check the supplied data, representing a single CSV row, for validation errors',
+        requestBody: new OAH\RequestBody(ImportUsersCsvRowValidationRequest::class),
+        responses: [new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
+    )]
+    #[OA\Response(
+        response: Response::HTTP_OK,
+        description: 'Validation information about the supplied data row',
+        content: new OA\JsonContent(
+            required: ['data', 'isExistingInstitutionUser'],
+            properties: [
+                new OA\Property(
+                    property: 'data',
+                    description: 'Only the subset of sent data which passed validation',
+                    properties: [
+                        new OA\Property(property: 'personal_identification_code', type: 'string'),
+                        new OA\Property(property: 'name', type: 'string'),
+                        new OA\Property(property: 'phone', type: 'string', format: 'phone'),
+                        new OA\Property(property: 'email', type: 'string', format: 'email'),
+                        new OA\Property(property: 'department', type: 'string', nullable: true),
+                        new OA\Property(property: 'role', type: 'string', example: 'Tõlk,Tõlkekorraldaja,Peakasutaja'),
+                    ],
+                    type: 'object'
+                ),
+                new OA\Property(property: 'isExistingInstitutionUser', type: 'boolean'),
+            ],
+            type: 'object',
+        )
+    )]
     public function validateCsvRow(ImportUsersCsvRowValidationRequest $request): JsonResponse
     {
         $this->authorize('import', InstitutionUser::class);

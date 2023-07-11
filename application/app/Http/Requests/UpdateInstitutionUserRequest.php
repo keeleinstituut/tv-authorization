@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Rules\ModelBelongsToInstitutionRule;
 use App\Rules\PhoneNumberRule;
 use Illuminate\Foundation\Http\FormRequest;
+use OpenApi\Attributes as OA;
 
 /**
  * @property string forename
@@ -18,6 +19,32 @@ use Illuminate\Foundation\Http\FormRequest;
  * @property string department
  * @property string vendor
  */
+#[OA\RequestBody(
+    request: self::class,
+    required: true,
+    content: new OA\JsonContent(
+        required: ['name'],
+        properties: [
+            new OA\Property(
+                property: 'user',
+                minProperties: 1,
+                properties: [
+                    new OA\Property(property: 'forename', type: 'string'),
+                    new OA\Property(property: 'surname', type: 'string'),
+                ],
+                type: 'object'
+            ),
+            new OA\Property(property: 'email', type: 'string', format: 'email'),
+            new OA\Property(property: 'phone', type: 'string', format: 'phone'),
+            new OA\Property(
+                property: 'roles',
+                type: 'array',
+                items: new OA\Items(type: 'string', format: 'uuid')
+            ),
+            new OA\Property(property: 'department_id', type: 'string', format: 'uuid', nullable: true),
+        ]
+    )
+)]
 class UpdateInstitutionUserRequest extends FormRequest
 {
     public function rules(): array

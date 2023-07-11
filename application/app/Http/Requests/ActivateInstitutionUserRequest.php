@@ -9,7 +9,30 @@ use App\Models\Role;
 use App\Rules\ModelBelongsToInstitutionRule;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
+use OpenApi\Attributes as OA;
 
+#[OA\RequestBody(
+    request: self::class,
+    required: true,
+    content: new OA\JsonContent(
+        required: ['institution_user_id', 'notify_user', 'roles'],
+        properties: [
+            new OA\Property(
+                property: 'institution_user_id',
+                description: 'UUID of institution user to reactivate',
+                type: 'string',
+                format: 'uuid'
+            ),
+            new OA\Property(property: 'notify_user', type: 'boolean'),
+            new OA\Property(
+                property: 'roles',
+                type: 'array',
+                items: new OA\Items(type: 'string', format: 'uuid'),
+                minItems: 1
+            ),
+        ]
+    )
+)]
 class ActivateInstitutionUserRequest extends FormRequest
 {
     use FindsInstitutionUsersWithAnyStatus;

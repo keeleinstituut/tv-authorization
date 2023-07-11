@@ -6,7 +6,6 @@ services:
       context: .
       dockerfile: Dockerfile
     depends_on:
-      - postgres
       - redis
     ports:
       - 8000:80
@@ -32,3 +31,4 @@ services:
       - SESSION_DRIVER=file
       - SESSION_LIFETIME=120
       - MEMCACHED_HOST=127.0.0.1
+      - L5_SWAGGER_GENERATE_ALWAYS=true
