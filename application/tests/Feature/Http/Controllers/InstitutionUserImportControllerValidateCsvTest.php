@@ -510,7 +510,7 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
             ]);
         }
 
-        return $this->postJson(
+        $something = $this->postJson(
             action([InstitutionUserImportController::class, 'validateCsv']),
             [
                 'file' => UploadedFile::fake()->createWithContent(
@@ -519,6 +519,8 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
                 ),
             ]
         );
+
+        return $something;
     }
 
     private function getValidCsvRow(string $roleName, string $departmentName = ''): array
