@@ -306,7 +306,7 @@ class InstitutionUserControllerIndexTest extends TestCase
             ->sendIndexRequestWithExpectedHeaders($queryParameters, $actingInstitutionUser)
             ->assertOk();
         $this->assertCount(10, $firstPageResponse->json('data'));
-        $this->assertArrayHasSpecifiedFragment(
+        $this->assertArrayHasSubsetIgnoringOrder(
             ['total' => 22, 'current_page' => 1, 'last_page' => 3, 'from' => 1, 'to' => 10],
             $firstPageResponse->json('meta')
         );
@@ -316,7 +316,7 @@ class InstitutionUserControllerIndexTest extends TestCase
             ->sendCustomRequestWithExpectedHeaders("{$nextUrl['path']}?{$nextUrl['query']}", $actingInstitutionUser)
             ->assertOk();
         $this->assertCount(10, $secondPageResponse->json('data'));
-        $this->assertArrayHasSpecifiedFragment(
+        $this->assertArrayHasSubsetIgnoringOrder(
             ['total' => 22, 'current_page' => 2, 'last_page' => 3, 'from' => 11, 'to' => 20],
             $secondPageResponse->json('meta')
         );
@@ -326,7 +326,7 @@ class InstitutionUserControllerIndexTest extends TestCase
             ->sendCustomRequestWithExpectedHeaders("{$nextUrl['path']}?{$nextUrl['query']}", $actingInstitutionUser)
             ->assertOk();
         $this->assertCount(2, $thirdPageResponse->json('data'));
-        $this->assertArrayHasSpecifiedFragment(
+        $this->assertArrayHasSubsetIgnoringOrder(
             ['total' => 22, 'current_page' => 3, 'last_page' => 3, 'from' => 21, 'to' => 22],
             $thirdPageResponse->json('meta')
         );

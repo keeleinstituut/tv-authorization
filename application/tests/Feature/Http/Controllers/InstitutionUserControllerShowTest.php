@@ -68,7 +68,7 @@ class InstitutionUserControllerShowTest extends TestCase
                 'personal_identification_code' => $expectedPic,
             ],
         ];
-        $this->assertResponseJsonDataIsEqualTo($expectedResponseData, $response);
+        $this->assertResponseJsonDataEqualsIgnoringOrder($expectedResponseData, $response);
     }
 
     public function test_requesting_nonexistent_user(): void
