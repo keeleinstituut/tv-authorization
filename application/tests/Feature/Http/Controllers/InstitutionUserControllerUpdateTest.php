@@ -83,7 +83,7 @@ class InstitutionUserControllerUpdateTest extends TestCase
                 'surname' => $expectedSurname,
             ],
         ];
-        $this->assertArrayHasSpecifiedFragmentIgnoringOrder($expectedFragment, $actualState);
+        $this->assertArrayHasSubsetIgnoringOrder($expectedFragment, $actualState);
 
         // And request response should correspond to the actual state
         $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
@@ -114,7 +114,7 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $actualState = RepresentationHelpers::createInstitutionUserNestedRepresentation(
             InstitutionUser::findOrFail($createdInstitutionUser->id)
         );
-        $this->assertArrayHasSpecifiedFragmentIgnoringOrder(['roles' => []], $actualState);
+        $this->assertArrayHasSubsetIgnoringOrder(['roles' => []], $actualState);
 
         // And request response should correspond to the actual state
         $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
@@ -143,7 +143,7 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $actualState = RepresentationHelpers::createInstitutionUserNestedRepresentation(
             InstitutionUser::findOrFail($createdInstitutionUser->id)
         );
-        $this->assertArrayHasSpecifiedFragmentIgnoringOrder(['department' => null], $actualState);
+        $this->assertArrayHasSubsetIgnoringOrder(['department' => null], $actualState);
 
         // And request response should correspond to the actual state
         $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
@@ -212,7 +212,7 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $actualState = RepresentationHelpers::createInstitutionUserNestedRepresentation(
             InstitutionUser::findOrFail($createdInstitutionUser->id)
         );
-        $this->assertArrayHasSpecifiedFragmentIgnoringOrder(['phone' => $validPhoneNumber], $actualState);
+        $this->assertArrayHasSubsetIgnoringOrder(['phone' => $validPhoneNumber], $actualState);
 
         // And request response should correspond to the actual state
         $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);

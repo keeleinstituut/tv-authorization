@@ -324,36 +324,36 @@ class InstitutionUserTest extends TestCase
 
     public function test_scope_status(): void
     {
-        $referenceInstitution = Institution::factory()->create();
+        $institution = Institution::factory()->create();
 
         $institutionUsersExpectedActive = [
-            InstitutionUser::factory()->for($referenceInstitution)->create(),
+            InstitutionUser::factory()->for($institution)->create(),
             InstitutionUser::factory()
-                ->for($referenceInstitution)
+                ->for($institution)
                 ->create(['deactivation_date' => Date::now()->addMonth()->format('Y-m-d')]),
         ];
 
         $institutionUsersExpectedDeactivated = [
             InstitutionUser::factory()
-                ->for($referenceInstitution)
+                ->for($institution)
                 ->create(['deactivation_date' => Date::now()->subMonth()->format('Y-m-d')]),
             InstitutionUser::factory()
-                ->for($referenceInstitution)
+                ->for($institution)
                 ->create(['deactivation_date' => Date::now()]),
         ];
 
         $institutionUsersExpectedArchived = [
             InstitutionUser::factory()
-                ->for($referenceInstitution)
+                ->for($institution)
                 ->create(['archived_at' => Date::now()]),
             InstitutionUser::factory()
-                ->for($referenceInstitution)
+                ->for($institution)
                 ->create([
                     'archived_at' => Date::yesterday(),
                     'deactivation_date' => Date::now()->subMonth()->format('Y-m-d'),
                 ]),
             InstitutionUser::factory()
-                ->for($referenceInstitution)
+                ->for($institution)
                 ->create([
                     'archived_at' => Date::yesterday(),
                     'deactivation_date' => Date::now()->addMonth()->format('Y-m-d'),
@@ -362,17 +362,81 @@ class InstitutionUserTest extends TestCase
 
         $this->assertEqualsCanonicalizing(
             collect($institutionUsersExpectedDeactivated)->pluck('id'),
-            InstitutionUser::status(InstitutionUserStatus::Deactivated)->pluck('id')
+            InstitutionUser::whereBelongsTo($institution)
+                ->status(InstitutionUserStatus::Deactivated)
+                ->pluck('id')
         );
 
         $this->assertEqualsCanonicalizing(
             collect($institutionUsersExpectedActive)->pluck('id'),
-            InstitutionUser::status(InstitutionUserStatus::Active)->pluck('id')
+            InstitutionUser::whereBelongsTo($institution)
+                ->status(InstitutionUserStatus::Active)
+                ->pluck('id')
         );
 
         $this->assertEqualsCanonicalizing(
             collect($institutionUsersExpectedArchived)->pluck('id'),
-            InstitutionUser::status(InstitutionUserStatus::Archived)->pluck('id')
+            InstitutionUser::whereBelongsTo($institution)
+                ->status(InstitutionUserStatus::Archived)
+                ->pluck('id')
+        );
+
+        $this->assertEqualsCanonicalizing(
+            collect($institutionUsersExpectedDeactivated)->pluck('id'),
+            InstitutionUser::whereBelongsTo($institution)
+                ->statusIn([InstitutionUserStatus::Deactivated])
+                ->pluck('id')
+        );
+
+        $this->assertEqualsCanonicalizing(
+            collect($institutionUsersExpectedActive)->pluck('id'),
+            InstitutionUser::whereBelongsTo($institution)
+                ->statusIn([InstitutionUserStatus::Active])
+                ->pluck('id')
+        );
+
+        $this->assertEqualsCanonicalizing(
+            collect($institutionUsersExpectedArchived)->pluck('id'),
+            InstitutionUser::whereBelongsTo($institution)
+                ->statusIn([InstitutionUserStatus::Archived])
+                ->pluck('id')
+        );
+
+        $this->assertEqualsCanonicalizing(
+            collect($institutionUsersExpectedActive)
+                ->merge($institutionUsersExpectedDeactivated)
+                ->pluck('id'),
+            InstitutionUser::whereBelongsTo($institution)
+                ->statusIn([InstitutionUserStatus::Active, InstitutionUserStatus::Deactivated])
+                ->pluck('id')
+        );
+
+        $this->assertEqualsCanonicalizing(
+            collect($institutionUsersExpectedActive)
+                ->merge($institutionUsersExpectedArchived)
+                ->pluck('id'),
+            InstitutionUser::whereBelongsTo($institution)
+                ->statusIn([InstitutionUserStatus::Active, InstitutionUserStatus::Archived])
+                ->pluck('id')
+        );
+
+        $this->assertEqualsCanonicalizing(
+            collect($institutionUsersExpectedDeactivated)
+                ->merge($institutionUsersExpectedArchived)
+                ->pluck('id'),
+            InstitutionUser::whereBelongsTo($institution)
+                ->statusIn([InstitutionUserStatus::Deactivated, InstitutionUserStatus::Archived])
+                ->pluck('id')
+        );
+
+        $this->assertEqualsCanonicalizing(
+            collect($institutionUsersExpectedActive)
+                ->merge($institutionUsersExpectedDeactivated)
+                ->merge($institutionUsersExpectedArchived)
+                ->pluck('id'),
+            InstitutionUser::whereBelongsTo($institution)
+                ->statusIn([InstitutionUserStatus::Active, InstitutionUserStatus::Deactivated, InstitutionUserStatus::Archived])
+                ->pluck('id')
         );
     }
 

@@ -15,7 +15,7 @@ abstract class TestCase extends BaseTestCase
         $this->assertArraysEqualIgnoringOrder($expectedData, $actualResponse->json('data'));
     }
 
-    public function assertArrayHasSpecifiedFragmentIgnoringOrder(?array $expectedFragment, ?array $actual): void
+    public function assertArrayHasSubsetIgnoringOrder(?array $expectedFragment, ?array $actual): void
     {
         $this->assertNotNull($expectedFragment);
         $this->assertNotNull($actual);

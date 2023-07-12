@@ -62,6 +62,7 @@ use Illuminate\Support\Facades\Date;
  * @method static Builder|InstitutionUser withTrashed()
  * @method static Builder|InstitutionUser withoutTrashed()
  * @method static Builder|InstitutionUser status(InstitutionUserStatus $value)
+ * @method static Builder|InstitutionUser statusIn(array $statuses)
  *
  * @mixin Eloquent
  */
@@ -108,9 +109,29 @@ class InstitutionUser extends Model
             ->withTimestamps();
     }
 
-    /** @noinspection PhpUnused */
-    public function scopeStatus(Builder $query, InstitutionUserStatus $status): void
+    /**
+     * @noinspection PhpUnused
+     *
+     * @param  array<InstitutionUserStatus|string>  $statuses
+     */
+    public function scopeStatusIn(Builder $query, array $statuses): void
     {
+        $query
+            ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
+            ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
+            ->where(
+                fn (Builder $clause) => collect($statuses)->each($clause->orWhere->status(...))
+            );
+    }
+
+    /** @noinspection PhpUnused */
+    public function scopeStatus(Builder $query, InstitutionUserStatus|string $status): void
+    {
+        if (is_string($status)) {
+            $status = InstitutionUserStatus::from($status);
+            /** @var InstitutionUserStatus $status */
+        }
+
         match ($status) {
             InstitutionUserStatus::Active => $query
                 ->whereNull('archived_at')

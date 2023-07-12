@@ -13,6 +13,7 @@ use App\Http\Requests\UpdateInstitutionUserRequest;
 use App\Http\Resources\InstitutionUserResource;
 use App\Models\InstitutionUser;
 use App\Models\Role;
+use App\Models\Scopes\ExcludeArchivedInstitutionUsersScope;
 use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Policies\InstitutionUserPolicy;
 use App\Util\DateUtil;
@@ -143,11 +144,29 @@ class InstitutionUserController extends Controller
         parameters: [
             new OA\QueryParameter(name: 'page', schema: new OA\Schema(type: 'integer', default: 1)),
             new OA\QueryParameter(name: 'per_page', schema: new OA\Schema(type: 'integer', default: 10, enum: [10, 50, 100])),
-            new OA\QueryParameter(name: 'role_id', schema: new OA\Schema(type: 'string', format: 'uuid')),
-            new OA\QueryParameter(name: 'status', schema: new OA\Schema(type: 'string', enum: InstitutionUserStatus::class)),
             new OA\QueryParameter(name: 'sort_by', schema: new OA\Schema(type: 'string', enum: ['name', 'created_at'])),
             new OA\QueryParameter(name: 'sort_order', schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'])),
-            new OA\QueryParameter(name: 'department', schema: new OA\Schema(type: 'string')),
+            new OA\QueryParameter(
+                name: 'roles',
+                schema: new OA\Schema(
+                    type: 'array',
+                    items: new OA\Items(type: 'string', format: 'uuid')
+                )
+            ),
+            new OA\QueryParameter(
+                name: 'statuses',
+                schema: new OA\Schema(
+                    type: 'array',
+                    items: new OA\Items(type: 'string', enum: InstitutionUserStatus::class)
+                )
+            ),
+            new OA\QueryParameter(
+                name: 'departments',
+                schema: new OA\Schema(
+                    type: 'array',
+                    items: new OA\Items(type: 'string', format: 'uuid')
+                )
+            ),
         ],
         responses: [new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
     )]
@@ -161,40 +180,51 @@ class InstitutionUserController extends Controller
             'institutionUserRoles.role',
         ]);
 
-        $roleId = $request->validated('role_id');
-        $institutionUsersQuery->when($roleId, function (Builder $query, string $roleId) {
-            $query->whereHas(
-                'institutionUserRoles',
-                fn (Builder $roleQuery) => $roleQuery->where('role_id', $roleId)
-            );
-        });
+        $institutionUsersQuery->when(
+            $request->validated('roles'),
+            function (Builder $iuQuery, array $roles) {
+                $iuQuery->whereHas(
+                    'institutionUserRoles',
+                    fn (Builder $iurClause) => $iurClause->whereIn('role_id', $roles)
+                );
+            }
+        );
 
         $sortOrder = $request->validated('sort_order', 'desc');
         $sortField = $request->validated('sort_by', 'created_at');
         $institutionUsersQuery->when(
             $sortField == 'name',
-            function (Builder $query) use ($sortOrder) {
-                $query->join('users', 'institution_users.user_id', '=', 'users.id')
+            function (Builder $iuQuery) use ($sortOrder) {
+                $iuQuery->join('users', 'institution_users.user_id', '=', 'users.id')
                     ->orderBy('users.surname', $sortOrder)
                     ->orderBy('users.forename', $sortOrder);
             },
-            function (Builder $query) use ($sortOrder, $sortField) {
-                $query->orderBy(
+            function (Builder $iuQuery) use ($sortOrder, $sortField) {
+                $iuQuery->orderBy(
                     $sortField,
                     $sortOrder
                 );
             }
         );
 
-        $status = $request->validated('status');
-        $institutionUsersQuery->when($status, function (Builder $query, string $status) {
-            $query->status(InstitutionUserStatus::from($status));
-        });
+        $institutionUsersQuery->when(
+            $request->validated('statuses'),
+            function (Builder $iuQuery, array $statuses) {
+                $iuQuery->statusIn($statuses);
+            }
+        );
+
+        $institutionUsersQuery->when(
+            $request->validated('departments'),
+            function (Builder $iuQuery, array $departments) {
+                $iuQuery->whereIn('department_id', $departments);
+            }
+        );
 
         return InstitutionUserResource::collection(
-            $institutionUsersQuery->paginate(
-                $request->validated('per_page', 10)
-            )
+            $institutionUsersQuery
+                ->paginate($request->validated('per_page', 10))
+                ->appends($request->validated())
         );
     }
 
@@ -211,7 +241,6 @@ class InstitutionUserController extends Controller
         return DB::transaction(function () use ($request) {
             /** @var $institutionUser InstitutionUser */
             $institutionUser = $this->getBaseQuery()
-                ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
                 ->findOrFail($request->validated('institution_user_id'));
 
             $this->authorize('deactivate', $institutionUser);
@@ -242,7 +271,6 @@ class InstitutionUserController extends Controller
         return DB::transaction(function () use ($request) {
             /** @var $institutionUser InstitutionUser */
             $institutionUser = $this->getBaseQuery()
-                ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
                 ->findOrFail($request->validated('institution_user_id'));
 
             $this->authorize('activate', $institutionUser);
@@ -277,7 +305,6 @@ class InstitutionUserController extends Controller
         return DB::transaction(function () use ($request) {
             /** @var $institutionUser InstitutionUser */
             $institutionUser = $this->getBaseQuery()
-                ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
                 ->findOrFail($request->validated('institution_user_id'));
 
             $this->authorize('archive', $institutionUser);
@@ -295,6 +322,8 @@ class InstitutionUserController extends Controller
     public function getBaseQuery(): Builder
     {
         return InstitutionUser::getModel()
+            ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
+            ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
             ->withGlobalScope('policy', InstitutionUserPolicy::scope())
             ->whereHas('user');
     }
