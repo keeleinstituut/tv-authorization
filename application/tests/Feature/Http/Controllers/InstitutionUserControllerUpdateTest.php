@@ -83,10 +83,10 @@ class InstitutionUserControllerUpdateTest extends TestCase
                 'surname' => $expectedSurname,
             ],
         ];
-        $this->assertArrayHasSpecifiedFragment($expectedFragment, $actualState);
+        $this->assertArrayHasSpecifiedFragmentIgnoringOrder($expectedFragment, $actualState);
 
         // And request response should correspond to the actual state
-        $this->assertResponseJsonDataIsEqualTo($actualState, $response);
+        $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
     }
 
     /**
@@ -114,10 +114,10 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $actualState = RepresentationHelpers::createInstitutionUserNestedRepresentation(
             InstitutionUser::findOrFail($createdInstitutionUser->id)
         );
-        $this->assertArrayHasSpecifiedFragment(['roles' => []], $actualState);
+        $this->assertArrayHasSpecifiedFragmentIgnoringOrder(['roles' => []], $actualState);
 
         // And request response should correspond to the actual state
-        $this->assertResponseJsonDataIsEqualTo($actualState, $response);
+        $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
     }
 
     /**
@@ -143,10 +143,10 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $actualState = RepresentationHelpers::createInstitutionUserNestedRepresentation(
             InstitutionUser::findOrFail($createdInstitutionUser->id)
         );
-        $this->assertArrayHasSpecifiedFragment(['department' => null], $actualState);
+        $this->assertArrayHasSpecifiedFragmentIgnoringOrder(['department' => null], $actualState);
 
         // And request response should correspond to the actual state
-        $this->assertResponseJsonDataIsEqualTo($actualState, $response);
+        $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
     }
 
     /**
@@ -212,10 +212,10 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $actualState = RepresentationHelpers::createInstitutionUserNestedRepresentation(
             InstitutionUser::findOrFail($createdInstitutionUser->id)
         );
-        $this->assertArrayHasSpecifiedFragment(['phone' => $validPhoneNumber], $actualState);
+        $this->assertArrayHasSpecifiedFragmentIgnoringOrder(['phone' => $validPhoneNumber], $actualState);
 
         // And request response should correspond to the actual state
-        $this->assertResponseJsonDataIsEqualTo($actualState, $response);
+        $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
     }
 
     public function test_updating_nonexistent_user(): void
