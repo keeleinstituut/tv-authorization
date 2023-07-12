@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\InstitutionUserStatus;
+use App\Http\OpenApiHelpers as OAH;
 use App\Http\Requests\ActivateInstitutionUserRequest;
 use App\Http\Requests\ArchiveInstitutionUserRequest;
 use App\Http\Requests\DeactivateInstitutionUserRequest;
@@ -12,6 +13,7 @@ use App\Http\Requests\UpdateInstitutionUserRequest;
 use App\Http\Resources\InstitutionUserResource;
 use App\Models\InstitutionUser;
 use App\Models\Role;
+use App\Models\Scopes\ExcludeArchivedInstitutionUsersScope;
 use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Policies\InstitutionUserPolicy;
 use App\Util\DateUtil;
@@ -23,6 +25,8 @@ use Illuminate\Support\Facades\DB;
 use League\Csv\CannotInsertRecord;
 use League\Csv\Exception;
 use League\Csv\Writer;
+use OpenApi\Attributes as OA;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
@@ -31,6 +35,12 @@ class InstitutionUserController extends Controller
     /**
      * @throws AuthorizationException
      */
+    #[OA\Get(
+        path: '/institution-users/{institution_user_id}',
+        parameters: [new OAH\UuidPath('institution_user_id')],
+        responses: [new OAH\NotFound, new OAH\Forbidden, new OAH\Unauthorized]
+    )]
+    #[OAH\ResourceResponse(dataRef: InstitutionUserResource::class, description: 'Institution user with given UUID')]
     public function show(GetInstitutionUserRequest $request): InstitutionUserResource
     {
         $institutionUser = $this->getBaseQuery()->findOrFail($request->getInstitutionUserId());
@@ -43,6 +53,13 @@ class InstitutionUserController extends Controller
     /**
      * @throws AuthorizationException|Throwable
      */
+    #[OA\Put(
+        path: '/institution-users',
+        summary: 'Update the institution user with the given UUID',
+        requestBody: new OAH\RequestBody(UpdateInstitutionUserRequest::class),
+        responses: [new OAH\NotFound, new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
+    )]
+    #[OAH\ResourceResponse(dataRef: InstitutionUserResource::class, description: 'Modified institution user')]
     public function update(UpdateInstitutionUserRequest $request): InstitutionUserResource
     {
         return DB::transaction(function () use ($request) {
@@ -73,6 +90,19 @@ class InstitutionUserController extends Controller
     /**
      * @throws AuthorizationException|CannotInsertRecord|Exception
      */
+    #[OA\Get(
+        path: '/institution-users/export-csv',
+        responses: [new OAH\Forbidden, new OAH\Unauthorized]
+    )]
+    #[OA\Response(
+        response: Response::HTTP_OK,
+        description: 'CSV file of institution users in current institution (inferred from JWT)',
+        content: new OA\MediaType(
+            mediaType: 'text/csv',
+            schema: new OA\Schema(type: 'string'),
+            example: "Isikukood,Nimi,Meiliaadress,Telefoninumber,Üksus,Roll\n60104179950,\"Isabel Collier\",tmckenzie@buckridge.com,+3723843547,,\"Transportation Attendant, Electrician, Transportation and Material-Moving, Cutting Machine Operator\"\n34602284846,\"Mabelle Quitzon\",zlockman@tromp.com,+3727554275,,\"MARCOM Manager, Maintenance Equipment Operator, Locksmith\""
+        )
+    )]
     public function exportCsv(): StreamedResponse
     {
         $this->authorize('export', InstitutionUser::class);
@@ -108,6 +138,39 @@ class InstitutionUserController extends Controller
     /**
      * @throws AuthorizationException
      */
+    #[OA\Get(
+        path: '/institution-users',
+        summary: 'List and optionally filter institution users belonging to the current institution (inferred from JWT)',
+        parameters: [
+            new OA\QueryParameter(name: 'page', schema: new OA\Schema(type: 'integer', default: 1)),
+            new OA\QueryParameter(name: 'per_page', schema: new OA\Schema(type: 'integer', default: 10, enum: [10, 50, 100])),
+            new OA\QueryParameter(name: 'sort_by', schema: new OA\Schema(type: 'string', enum: ['name', 'created_at'])),
+            new OA\QueryParameter(name: 'sort_order', schema: new OA\Schema(type: 'string', enum: ['asc', 'desc'])),
+            new OA\QueryParameter(
+                name: 'roles',
+                schema: new OA\Schema(
+                    type: 'array',
+                    items: new OA\Items(type: 'string', format: 'uuid')
+                )
+            ),
+            new OA\QueryParameter(
+                name: 'statuses',
+                schema: new OA\Schema(
+                    type: 'array',
+                    items: new OA\Items(type: 'string', enum: InstitutionUserStatus::class)
+                )
+            ),
+            new OA\QueryParameter(
+                name: 'departments',
+                schema: new OA\Schema(
+                    type: 'array',
+                    items: new OA\Items(type: 'string', format: 'uuid')
+                )
+            ),
+        ],
+        responses: [new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
+    )]
+    #[OAH\PaginatedCollectionResponse(itemsRef: InstitutionUserResource::class, description: 'Filtered institution users of current institution')]
     public function index(InstitutionUserListRequest $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', InstitutionUser::class);
@@ -117,50 +180,67 @@ class InstitutionUserController extends Controller
             'institutionUserRoles.role',
         ]);
 
-        $roleId = $request->validated('role_id');
-        $institutionUsersQuery->when($roleId, function (Builder $query, string $roleId) {
-            $query->whereHas(
-                'institutionUserRoles',
-                fn (Builder $roleQuery) => $roleQuery->where('role_id', $roleId)
-            );
-        });
+        $institutionUsersQuery->when(
+            $request->validated('roles'),
+            function (Builder $iuQuery, array $roles) {
+                $iuQuery->whereHas(
+                    'institutionUserRoles',
+                    fn (Builder $iurClause) => $iurClause->whereIn('role_id', $roles)
+                );
+            }
+        );
 
         $sortOrder = $request->validated('sort_order', 'desc');
         $sortField = $request->validated('sort_by', 'created_at');
         $institutionUsersQuery->when(
             $sortField == 'name',
-            function (Builder $query) use ($sortOrder) {
-                $query->join('users', 'institution_users.user_id', '=', 'users.id')
+            function (Builder $iuQuery) use ($sortOrder) {
+                $iuQuery->join('users', 'institution_users.user_id', '=', 'users.id')
                     ->orderBy('users.surname', $sortOrder)
                     ->orderBy('users.forename', $sortOrder);
             },
-            function (Builder $query) use ($sortOrder, $sortField) {
-                $query->orderBy(
+            function (Builder $iuQuery) use ($sortOrder, $sortField) {
+                $iuQuery->orderBy(
                     $sortField,
                     $sortOrder
                 );
             }
         );
 
-        $status = $request->validated('status');
-        $institutionUsersQuery->when($status, function (Builder $query, string $status) {
-            $query->status(InstitutionUserStatus::from($status));
-        });
+        $institutionUsersQuery->when(
+            $request->validated('statuses'),
+            function (Builder $iuQuery, array $statuses) {
+                $iuQuery->statusIn($statuses);
+            }
+        );
+
+        $institutionUsersQuery->when(
+            $request->validated('departments'),
+            function (Builder $iuQuery, array $departments) {
+                $iuQuery->whereIn('department_id', $departments);
+            }
+        );
 
         return InstitutionUserResource::collection(
-            $institutionUsersQuery->paginate(
-                $request->validated('per_page', 10)
-            )
+            $institutionUsersQuery
+                ->paginate($request->validated('per_page', 10))
+                ->appends($request->validated())
         );
     }
 
     /** @throws AuthorizationException|Throwable */
+    #[OA\Post(
+        path: '/institution-users/deactivate',
+        summary: 'Set a deactivation date for the specified institution user',
+        requestBody: new OAH\RequestBody(DeactivateInstitutionUserRequest::class),
+        responses: [new OAH\NotFound, new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
+    )]
+    #[OAH\ResourceResponse(dataRef: InstitutionUserResource::class, description: 'Modified institution user')]
     public function deactivate(DeactivateInstitutionUserRequest $request): InstitutionUserResource
     {
         return DB::transaction(function () use ($request) {
             /** @var $institutionUser InstitutionUser */
             $institutionUser = $this->getBaseQuery()
-                ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
                 ->findOrFail($request->validated('institution_user_id'));
 
             $this->authorize('deactivate', $institutionUser);
@@ -179,12 +259,18 @@ class InstitutionUserController extends Controller
     }
 
     /** @throws AuthorizationException|Throwable */
+    #[OA\Post(
+        path: '/institution-users/activate',
+        summary: 'Reactivate a deactivated institution user with given UUID',
+        requestBody: new OAH\RequestBody(ActivateInstitutionUserRequest::class),
+        responses: [new OAH\NotFound, new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
+    )]
+    #[OAH\ResourceResponse(dataRef: InstitutionUserResource::class, description: 'Modified institution user')]
     public function activate(ActivateInstitutionUserRequest $request): InstitutionUserResource
     {
         return DB::transaction(function () use ($request) {
             /** @var $institutionUser InstitutionUser */
             $institutionUser = $this->getBaseQuery()
-                ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
                 ->findOrFail($request->validated('institution_user_id'));
 
             $this->authorize('activate', $institutionUser);
@@ -207,12 +293,18 @@ class InstitutionUserController extends Controller
     }
 
     /** @throws AuthorizationException|Throwable */
+    #[OA\Post(
+        path: '/institution-users/archive',
+        summary: 'Archive an institution user with the given UUID',
+        requestBody: new OAH\RequestBody(ArchiveInstitutionUserRequest::class),
+        responses: [new OAH\NotFound, new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
+    )]
+    #[OAH\ResourceResponse(dataRef: InstitutionUserResource::class, description: 'Modified institution user')]
     public function archive(ArchiveInstitutionUserRequest $request): InstitutionUserResource
     {
         return DB::transaction(function () use ($request) {
             /** @var $institutionUser InstitutionUser */
             $institutionUser = $this->getBaseQuery()
-                ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
                 ->findOrFail($request->validated('institution_user_id'));
 
             $this->authorize('archive', $institutionUser);
@@ -230,6 +322,8 @@ class InstitutionUserController extends Controller
     public function getBaseQuery(): Builder
     {
         return InstitutionUser::getModel()
+            ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
+            ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
             ->withGlobalScope('policy', InstitutionUserPolicy::scope())
             ->whereHas('user');
     }

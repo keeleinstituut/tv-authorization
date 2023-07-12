@@ -3,10 +3,12 @@
 namespace App\Http\Requests;
 
 use App\Enums\InstitutionUserStatus;
+use App\Models\Department;
 use App\Models\Role;
-use App\Policies\RolePolicy;
+use App\Rules\ModelBelongsToInstitutionRule;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 
@@ -20,16 +22,43 @@ class InstitutionUserListRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'per_page' => ['integer', Rule::in([10, 50, 100])],
-            'role_id' => ['uuid', function ($attribute, $value, $fail) {
-                if (! Role::where('id', $value)->withGlobalScope('policy', RolePolicy::scope())->exists()) {
-                    $fail("The selected $attribute is invalid.");
-                }
-            }],
-            'status' => ['string', new Enum(InstitutionUserStatus::class)],
+            'per_page' => [
+                'integer',
+                Rule::in([10, 50, 100]),
+            ],
+            'roles' => 'array',
+            'roles.*' => [
+                'uuid',
+                $this->existsRoleInCurrentInstitution(),
+            ],
+            'statuses' => 'array',
+            'statuses.*' => [
+                'string',
+                new Enum(InstitutionUserStatus::class),
+            ],
+            'departments' => 'array',
+            'departments.*' => [
+                'uuid',
+                $this->existsDepartmentInCurrentInstitution(),
+            ],
             'sort_by' => ['nullable', Rule::in('name', 'created_at')],
             'sort_order' => ['nullable', Rule::in(['asc', 'desc'])],
-            'department' => ['string'], // TODO: implement after adding tags into the system.
         ];
+    }
+
+    private function existsDepartmentInCurrentInstitution(): ModelBelongsToInstitutionRule
+    {
+        return new ModelBelongsToInstitutionRule(
+            Department::class,
+            fn () => Auth::user()?->institutionId
+        );
+    }
+
+    private function existsRoleInCurrentInstitution(): ModelBelongsToInstitutionRule
+    {
+        return new ModelBelongsToInstitutionRule(
+            Role::class,
+            fn () => Auth::user()?->institutionId
+        );
     }
 }
