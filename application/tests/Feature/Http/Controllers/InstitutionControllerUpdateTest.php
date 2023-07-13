@@ -98,7 +98,80 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
         ];
     }
 
+    /** @return array<array{
+     *     modifyInstitution: Closure(Institution):void,
+     *     payload: array,
+     *     expectedStateOverride: array
+     * }> */
+    public static function provideInstitutionWorktimeModifiersAndPayloadsAndExpectedState(): array
+    {
+        return [
+            'Initially without working times, setting working times' => [
+                'modifyInstitution' => null,
+                'payload' => [
+                    'worktime_timezone' => 'Europe/Tallinn',
+                    'monday_worktime_start' => '08:00:00',
+                    'monday_worktime_end' => '16:00:00',
+                    'tuesday_worktime_start' => '08:00:00',
+                    'tuesday_worktime_end' => '16:00:00',
+                    'wednesday_worktime_start' => '08:00:00',
+                    'wednesday_worktime_end' => '16:00:00',
+                    'thursday_worktime_start' => '08:00:00',
+                    'thursday_worktime_end' => '16:00:00',
+                    'friday_worktime_start' => '08:00:00',
+                    'friday_worktime_end' => '16:00:00',
+                    'saturday_worktime_start' => null,
+                    'saturday_worktime_end' => null,
+                    'sunday_worktime_start' => null,
+                    'sunday_worktime_end' => null,
+                ],
+                'expectedStateOverride' => [],
+            ],
+            'With existing working times, changing working times and timezone' => [
+                'modifyInstitution' => function (Institution $institution) {
+                    $institution->fill([
+                        'worktime_timezone' => 'Europe/Tallinn',
+                        'monday_worktime_start' => '08:00:00',
+                        'monday_worktime_end' => '16:00:00',
+                        'tuesday_worktime_start' => '08:00:00',
+                        'tuesday_worktime_end' => '16:00:00',
+                        'wednesday_worktime_start' => '08:00:00',
+                        'wednesday_worktime_end' => '16:00:00',
+                        'thursday_worktime_start' => '08:00:00',
+                        'thursday_worktime_end' => '16:00:00',
+                        'friday_worktime_start' => '08:00:00',
+                        'friday_worktime_end' => '16:00:00',
+                        'saturday_worktime_start' => null,
+                        'saturday_worktime_end' => null,
+                        'sunday_worktime_start' => null,
+                        'sunday_worktime_end' => null,
+                    ]);
+                },
+                'payload' => [
+                    'worktime_timezone' => 'Asia/Shanghai',
+                    'monday_worktime_start' => '09:00:00',
+                    'monday_worktime_end' => '15:00:00',
+                    'tuesday_worktime_start' => '09:00:00',
+                    'tuesday_worktime_end' => '15:00:00',
+                    'wednesday_worktime_start' => '09:00:00',
+                    'wednesday_worktime_end' => '15:00:00',
+                    'thursday_worktime_start' => '09:00:00',
+                    'thursday_worktime_end' => '15:00:00',
+                    'friday_worktime_start' => null,
+                    'friday_worktime_end' => null,
+                    'saturday_worktime_start' => null,
+                    'saturday_worktime_end' => null,
+                    'sunday_worktime_start' => null,
+                    'sunday_worktime_end' => null,
+                ],
+                'expectedStateOverride' => [],
+            ],
+        ];
+    }
+
     /** @dataProvider provideInstitutionModifiersAndPayloadsAndExpectedState
+     * @dataProvider provideInstitutionWorktimeModifiersAndPayloadsAndExpectedState
+     *
      * @param  null|Closure(Institution):void  $modifyInstitution
      *
      * @throws Throwable
@@ -169,35 +242,189 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
         );
     }
 
-    /** @return array<array{array}> */
-    public static function provideInvalidPayloads(): array
+    /**
+     * @return array<array{
+     *     validInitialState: array,
+     *     invalidChange: array
+     * }>
+     */
+    public static function provideValidInitialStateAndInvalidChanges(): array
     {
         return [
-            'name: ""' => [[...static::createExampleValidPayload(), 'name' => '']],
-            'name: "\t \n"' => [[...static::createExampleValidPayload(), 'name' => "\t \n"]],
-            'name: null' => [[...static::createExampleValidPayload(), 'name' => null]],
-            'email: "not email"' => [[...static::createExampleValidPayload(), 'email' => 'not email']],
-            'phone: "not phone"' => [[...static::createExampleValidPayload(), 'phone' => 'not phone']],
-            'phone: "112"' => [[...static::createExampleValidPayload(), 'phone' => '112']],
-            'phone: "512 8756"' => [[...static::createExampleValidPayload(), 'phone' => '512 8756']],
-            'phone: "+4951234567"' => [[...static::createExampleValidPayload(), 'phone' => '+4951234567']],
-            'short_name: "ABCD"' => [[...static::createExampleValidPayload(), 'short_name' => 'ABCD']],
+            'name: ""' => [
+                'validInitialState' => [],
+                'invalidChange' => [...static::createExampleValidPayload(), 'name' => ''],
+            ],
+            'name: "\t \n"' => [
+                'validInitialState' => [],
+                'invalidChange' => [...static::createExampleValidPayload(), 'name' => "\t \n"],
+            ],
+            'name: null' => [
+                'validInitialState' => [],
+                'invalidChange' => [...static::createExampleValidPayload(), 'name' => null],
+            ],
+            'email: "not email"' => [
+                'validInitialState' => [],
+                'invalidChange' => [...static::createExampleValidPayload(), 'email' => 'not email'],
+            ],
+            'phone: "not phone"' => [
+                'validInitialState' => [],
+                'invalidChange' => [...static::createExampleValidPayload(), 'phone' => 'not phone'],
+            ],
+            'phone: "112"' => [
+                'validInitialState' => [],
+                'invalidChange' => [...static::createExampleValidPayload(), 'phone' => '112'],
+            ],
+            'phone: "512 8756"' => [
+                'validInitialState' => [],
+                'invalidChange' => [...static::createExampleValidPayload(), 'phone' => '512 8756'],
+            ],
+            'phone: "+4951234567"' => [
+                'validInitialState' => [],
+                'invalidChange' => [...static::createExampleValidPayload(), 'phone' => '+4951234567'],
+            ],
+            'short_name: "ABCD"' => [
+                'validInitialState' => [],
+                'invalidChange' => [...static::createExampleValidPayload(), 'short_name' => 'ABCD'],
+            ],
         ];
     }
 
-    /** @dataProvider provideInvalidPayloads
+    /**
+     * @return array<array{
+     *     validInitialState: array,
+     *     invalidChange: array
+     * }>
+     */
+    public static function provideValidInitialWorktimesAndInvalidChanges(): array
+    {
+        return [
+            'Worktime timezone missing' => [
+                'validInitialState' => [],
+                'invalidChange' => [
+                    ...static::createNullWorktimeIntervals(),
+                    'monday_worktime_start' => '08:00:00',
+                    'monday_worktime_end' => '16:00:00',
+                    'worktime_timezone' => null,
+                ],
+            ],
+            'Worktime in invalid format: AM/PM' => [
+                'validInitialState' => [],
+                'invalidChange' => [
+                    ...static::createNullWorktimeIntervals(),
+                    'monday_worktime_start' => '8 AM',
+                    'monday_worktime_end' => '16:00:00',
+                    'worktime_timezone' => 'Europe/Tallinn',
+                ],
+            ],
+            'Worktime in invalid format: ISO Datetime' => [
+                'validInitialState' => [],
+                'invalidChange' => [
+                    ...static::createNullWorktimeIntervals(),
+                    'monday_worktime_start' => '2023-07-01T12:00:00Z',
+                    'monday_worktime_end' => '16:00:00',
+                    'worktime_timezone' => 'Europe/Tallinn',
+                ],
+            ],
+            'Not sending all worktime fields' => [
+                'validInitialState' => [],
+                'invalidChange' => [
+                    'worktime_timezone' => 'Europe/Tallinn',
+                    'monday_worktime_start' => '08:00:00',
+                    'monday_worktime_end' => '16:00:00',
+                ],
+            ],
+            'Worktimes end missing' => [
+                'validInitialState' => [],
+                'invalidChange' => [
+                    ...static::createNullWorktimeIntervals(),
+                    'worktime_timezone' => 'Europe/Tallinn',
+                    'monday_worktime_start' => '08:00:00',
+                ],
+            ],
+            'Worktime start missing' => [
+                'validInitialState' => [],
+                'invalidChange' => [
+                    ...static::createNullWorktimeIntervals(),
+                    'worktime_timezone' => 'Europe/Tallinn',
+                    'monday_worktime_start' => null,
+                    'monday_worktime_end' => '16:00:00',
+                ],
+            ],
+            'Worktime end before start' => [
+                'validInitialState' => [],
+                'invalidChange' => [
+                    ...static::createNullWorktimeIntervals(),
+                    'worktime_timezone' => 'Europe/Tallinn',
+                    'monday_worktime_start' => '16:00:00',
+                    'monday_worktime_end' => '08:00:00',
+                ],
+            ],
+            'Worktime end equal to start' => [
+                'validInitialState' => [],
+                'invalidChange' => [
+                    ...static::createNullWorktimeIntervals(),
+                    'worktime_timezone' => 'Europe/Tallinn',
+                    'monday_worktime_start' => '08:00:00',
+                    'monday_worktime_end' => '08:00:00',
+                ],
+            ],
+            'Worktime timezone as non-IANA value: gibberish' => [
+                'validInitialState' => [],
+                'invalidChange' => [
+                    ...static::createNullWorktimeIntervals(),
+                    'worktime_timezone' => 'Essos/Braavos',
+                    'monday_worktime_start' => '08:00:00',
+                    'monday_worktime_end' => '16:00:00',
+                ],
+            ],
+            'Worktime timezone as non-IANA value: timezone abbreviation' => [
+                'validInitialState' => [],
+                'invalidChange' => [
+                    ...static::createNullWorktimeIntervals(),
+                    'worktime_timezone' => 'PST',
+                    'monday_worktime_start' => '08:00:00',
+                    'monday_worktime_end' => '16:00:00',
+                ],
+            ],
+            'Worktime timezone as non-IANA value: numerical offset (+2)' => [
+                'validInitialState' => [],
+                'invalidChange' => [
+                    ...static::createNullWorktimeIntervals(),
+                    'worktime_timezone' => '+2',
+                    'monday_worktime_start' => '08:00:00',
+                    'monday_worktime_end' => '16:00:00',
+                ],
+            ],
+            'Worktime timezone as non-IANA value: numerical offset (+3:00)' => [
+                'validInitialState' => [],
+                'invalidChange' => [
+                    ...static::createNullWorktimeIntervals(),
+                    'worktime_timezone' => '+2',
+                    'monday_worktime_start' => '08:00:00',
+                    'monday_worktime_end' => '16:00:00',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider provideValidInitialStateAndInvalidChanges
+     * @dataProvider provideValidInitialWorktimesAndInvalidChanges
      *
      * @throws Throwable
      */
-    public function test_nothing_is_changed_when_payload_invalid(array $invalidPayload): void
+    public function test_nothing_is_changed_when_payload_invalid(array $validInitialState, array $invalidChange): void
     {
         [
             'institution' => $institution,
             'actingInstitutionUser' => $actingInstitutionUser,
-        ] = $this->createInstitutionAndPrivilegedActingUser();
+        ] = $this->createInstitutionAndPrivilegedActingUser(
+            fn (Institution $institution) => $institution->fill($validInitialState)
+        );
 
         $this->assertInstitutionUnchangedAfterAction(
-            fn () => $this->sendUpdateRequestWithExpectedHeaders($institution->id, $invalidPayload, $actingInstitutionUser),
+            fn () => $this->sendUpdateRequestWithExpectedHeaders($institution->id, $invalidChange, $actingInstitutionUser),
             $institution,
             Response::HTTP_UNPROCESSABLE_ENTITY
         );
@@ -278,5 +505,15 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
                 }
             }
         );
+    }
+
+    private static function createNullWorktimeIntervals(): array
+    {
+        return collect(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])
+            ->flatMap(fn (string $day) => [
+                "{$day}_worktime_start" => null,
+                "{$day}_worktime_end" => null,
+            ])
+            ->all();
     }
 }

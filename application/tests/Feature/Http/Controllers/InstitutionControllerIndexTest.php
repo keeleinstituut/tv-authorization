@@ -27,11 +27,11 @@ class InstitutionControllerIndexTest extends TestCase
     {
         // GIVEN there’s a user connected to two institutions in the database
         InstitutionUser::factory()
-            ->for($expectedInstitution1 = Institution::factory()->create())
+            ->for($expectedInstitution1 = Institution::factory()->create()->refresh())
             ->for($user = User::factory()->create())
             ->create();
         InstitutionUser::factory()
-            ->for($expectedInstitution2 = Institution::factory()->create())
+            ->for($expectedInstitution2 = Institution::factory()->create()->refresh())
             ->for($user)
             ->create();
 
@@ -53,11 +53,11 @@ class InstitutionControllerIndexTest extends TestCase
     {
         // GIVEN there’s a user connected to two institutions in the database, one of which has been soft deleted
         InstitutionUser::factory()
-            ->for($expectedInstitution = Institution::factory()->create())
+            ->for($expectedInstitution = Institution::factory()->create()->refresh())
             ->for($user = User::factory()->create())
             ->create();
         InstitutionUser::factory()
-            ->for($softDeletedInstitution = Institution::factory()->create())
+            ->for($softDeletedInstitution = Institution::factory()->create()->refresh())
             ->for($user)
             ->create();
 
@@ -78,7 +78,7 @@ class InstitutionControllerIndexTest extends TestCase
     {
         // GIVEN there’s a user connected to two institutions in the database, with one for the pivots having been soft deleted
         InstitutionUser::factory()
-            ->for($expectedInstitution = Institution::factory()->create())
+            ->for($expectedInstitution = Institution::factory()->create()->refresh())
             ->for($user = User::factory()->create())
             ->create();
         InstitutionUser::factory()

@@ -25,6 +25,21 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property string $name
  * @property string|null $logo_url
+ * @property string|null worktime_timezone
+ * @property string|null monday_worktime_start
+ * @property string|null monday_worktime_end
+ * @property string|null tuesday_worktime_start
+ * @property string|null tuesday_worktime_end
+ * @property string|null wednesday_worktime_start
+ * @property string|null wednesday_worktime_end
+ * @property string|null thursday_worktime_start
+ * @property string|null thursday_worktime_end
+ * @property string|null friday_worktime_start
+ * @property string|null friday_worktime_end
+ * @property string|null saturday_worktime_start
+ * @property string|null saturday_worktime_end
+ * @property string|null sunday_worktime_start
+ * @property string|null sunday_worktime_end
  * @property-read Collection<int, InstitutionUser> $institutionUsers
  * @property-read int|null $institution_users_count
  * @property-read Collection<int, Role> $roles
@@ -48,6 +63,21 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Institution whereUpdatedAt($value)
  * @method static Builder|Institution withTrashed()
  * @method static Builder|Institution withoutTrashed()
+ * @method static Builder|Institution whereWorktimeTimezone($value)
+ * @method static Builder|Institution whereMondayWorktimeStart($value)
+ * @method static Builder|Institution whereMondayWorktimeEnd($value)
+ * @method static Builder|Institution whereTuesdayWorktimeStart($value)
+ * @method static Builder|Institution whereTuesdayWorktimeEnd($value)
+ * @method static Builder|Institution whereWednesdayWorktimeStart($value)
+ * @method static Builder|Institution whereWednesdayWorktimeEnd($value)
+ * @method static Builder|Institution whereThursdayWorktimeStart($value)
+ * @method static Builder|Institution whereThursdayWorktimeEnd($value)
+ * @method static Builder|Institution whereFridayWorktimeStart($value)
+ * @method static Builder|Institution whereFridayWorktimeEnd($value)
+ * @method static Builder|Institution whereSaturdayWorktimeStart($value)
+ * @method static Builder|Institution whereSaturdayWorktimeEnd($value)
+ * @method static Builder|Institution whereSundayWorktimeStart($value)
+ * @method static Builder|Institution whereSundayWorktimeEnd($value)
  *
  * @mixin Eloquent
  */
@@ -55,7 +85,28 @@ class Institution extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
 
-    protected $fillable = ['name', 'logo_url', 'short_name', 'email', 'phone'];
+    protected $fillable = [
+        'name',
+        'logo_url',
+        'short_name',
+        'email',
+        'phone',
+        'worktime_timezone',
+        'monday_worktime_start',
+        'monday_worktime_end',
+        'tuesday_worktime_start',
+        'tuesday_worktime_end',
+        'wednesday_worktime_start',
+        'wednesday_worktime_end',
+        'thursday_worktime_start',
+        'thursday_worktime_end',
+        'friday_worktime_start',
+        'friday_worktime_end',
+        'saturday_worktime_start',
+        'saturday_worktime_end',
+        'sunday_worktime_start',
+        'sunday_worktime_end',
+    ];
 
     public function institutionUsers(): HasMany
     {
