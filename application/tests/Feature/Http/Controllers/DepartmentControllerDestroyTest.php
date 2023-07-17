@@ -30,7 +30,7 @@ class DepartmentControllerDestroyTest extends DepartmentControllerTestCase
                     ->create();
             }],
             'Department without members' => [function (Department $department) {
-                $department->institutionUsers()->delete();
+                $department->institutionUsers()->each(fn (InstitutionUser $institutionUser) => $institutionUser->deleteOrFail());
             }],
         ];
     }

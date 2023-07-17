@@ -27,7 +27,7 @@ class DepartmentControllerShowTest extends DepartmentControllerTestCase
                 Response::HTTP_OK,
             ],
             'Department without members' => [
-                fn (Department $department) => $department->institutionUsers()->delete(),
+                fn (Department $department) => $department->institutionUsers()->each(fn (InstitutionUser $institutionUser) => $institutionUser->deleteOrFail()),
                 Response::HTTP_OK,
             ],
             'Department soft-deleted' => [
