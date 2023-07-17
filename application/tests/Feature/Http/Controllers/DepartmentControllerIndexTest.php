@@ -43,7 +43,7 @@ class DepartmentControllerIndexTest extends DepartmentControllerTestCase
                 1,
             ],
             'Second department has no members' => [
-                [null, fn (Department $department) => $department->institutionUsers()->delete()],
+                [null, fn (Department $department) => $department->institutionUsers()->each(fn (InstitutionUser $institutionUser) => $institutionUser->deleteOrFail())],
                 null,
             ],
         ];

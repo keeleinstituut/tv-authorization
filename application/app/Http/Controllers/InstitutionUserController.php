@@ -12,6 +12,7 @@ use App\Http\Requests\InstitutionUserListRequest;
 use App\Http\Requests\UpdateInstitutionUserRequest;
 use App\Http\Resources\InstitutionUserResource;
 use App\Models\InstitutionUser;
+use App\Models\InstitutionUserRole;
 use App\Models\Role;
 use App\Models\Scopes\ExcludeArchivedInstitutionUsersScope;
 use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
@@ -249,7 +250,7 @@ class InstitutionUserController extends Controller
             $institutionUser->saveOrFail();
 
             if ($request->getValidatedDeactivationDateAtEstonianMidnight()?->isSameDay(Date::today(DateUtil::ESTONIAN_TIMEZONE))) {
-                $institutionUser->institutionUserRoles()->delete();
+                $institutionUser->institutionUserRoles()->each(fn (InstitutionUserRole $pivot) => $pivot->deleteOrFail());
             }
 
             // TODO: audit log
@@ -310,7 +311,7 @@ class InstitutionUserController extends Controller
             $this->authorize('archive', $institutionUser);
 
             $institutionUser->archived_at = Date::now();
-            $institutionUser->institutionUserRoles()->delete();
+            $institutionUser->institutionUserRoles()->each(fn (InstitutionUserRole $pivot) => $pivot->deleteOrFail());
             $institutionUser->saveOrFail();
 
             // TODO: audit log

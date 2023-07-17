@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Events\Publishers\InstitutionUserEventsPublisher;
 use App\Exceptions\DeniedRootRoleModifyException;
+use App\Models\PrivilegeRole;
 use App\Models\Role;
 
 readonly class RoleObserver
@@ -59,7 +60,7 @@ readonly class RoleObserver
      */
     public function deleted(Role $role): void
     {
-        $role->privilegeRoles()->delete();
+        $role->privilegeRoles()->each(fn (PrivilegeRole $pivot) => $pivot->deleteOrFail());
         $this->publishAffectedInstitutionUsers($role);
     }
 
