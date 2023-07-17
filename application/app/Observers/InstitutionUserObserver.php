@@ -8,11 +8,6 @@ use App\Models\InstitutionUser;
 
 class InstitutionUserObserver
 {
-    /**
-     * Handle events after all transactions are committed.
-     */
-    public bool $afterCommit = true;
-
     public function __construct(private readonly InstitutionUserEventsPublisher $publisher)
     {
     }
