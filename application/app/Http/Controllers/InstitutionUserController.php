@@ -108,7 +108,7 @@ class InstitutionUserController extends Controller
     {
         $this->authorize('export', InstitutionUser::class);
 
-        $csvDocument = Writer::createFromString();
+        $csvDocument = Writer::createFromString()->setDelimiter(';');
 
         $csvDocument->insertOne([
             'Isikukood', 'Nimi', 'Meiliaadress', 'Telefoninumber', 'Üksus', 'Roll',
