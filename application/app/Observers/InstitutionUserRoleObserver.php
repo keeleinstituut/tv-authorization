@@ -30,7 +30,7 @@ readonly class InstitutionUserRoleObserver
     {
         if ($institutionUserRole->isDirty('role_id')) {
             $originalRole = Role::findOrFail($institutionUserRole->getOriginal('role_id'));
-            if ($originalRole->is_root && $institutionUserRole->institutionUser->isOnlyUserWithRootRole()) {
+            if ($originalRole->is_root && $institutionUserRole->institutionUser?->isOnlyUserWithRootRole()) {
                 throw new OnlyUserUnderRootRoleException();
             }
         }
@@ -51,7 +51,7 @@ readonly class InstitutionUserRoleObserver
      */
     public function deleting(InstitutionUserRole $institutionUserRole): void
     {
-        if ($institutionUserRole->role->is_root && $institutionUserRole->institutionUser->isOnlyUserWithRootRole()) {
+        if ($institutionUserRole->role?->is_root && $institutionUserRole->institutionUser?->isOnlyUserWithRootRole()) {
             throw new OnlyUserUnderRootRoleException();
         }
     }
