@@ -339,6 +339,16 @@ class InstitutionUserControllerDeactivateTest extends TestCase
                 },
                 Response::HTTP_UNPROCESSABLE_ENTITY,
             ],
+            'Target institution user is the sole root role holder' => [
+                function (InstitutionUser $institutionUser) {
+                    $institutionUser->roles()->syncWithoutDetaching(
+                        Role::factory()
+                            ->for($institutionUser->institution)
+                            ->create(['is_root' => true])
+                    );
+                },
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+            ],
             'Target institution user is soft-deleted' => [
                 function (InstitutionUser $institutionUser) {
                     $institutionUser->delete();

@@ -40,6 +40,7 @@ class DeactivateInstitutionUserRequest extends FormRequest
                 'required',
                 'uuid',
                 $this->validateInstitutionUserIsActive(...),
+                $this->validateInstitutionUserIsNotOnlyUserWithRootRole(...),
             ],
             'deactivation_date' => [
                 'bail',
@@ -58,6 +59,15 @@ class DeactivateInstitutionUserRequest extends FormRequest
     ): void {
         if ($this->findInstitutionUserWithAnyStatus($value)->getStatus() !== InstitutionUserStatus::Active) {
             $fail('Institution user is not active.');
+        }
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    private function validateInstitutionUserIsNotOnlyUserWithRootRole(
+        string $attribute, mixed $value, Closure $fail
+    ): void {
+        if ($this->findInstitutionUserWithAnyStatus($value)->isOnlyUserWithRootRole()) {
+            $fail('This is the only user with a root role in the institution.');
         }
     }
 
