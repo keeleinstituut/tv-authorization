@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\PrivilegeKey;
+use App\Http\Requests\DeactivateInstitutionUserRequest;
 use App\Models\Department;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
@@ -84,6 +85,37 @@ class InstitutionUserControllerUpdateTest extends TestCase
             ],
         ];
         $this->assertArrayHasSubsetIgnoringOrder($expectedFragment, $actualState);
+
+        // And request response should correspond to the actual state
+        $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function test_updating_deactivated_user(): void
+    {
+        // GIVEN there’s a deactivated institution user
+        [
+            'institution' => $createdInstitution,
+            'institutionUser' => $createdInstitutionUser,
+        ] = $this->createBasicModels(forename: 'Activa');
+
+        // WHEN authorizated request sent to endpoint
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
+        $response = $this->sendPutRequestWithTokenFor(
+            $createdInstitutionUser->id,
+            ['user' => ['forename' => $expectedForename = 'Deactiva']],
+            $actingUser
+        );
+
+        // THEN the database state should have updated data
+        $actualState = RepresentationHelpers::createInstitutionUserNestedRepresentation(
+            InstitutionUser::withoutGlobalScope(DeactivateInstitutionUserRequest::class)
+                ->findOrFail($createdInstitutionUser->id)
+        );
+        $expectedSubset = ['user' => ['forename' => $expectedForename]];
+        $this->assertArrayHasSubsetIgnoringOrder($expectedSubset, $actualState);
 
         // And request response should correspond to the actual state
         $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
