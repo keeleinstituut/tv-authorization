@@ -15,13 +15,16 @@ abstract class TestCase extends BaseTestCase
         $this->assertArraysEqualIgnoringOrder($expectedData, $actualResponse->json('data'));
     }
 
-    public function assertArrayHasSubsetIgnoringOrder(?array $expectedFragment, ?array $actual): void
+    public function assertArrayHasSubsetIgnoringOrder(?array $expectedSubset, ?array $actual): void
     {
-        $this->assertNotNull($expectedFragment);
+        $this->assertNotNull($expectedSubset);
         $this->assertNotNull($actual);
 
-        $actualFragment = Arr::only($actual, array_keys($expectedFragment));
-        $this->assertArraysEqualIgnoringOrder($expectedFragment, $actualFragment);
+        $sortedDottedExpectedSubset = Arr::dot(Arr::sortRecursive($expectedSubset));
+        $sortedDottedActualWholeArray = Arr::dot(Arr::sortRecursive($actual));
+        $sortedDottedActualSubset = Arr::only($sortedDottedActualWholeArray, array_keys($sortedDottedExpectedSubset));
+
+        $this->assertArraysEqualIgnoringOrder($sortedDottedExpectedSubset, $sortedDottedActualSubset);
     }
 
     public function assertArraysEqualIgnoringOrder(?array $expected, ?array $actual): void

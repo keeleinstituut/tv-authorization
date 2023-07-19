@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Department;
 use App\Models\InstitutionUser;
 use App\Models\Role;
+use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Rules\ModelBelongsToInstitutionRule;
 use App\Rules\PhoneNumberRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -83,7 +84,9 @@ class UpdateInstitutionUserRequest extends FormRequest
 
     public function findInstitutionUserInstitutionId(): ?string
     {
-        return InstitutionUser::find($this->getInstitutionUserId())?->institution_id;
+        return InstitutionUser::withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
+            ->find($this->getInstitutionUserId())
+            ?->institution_id;
     }
 
     public function getInstitutionUserId(): string
