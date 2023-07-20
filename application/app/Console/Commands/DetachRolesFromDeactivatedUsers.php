@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Events\Publishers\InstitutionUserEventsPublisher;
 use App\Models\InstitutionUserRole;
 use App\Util\DateUtil;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Console\Isolatable;
 use Illuminate\Support\Facades\Date;
@@ -19,21 +19,23 @@ class DetachRolesFromDeactivatedUsers extends Command implements Isolatable
 
     protected $description = 'Detach roles from institution users who have been deactivated.';
 
-    /**
-     * @throws Throwable
-     */
-    public function handle(InstitutionUserEventsPublisher $publisher)
+    /** @throws Throwable */
+    public function handle(): void
     {
-        DB::transaction(function () use ($publisher) {
+        DB::transaction(function () {
             InstitutionUserRole::query()
                 ->whereIn(
                     'institution_user_id',
                     DB::table('institution_users')
                         ->select('id')
                         ->whereDate('deactivation_date', '<=', Date::now(DateUtil::ESTONIAN_TIMEZONE)->format('Y-m-d'))
-                )->each(function (InstitutionUserRole $institutionUserRole) use ($publisher) {
-                    $institutionUserRole->deleteQuietly();
-                    $publisher->publishSyncEvent($institutionUserRole->institution_user_id);
+                )->each(function (InstitutionUserRole $institutionUserRole) {
+                    try {
+                        $institutionUserRole->delete();
+                    } catch (Exception) {
+                        // TODO: error log
+                        // Continue execution since we don’t want the entire update to fail
+                    }
                 });
 
             // TODO: audit log
