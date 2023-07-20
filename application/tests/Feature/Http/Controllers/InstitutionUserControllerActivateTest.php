@@ -9,10 +9,10 @@ use App\Enums\PrivilegeKey;
 use App\Http\Controllers\InstitutionUserController;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
+use App\Models\InstitutionUserRole;
 use App\Models\Privilege;
 use App\Models\Role;
 use App\Util\DateUtil;
-use Carbon\CarbonInterval;
 use Closure;
 use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -39,37 +39,96 @@ class InstitutionUserControllerActivateTest extends TestCase
         Carbon::setTestNow(Carbon::create(2000, 1, 1, 1, 1, 0, DateUtil::ESTONIAN_TIMEZONE));
     }
 
-    /** @return array<array{CarbonInterval, bool}>
+    /** @return array<array{bool, Closure(InstitutionUser): void}>
      * @throws Exception
      */
-    public static function provideValidDeactivationOffsetsAndNotifyUserOptions(): array
+    public static function provideValidNotifyUserOptionsAndTargetInstitutionUserModifiers(): array
     {
         return [
-            'deactivation_date=(1 year ago) notify_user=false' => [CarbonInterval::year(), false],
-            'deactivation_date=(1 day ago) notify_user=false' => [CarbonInterval::day(), false],
-            'deactivation_date=(1 hour ago) notify_user=false' => [CarbonInterval::hour(), false],
-            'deactivation_date=(just now) notify_user=false' => [CarbonInterval::create(0), false],
-            'deactivation_date=(1 year ago) notify_user=true' => [CarbonInterval::year(), true],
-            'deactivation_date=(1 day ago) notify_user=true' => [CarbonInterval::day(), true],
-            'deactivation_date=(1 hour ago) notify_user=true' => [CarbonInterval::hour(), true],
-            'deactivation_date=(just now) notify_user=true' => [CarbonInterval::create(0), true],
+            'notify_user=false; deactivation date 1 year ago, existing roles have been force-deleted' => [
+                false,
+                function (InstitutionUser $targetInstitutionUser) {
+                    $targetInstitutionUser->deactivation_date = Carbon::now()->subYear();
+                    $targetInstitutionUser->institutionUserRoles()->delete();
+                },
+            ],
+            'notify_user=false; deactivation date 1 day ago, existing roles have been force-deleted' => [
+                false,
+                function (InstitutionUser $targetInstitutionUser) {
+                    $targetInstitutionUser->deactivation_date = Carbon::yesterday();
+                    $targetInstitutionUser->institutionUserRoles()->delete();
+                },
+            ],
+            'notify_user=false; deactivation date 1 hour ago, existing roles have been force-deleted' => [
+                false,
+                function (InstitutionUser $targetInstitutionUser) {
+                    $targetInstitutionUser->deactivation_date = Carbon::now()->subHour();
+                    $targetInstitutionUser->institutionUserRoles()->delete();
+                },
+            ],
+            'notify_user=false; deactivation date just now, existing roles have been force-deleted' => [
+                false,
+                function (InstitutionUser $targetInstitutionUser) {
+                    $targetInstitutionUser->deactivation_date = Carbon::now();
+                    $targetInstitutionUser->institutionUserRoles()->delete();
+                },
+            ],
+            'notify_user=true; deactivation date 1 year ago, existing roles have been force-deleted' => [
+                true,
+                function (InstitutionUser $targetInstitutionUser) {
+                    $targetInstitutionUser->deactivation_date = Carbon::now()->subYear();
+                    $targetInstitutionUser->institutionUserRoles()->delete();
+                },
+            ],
+            'notify_user=true; deactivation date 1 day ago, existing roles have been force-deleted' => [
+                true,
+                function (InstitutionUser $targetInstitutionUser) {
+                    $targetInstitutionUser->deactivation_date = Carbon::yesterday();
+                    $targetInstitutionUser->institutionUserRoles()->delete();
+                },
+            ],
+            'notify_user=true; deactivation date 1 hour ago, existing roles have been force-deleted' => [
+                true,
+                function (InstitutionUser $targetInstitutionUser) {
+                    $targetInstitutionUser->deactivation_date = Carbon::now()->subHour();
+                    $targetInstitutionUser->institutionUserRoles()->delete();
+                },
+            ],
+            'notify_user=true; deactivation date just now, existing roles have been force-deleted' => [
+                true,
+                function (InstitutionUser $targetInstitutionUser) {
+                    $targetInstitutionUser->deactivation_date = Carbon::now();
+                    $targetInstitutionUser->institutionUserRoles()->delete();
+                },
+            ],
+            'notify_user=true; deactivation date just now, existing roles have been soft-deleted' => [
+                true,
+                function (InstitutionUser $targetInstitutionUser) {
+                    $targetInstitutionUser->deactivation_date = Carbon::now();
+                    $targetInstitutionUser->institutionUserRoles()
+                        ->each(fn (InstitutionUserRole $pivot) => $pivot->delete());
+                },
+            ],
+            'notify_user=true; deactivation date 1 day ago, existing roles have been soft-deleted' => [
+                true,
+                function (InstitutionUser $targetInstitutionUser) {
+                    $targetInstitutionUser->deactivation_date = Carbon::yesterday();
+                    $targetInstitutionUser->institutionUserRoles()
+                        ->each(fn (InstitutionUserRole $pivot) => $pivot->delete());
+                },
+            ],
         ];
     }
 
-    /** @dataProvider provideValidDeactivationOffsetsAndNotifyUserOptions */
-    public function test_target_institution_user_is_reactivated_with_added_roles(CarbonInterval $deactivationDateBackwardOffset, bool $notifyUser): void
+    /** @dataProvider provideValidNotifyUserOptionsAndTargetInstitutionUserModifiers */
+    public function test_target_institution_user_is_reactivated_with_added_roles(bool $notifyUser, Closure $modifyTargetInstitutionUser): void
     {
         [
             'targetInstitutionUser' => $targetInstitutionUser,
             'actingInstitutionUser' => $actingInstitutionUser,
             'untargetedInstitutionUser' => $untargetedInstitutionUser,
             'roles' => $roles
-        ] = $this->createStandardSuccessCaseInstitutionUsersAndRoles(
-            function (InstitutionUser $originalTargetInstitutionUser) use ($deactivationDateBackwardOffset) {
-                $originalTargetInstitutionUser->deactivation_date = Carbon::now()->sub($deactivationDateBackwardOffset);
-                $originalTargetInstitutionUser->roles()->detach();
-            }
-        );
+        ] = $this->createStandardSuccessCaseInstitutionUsersAndRoles($modifyTargetInstitutionUser);
 
         $modelsWithExpectedChanges = [
             [$untargetedInstitutionUser, []],
@@ -246,9 +305,10 @@ class InstitutionUserControllerActivateTest extends TestCase
      *
      * @throws Throwable
      */
-    public function test_nothing_is_changed_when_target_has_invalid_state(Closure $makeTargetInstitutionUserStateInvalid,
-        int $expectedStatusCode): void
-    {
+    public function test_nothing_is_changed_when_target_has_invalid_state(
+        Closure $makeTargetInstitutionUserStateInvalid,
+        int $expectedStatusCode
+    ): void {
         [
             'targetInstitutionUser' => $targetInstitutionUser,
             'actingInstitutionUser' => $actingInstitutionUser,
@@ -384,12 +444,13 @@ class InstitutionUserControllerActivateTest extends TestCase
         );
     }
 
-    public function assertNothingChangedAfterSendingActivateRequestWithCorrectHeaders(InstitutionUser $targetInstitutionUser,
+    public function assertNothingChangedAfterSendingActivateRequestWithCorrectHeaders(
+        InstitutionUser $targetInstitutionUser,
         InstitutionUser $actingInstitutionUser,
         InstitutionUser $untargetedInstitutionUser,
         Collection $roles,
-        int $expectedStatusCode): void
-    {
+        int $expectedStatusCode
+    ): void {
         $modelsWithExpectedChanges = [
             [$untargetedInstitutionUser, []],
             [$actingInstitutionUser, []],
@@ -426,20 +487,22 @@ class InstitutionUserControllerActivateTest extends TestCase
     /**
      * @param  Collection<Role>  $roles
      */
-    private function sendActivateRequestWithExpectedPayloadAndHeaders(InstitutionUser $targetInstitutionUser,
+    private function sendActivateRequestWithExpectedPayloadAndHeaders(
+        InstitutionUser $targetInstitutionUser,
         InstitutionUser $actingInstitutionUser,
         Collection $roles,
-        bool $notifyUser): TestResponse
-    {
+        bool $notifyUser
+    ): TestResponse {
         return $this->sendActivateRequestWithCustomPayloadAndExpectedHeaders(
             $this->createExpectedPayload($targetInstitutionUser, $notifyUser, $roles),
             $actingInstitutionUser
         );
     }
 
-    private function sendActivateRequestWithCustomPayloadAndExpectedHeaders(array $payload,
-        InstitutionUser $actingInstitutionUser): TestResponse
-    {
+    private function sendActivateRequestWithCustomPayloadAndExpectedHeaders(
+        array $payload,
+        InstitutionUser $actingInstitutionUser
+    ): TestResponse {
         return $this->sendActivateRequestWithCustomPayloadAndHeaders(
             $payload,
             AuthHelpers::createHeadersForInstitutionUser($actingInstitutionUser)
@@ -477,10 +540,11 @@ class InstitutionUserControllerActivateTest extends TestCase
      *
      * @throws Throwable
      */
-    public function createStandardSuccessCaseInstitutionUsersAndRoles(?Closure $modifyTargetUser = null,
+    public function createStandardSuccessCaseInstitutionUsersAndRoles(
+        ?Closure $modifyTargetUser = null,
         ?Closure $modifyActingUser = null,
-        ?Closure $modifyRoles = null): array
-    {
+        ?Closure $modifyRoles = null
+    ): array {
         [
             $targetInstitutionUser,
             $actingInstitutionUser,
