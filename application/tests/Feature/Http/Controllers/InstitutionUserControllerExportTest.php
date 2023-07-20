@@ -59,7 +59,7 @@ class InstitutionUserControllerExportTest extends TestCase
                 'Üksus' => $institutionUser->department?->name ?? '',
                 'Roll' => $institutionUser->roles->map->name->join(', ') ?? '',
             ]);
-        $actualResponseCsvDocument = Reader::createFromString($response->streamedContent())->setHeaderOffset(0);
+        $actualResponseCsvDocument = static::createCsvReader($response);
 
         $this->assertJsonStringEqualsJsonString(
             json_encode($expectedResponseData),
@@ -108,7 +108,7 @@ class InstitutionUserControllerExportTest extends TestCase
             'Üksus' => $singleInstitutionUser->department?->name ?? '',
             'Roll' => $singleInstitutionUser->roles->map->name->join(', ') ?? '',
         ]];
-        $actualResponseCsvDocument = Reader::createFromString($response->streamedContent())->setHeaderOffset(0);
+        $actualResponseCsvDocument = static::createCsvReader($response);
 
         $this->assertJsonStringEqualsJsonString(
             json_encode($expectedResponseData),
@@ -150,7 +150,7 @@ class InstitutionUserControllerExportTest extends TestCase
             ->assertDownload('exported_users.csv');
 
         // And file data should contain not contain the soft-deleted user
-        $responseCsvData = collect(Reader::createFromString($response->streamedContent())->setHeaderOffset(0));
+        $responseCsvData = collect(static::createCsvReader($response));
         $this->assertCount($institutionUsersCountBeforeSoftDeletion - 1, $responseCsvData);
         $this->assertNotContains($softDeletedInstitutionUser->user->personal_identificaiton_code, $responseCsvData->map->{'Isikukood'});
     }
@@ -189,7 +189,7 @@ class InstitutionUserControllerExportTest extends TestCase
             ->assertDownload('exported_users.csv');
 
         // And file data should contain not contain the soft-deleted user
-        $responseCsvData = collect(Reader::createFromString($response->streamedContent())->setHeaderOffset(0));
+        $responseCsvData = collect(static::createCsvReader($response));
         $this->assertCount($institutionUsersCountBeforeSoftDeletion - 1, $responseCsvData);
         $this->assertNotContains($softDeletedUser->personal_identification_code, $responseCsvData->map->{'Isikukood'});
     }
@@ -255,5 +255,12 @@ class InstitutionUserControllerExportTest extends TestCase
         return $this
             ->withHeaders(['Authorization' => "Bearer $token"])
             ->getJson('/api/institution-users/export-csv');
+    }
+
+    private static function createCsvReader(TestResponse $response): Reader
+    {
+        return Reader::createFromString($response->streamedContent())
+            ->setDelimiter(';')
+            ->setHeaderOffset(0);
     }
 }
