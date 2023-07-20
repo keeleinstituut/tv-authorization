@@ -36,7 +36,7 @@ readonly class PrivilegeRoleObserver
                 $roleToCheck = $privilegeRole->role;
             }
 
-            if ($roleToCheck->is_root) {
+            if ($roleToCheck?->is_root) {
                 throw new DeniedRootRoleModifyException();
             }
         }
@@ -57,7 +57,7 @@ readonly class PrivilegeRoleObserver
      */
     public function deleting(PrivilegeRole $privilegeRole): void
     {
-        if ($privilegeRole->role->is_root) {
+        if ($privilegeRole->role?->is_root) {
             throw new DeniedRootRoleModifyException();
         }
     }
@@ -86,7 +86,9 @@ readonly class PrivilegeRoleObserver
 
     private function publishAffectedInstitutionUsers(PrivilegeRole $privilegeRole): void
     {
-        $privilegeRole->role->institutionUserRoles()->pluck('institution_user_id')
+        $privilegeRole->role()
+            ->getRelation('institutionUserRoles')
+            ->pluck('institution_user_id')
             ->each(fn (string $institutionUserId) => $this->publisher->publishSyncEvent($institutionUserId));
     }
 }
