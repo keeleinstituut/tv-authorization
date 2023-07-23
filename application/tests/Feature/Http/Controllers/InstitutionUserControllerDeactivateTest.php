@@ -184,7 +184,7 @@ class InstitutionUserControllerDeactivateTest extends TestCase
 
         $this->assertInstitutionUserDeactivationDateInDatabaseIs($validDeactivationDate, $targetInstitutionUser->id);
         $this->assertNull(InstitutionUser::find($targetInstitutionUser->id));
-        $this->assertInstitutionUserRolePivotsAreSoftDeleted($targetInstitutionUserRolePivots);
+        $this->assertInstitutionUserRolePivotsAreMissing($targetInstitutionUserRolePivots);
     }
 
     /** @return array<array{CarbonInterface, ?string}> */

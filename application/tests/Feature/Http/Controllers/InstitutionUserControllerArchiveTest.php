@@ -113,7 +113,7 @@ class InstitutionUserControllerArchiveTest extends TestCase
 
         $this->assertInstitutionUserArchivedAtInDatabaseIs(Carbon::now()->toJSON(), $targetInstitutionUser->id);
         $this->assertNull(InstitutionUser::find($targetInstitutionUser->id));
-        $this->assertInstitutionUserRolePivotsAreSoftDeleted($targetInstitutionUserRolePivots);
+        $this->assertInstitutionUserRolePivotsAreMissing($targetInstitutionUserRolePivots);
     }
 
     /** @return array<array{Closure(InstitutionUser): void, int}> */

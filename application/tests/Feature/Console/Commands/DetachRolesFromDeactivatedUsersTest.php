@@ -19,7 +19,7 @@ class DetachRolesFromDeactivatedUsersTest extends TestCase
 {
     use RefreshDatabase, InstitutionUserHelpers;
 
-    public function test_deactivated_institution_users_have_no_roles_and_pivots_are_soft_deleted(): void
+    public function test_deactivated_institution_users_have_no_roles_and_pivots_are_deleted(): void
     {
         // GIVEN the current Estonian time is 2000-01-01T00:00:00
         Date::setTestNow(Date::create(2000, tz: 'Europe/Tallinn'));
@@ -48,7 +48,7 @@ class DetachRolesFromDeactivatedUsersTest extends TestCase
             ->flatten()
             ->flatMap(fn (InstitutionUser $institutionUser) => $institutionUser->roles)
             ->map(fn (Role $role) => $role->id);
-        $pivotIdsExpectedToSoftDelete = $deactivatedInstitutionUsers
+        $pivotIdsExpectedDeleted = $deactivatedInstitutionUsers
             ->flatMap(fn (InstitutionUser $institutionUser) => $institutionUser->institutionUserRoles)
             ->map(fn (InstitutionUserRole $institutionUserRole) => $institutionUserRole->id);
         $pivotIdsExpectedToRemain = collect([$notYetDeactivatedInstitutionUsers, $activeInstitutionUsers])
@@ -68,9 +68,9 @@ class DetachRolesFromDeactivatedUsersTest extends TestCase
         // THEN command exit code should indicate success
         $this->assertSame(CommandAlias::SUCCESS, $exitCode);
 
-        // And expected pivot rows should be soft deleted
-        $pivotIdsExpectedToSoftDelete->each(
-            fn ($id) => $this->assertSoftDeleted(InstitutionUserRole::class, ['id' => $id])
+        // And expected pivot rows should be deleted
+        $pivotIdsExpectedDeleted->each(
+            fn ($id) => $this->assertDatabaseMissing(InstitutionUserRole::class, ['id' => $id])
         );
 
         // And deactivated users should now have zero roles

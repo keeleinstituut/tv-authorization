@@ -34,7 +34,6 @@ use Illuminate\Support\Carbon;
  * @property-read int|null $privileges_count
  * @property-read Collection<int, PrivilegeRole> $institutionUsers
  * @property-read int|null $institution_users_count
- *
  * @method static RoleFactory factory($count = null, $state = [])
  * @method static Builder|Role newModelQuery()
  * @method static Builder|Role newQuery()
@@ -48,7 +47,7 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Role whereUpdatedAt($value)
  * @method static Builder|Role withTrashed()
  * @method static Builder|Role withoutTrashed()
- *
+ * @method static Builder|Role whereIsRoot($value)
  * @mixin Eloquent
  */
 class Role extends Model
@@ -83,7 +82,6 @@ class Role extends Model
 
     public function institutionUsers(): BelongsToMany
     {
-        return $this->belongsToMany(InstitutionUser::class, InstitutionUserRole::class)
-            ->wherePivot('deleted_at', null);
+        return $this->belongsToMany(InstitutionUser::class, InstitutionUserRole::class);
     }
 }

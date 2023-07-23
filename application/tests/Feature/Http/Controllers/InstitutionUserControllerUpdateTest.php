@@ -3,26 +3,29 @@
 namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\PrivilegeKey;
-use App\Http\Requests\DeactivateInstitutionUserRequest;
 use App\Models\Department;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
 use App\Models\Role;
+use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
+use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
 use Tests\TestCase;
 use Throwable;
 
 class InstitutionUserControllerUpdateTest extends TestCase
 {
-    use RefreshDatabase, InstitutionUserHelpers;
+    use RefreshDatabase, InstitutionUserHelpers, ModelAssertions;
 
     public function setUp(): void
     {
@@ -100,6 +103,9 @@ class InstitutionUserControllerUpdateTest extends TestCase
             'institution' => $createdInstitution,
             'institutionUser' => $createdInstitutionUser,
         ] = $this->createBasicModels(forename: 'Activa');
+        $createdInstitutionUser->deactivation_date = Date::yesterday();
+        $createdInstitutionUser->saveOrFail();
+        $createdInstitutionUser->refresh();
 
         // WHEN authorizated request sent to endpoint
         $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
@@ -111,7 +117,7 @@ class InstitutionUserControllerUpdateTest extends TestCase
 
         // THEN the database state should have updated data
         $actualState = RepresentationHelpers::createInstitutionUserNestedRepresentation(
-            InstitutionUser::withoutGlobalScope(DeactivateInstitutionUserRequest::class)
+            InstitutionUser::withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
                 ->findOrFail($createdInstitutionUser->id)
         );
         $expectedSubset = ['user' => ['forename' => $expectedForename]];
@@ -119,6 +125,35 @@ class InstitutionUserControllerUpdateTest extends TestCase
 
         // And request response should correspond to the actual state
         $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function test_removing_is_root_role_from_sole_owner(): void
+    {
+        // GIVEN there’s an institution user who is the sole owner of the institution’s root role
+        [
+            'institution' => $createdInstitution,
+            'institutionUser' => $createdInstitutionUser
+        ] = $this->createBasicModels();
+        $createdInstitutionUser->roles()->sync(Role::factory()->for($createdInstitution)->create(['is_root' => true]));
+        $createdInstitutionUser->saveOrFail();
+        $createdInstitutionUser->refresh();
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
+
+        // WHEN authorizated request which removes all roles sent to endpoint
+        // THEN database state should not change and response should be 422
+        $this->assertModelsWithoutChangeAfterAction(
+            fn () => $this->sendPutRequestWithTokenFor(
+                $createdInstitutionUser->id,
+                ['roles' => []],
+                $actingUser
+            ),
+            RepresentationHelpers::createInstitutionUserNestedRepresentation(...),
+            [$createdInstitutionUser],
+            Response::HTTP_BAD_REQUEST
+        );
     }
 
     /**

@@ -12,14 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('institution_user_roles', function (Blueprint $table) {
-            $table->dropUnique(['institution_user_id', 'role_id']);
+            $table->dropTimestampsTz();
+            $table->dropSoftDeletesTz();
         });
-
-        DB::statement(<<<'EOT'
-            CREATE UNIQUE INDEX institution_user_roles_institution_user_id_role_id_unique ON institution_user_roles (institution_user_id, role_id)
-            WHERE deleted_at IS NULL
-        EOT);
-
     }
 
     /**
@@ -27,12 +22,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement(<<<'EOT'
-            DROP INDEX institution_user_roles_institution_user_id_role_id_unique;
-        EOT);
-
         Schema::table('institution_user_roles', function (Blueprint $table) {
-            $table->unique(['institution_user_id', 'role_id']);
+            $table->timestampsTz();
+            $table->softDeletesTz();
         });
     }
 };

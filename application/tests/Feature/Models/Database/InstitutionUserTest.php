@@ -294,34 +294,6 @@ class InstitutionUserTest extends TestCase
         ]));
     }
 
-    public function test_soft_deleting_role_pivots(): void
-    {
-        $institution = Institution::factory()->create();
-        $firstRole = Role::factory()->for($institution)->create();
-        $secondRole = Role::factory()->for($institution)->create();
-        $institutionUser = InstitutionUser::factory()
-            ->for($institution)
-            ->hasAttached($firstRole)
-            ->hasAttached($secondRole)
-            ->create();
-
-        $firstRolePivot = InstitutionUserRole::firstWhere([
-            'institution_user_id' => $institutionUser->id,
-            'role_id' => $firstRole->id,
-        ]);
-        $secondRolePivot = InstitutionUserRole::firstWhere([
-            'institution_user_id' => $institutionUser->id,
-            'role_id' => $secondRole->id,
-        ]);
-
-        $firstRolePivot->deleteOrFail();
-        $secondRolePivot->deleteOrFail();
-
-        $this->assertEmpty($institutionUser->refresh()->roles);
-        $this->assertSoftDeleted($firstRolePivot);
-        $this->assertSoftDeleted($secondRolePivot);
-    }
-
     public function test_scope_status(): void
     {
         $institution = Institution::factory()->create();
