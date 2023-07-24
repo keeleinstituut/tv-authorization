@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('institution_user_roles', function (Blueprint $table) {
-            $table->dropTimestampsTz();
             $table->dropSoftDeletesTz();
         });
     }
@@ -23,7 +22,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('institution_user_roles', function (Blueprint $table) {
-            $table->timestampsTz();
             $table->softDeletesTz();
         });
     }

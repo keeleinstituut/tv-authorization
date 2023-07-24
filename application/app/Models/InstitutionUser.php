@@ -103,7 +103,7 @@ class InstitutionUser extends Model
 
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(Role::class, InstitutionUserRole::class);
+        return $this->belongsToMany(Role::class, InstitutionUserRole::class)->withTimestamps();
     }
 
     /**
