@@ -103,10 +103,7 @@ class InstitutionUser extends Model
 
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(Role::class, InstitutionUserRole::class)
-            ->using(InstitutionUserRole::class)
-            ->wherePivot('deleted_at', null)
-            ->withTimestamps();
+        return $this->belongsToMany(Role::class, InstitutionUserRole::class)->withTimestamps();
     }
 
     /**

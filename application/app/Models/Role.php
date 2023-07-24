@@ -48,6 +48,7 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Role whereUpdatedAt($value)
  * @method static Builder|Role withTrashed()
  * @method static Builder|Role withoutTrashed()
+ * @method static Builder|Role whereIsRoot($value)
  *
  * @mixin Eloquent
  */
@@ -83,7 +84,6 @@ class Role extends Model
 
     public function institutionUsers(): BelongsToMany
     {
-        return $this->belongsToMany(InstitutionUser::class, InstitutionUserRole::class)
-            ->wherePivot('deleted_at', null);
+        return $this->belongsToMany(InstitutionUser::class, InstitutionUserRole::class)->withTimestamps();
     }
 }

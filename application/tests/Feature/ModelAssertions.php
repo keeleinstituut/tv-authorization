@@ -22,10 +22,10 @@ trait ModelAssertions
         $this->assertEquals(InstitutionUserStatus::Active, $institutionUser->getStatus());
     }
 
-    public function assertInstitutionUserRolePivotsAreSoftDeleted(Collection $pivots): void
+    public function assertInstitutionUserRolePivotsAreMissing(Collection $pivots): void
     {
         $pivots->each(
-            fn ($pivot) => $this->assertSoftDeleted(
+            fn ($pivot) => $this->assertDatabaseMissing(
                 InstitutionUserRole::class,
                 ['id' => $pivot->id]
             )

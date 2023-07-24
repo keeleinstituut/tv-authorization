@@ -159,6 +159,35 @@ class InstitutionUserControllerUpdateTest extends TestCase
     /**
      * @throws Throwable
      */
+    public function test_removing_is_root_role_from_sole_owner(): void
+    {
+        // GIVEN there’s an institution user who is the sole owner of the institution’s root role
+        [
+            'institution' => $createdInstitution,
+            'institutionUser' => $createdInstitutionUser
+        ] = $this->createBasicModels();
+        $createdInstitutionUser->roles()->sync(Role::factory()->for($createdInstitution)->create(['is_root' => true]));
+        $createdInstitutionUser->saveOrFail();
+        $createdInstitutionUser->refresh();
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
+
+        // WHEN authorizated request which removes all roles sent to endpoint
+        // THEN database state should not change and response should be 422
+        $this->assertModelsWithoutChangeAfterAction(
+            fn () => $this->sendPutRequestWithTokenFor(
+                $createdInstitutionUser->id,
+                ['roles' => []],
+                $actingUser
+            ),
+            RepresentationHelpers::createInstitutionUserNestedRepresentation(...),
+            [$createdInstitutionUser],
+            Response::HTTP_BAD_REQUEST
+        );
+    }
+
+    /**
+     * @throws Throwable
+     */
     public function test_removing_roles(): void
     {
         // GIVEN the following data is in database
