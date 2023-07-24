@@ -100,6 +100,31 @@ class UpdateInstitutionRequest extends FormRequest
         ];
     }
 
+    public function hasAnyWorktimeInput(): bool
+    {
+        return filled($this->getValidatedWorktimeInput());
+    }
+
+    public function hasAnyNonCalendarInput(): bool
+    {
+        return filled($this->getValidatedNonCalendarInput());
+    }
+
+    public function getValidatedWorktimeInput(): array
+    {
+        $worktimeAttributeKeys = WorktimeValidationUtil::getWorktimeIntervalEdgesByDay()
+            ->flatten()
+            ->push('worktime_timezone')
+            ->all();
+
+        return $this->safe($worktimeAttributeKeys);
+    }
+
+    public function getValidatedNonCalendarInput(): array
+    {
+        return $this->safe(['name', 'email', 'phone', 'short_name']);
+    }
+
     public function after(): array
     {
         return [
