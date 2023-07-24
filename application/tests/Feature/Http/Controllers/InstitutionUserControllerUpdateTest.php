@@ -741,7 +741,7 @@ class InstitutionUserControllerUpdateTest extends TestCase
                 'modifyActingInstitutionUser' => function (InstitutionUser $institutionUser) {
                     $institutionUser->institution()->associate(Institution::factory()->create());
                 },
-                'payload' => [],
+                'payload' => static::createExampleValidPayload(),
                 'expectedResponseStatus' => Response::HTTP_NOT_FOUND,
             ],
         ];
@@ -752,8 +752,11 @@ class InstitutionUserControllerUpdateTest extends TestCase
      *
      * @throws Throwable
      */
-    public function test_nothing_is_changed_when_acting_user_forbidden(Closure $modifyActingInstitutionUser, array $payload, int $expectedResponseStatus): void
-    {
+    public function test_nothing_is_changed_when_acting_user_forbidden(
+        Closure $modifyActingInstitutionUser,
+        array $payload,
+        int $expectedResponseStatus
+    ): void {
         [
             'actingInstitutionUser' => $actingInstitutionUser,
             'targetInstitutionUser' => $targetInstitutionUser,
@@ -762,7 +765,7 @@ class InstitutionUserControllerUpdateTest extends TestCase
         $this->assertInstitutionUserUnchangedAfterAction(
             fn () => $this->sendRequestWithExpectedHeaders(
                 $targetInstitutionUser->id,
-                static::createExampleValidPayload(),
+                $payload,
                 $actingInstitutionUser
             ),
             $targetInstitutionUser,
