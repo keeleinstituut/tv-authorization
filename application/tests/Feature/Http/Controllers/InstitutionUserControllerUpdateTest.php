@@ -130,6 +130,35 @@ class InstitutionUserControllerUpdateTest extends TestCase
     /**
      * @throws Throwable
      */
+    public function test_updating_deactivated_user_roles(): void
+    {
+        // GIVEN there’s a deactivated institution user
+        [
+            'institution' => $createdInstitution,
+            'institutionUser' => $createdInstitutionUser
+        ] = $this->createBasicModels();
+        $createdInstitutionUser->deactivation_date = Date::yesterday();
+        $createdInstitutionUser->saveOrFail();
+        $createdInstitutionUser->refresh();
+        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
+
+        // WHEN authorizated request with role modifications sent to endpoint
+        // THEN database state should not change and response should be 422
+        $this->assertModelsWithoutChangeAfterAction(
+            fn () => $this->sendPutRequestWithTokenFor(
+                $createdInstitutionUser->id,
+                ['roles' => [Role::factory()->for($createdInstitution)->create()->id]],
+                $actingUser
+            ),
+            RepresentationHelpers::createInstitutionUserNestedRepresentation(...),
+            [$createdInstitutionUser],
+            Response::HTTP_UNPROCESSABLE_ENTITY
+        );
+    }
+
+    /**
+     * @throws Throwable
+     */
     public function test_removing_is_root_role_from_sole_owner(): void
     {
         // GIVEN there’s an institution user who is the sole owner of the institution’s root role
