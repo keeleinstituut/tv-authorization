@@ -41,6 +41,21 @@ use Illuminate\Support\Facades\Date;
  * @property-read Institution $institution
  * @property-read Department $department
  * @property-read User $user
+ * @property string|null worktime_timezone
+ * @property string|null monday_worktime_start
+ * @property string|null monday_worktime_end
+ * @property string|null tuesday_worktime_start
+ * @property string|null tuesday_worktime_end
+ * @property string|null wednesday_worktime_start
+ * @property string|null wednesday_worktime_end
+ * @property string|null thursday_worktime_start
+ * @property string|null thursday_worktime_end
+ * @property string|null friday_worktime_start
+ * @property string|null friday_worktime_end
+ * @property string|null saturday_worktime_start
+ * @property string|null saturday_worktime_end
+ * @property string|null sunday_worktime_start
+ * @property string|null sunday_worktime_end
  * @property-read Collection<int, InstitutionUserRole> $institutionUserRoles
  * @property-read int|null $institution_user_roles_count
  * @property-read Collection<int, Role> $roles
@@ -70,7 +85,28 @@ class InstitutionUser extends Model
 {
     use HasFactory, SoftDeletes, HasUuids;
 
-    protected $fillable = ['institution_id', 'department_id', 'user_id', 'email', 'phone'];
+    protected $fillable = [
+        'institution_id',
+        'department_id',
+        'user_id',
+        'email',
+        'phone',
+        'worktime_timezone',
+        'monday_worktime_start',
+        'monday_worktime_end',
+        'tuesday_worktime_start',
+        'tuesday_worktime_end',
+        'wednesday_worktime_start',
+        'wednesday_worktime_end',
+        'thursday_worktime_start',
+        'thursday_worktime_end',
+        'friday_worktime_start',
+        'friday_worktime_end',
+        'saturday_worktime_start',
+        'saturday_worktime_end',
+        'sunday_worktime_start',
+        'sunday_worktime_end',
+    ];
 
     protected $casts = ['archived_at' => 'datetime'];
 

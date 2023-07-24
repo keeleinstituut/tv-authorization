@@ -18,6 +18,7 @@ use App\Models\Scopes\ExcludeArchivedInstitutionUsersScope;
 use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Policies\InstitutionUserPolicy;
 use App\Util\DateUtil;
+use Arr;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -67,18 +68,14 @@ class InstitutionUserController extends Controller
             /** @var $institutionUser InstitutionUser */
             $institutionUser = $this->getBaseQuery()->findOrFail($request->getInstitutionUserId());
 
-            $this->authorize('update', $institutionUser);
-
-            $institutionUser->fill($request->safe(['email', 'phone']));
-
-            if ($request->has('user')) {
-                $institutionUser->user->update($request->validated('user'));
+            if ($request->hasAnyNonCalendarInput()) {
+                $this->authorize('update', $institutionUser);
+                $this->updateNonCalendarAttributes($institutionUser, $request->getValidatedNonCalendarInput());
             }
-            if ($request->has('roles')) {
-                $institutionUser->roles()->sync($request->validated('roles'));
-            }
-            if ($request->has('department_id')) {
-                $institutionUser->department()->associate($request->validated('department_id'));
+
+            if ($request->hasAnyWorktimeInput()) {
+                $this->authorize('updateWorktime', $institutionUser);
+                $institutionUser->fill($request->getValidatedWorktimeInput());
             }
 
             $institutionUser->saveOrFail();
@@ -327,5 +324,23 @@ class InstitutionUserController extends Controller
             ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
             ->withGlobalScope('policy', InstitutionUserPolicy::scope())
             ->whereHas('user');
+    }
+
+    /**
+     * @throws Throwable
+     */
+    private function updateNonCalendarAttributes(InstitutionUser $institutionUser, array $validatedInput): void
+    {
+        $institutionUser->fill(Arr::only($validatedInput, ['email', 'phone']));
+
+        if (Arr::has($validatedInput, 'user')) {
+            $institutionUser->user->updateOrFail($validatedInput['user']);
+        }
+        if (Arr::has($validatedInput, 'roles')) {
+            $institutionUser->roles()->sync($validatedInput['roles']);
+        }
+        if (Arr::has($validatedInput, 'department_id')) {
+            $institutionUser->department()->associate($validatedInput['department_id']);
+        }
     }
 }
