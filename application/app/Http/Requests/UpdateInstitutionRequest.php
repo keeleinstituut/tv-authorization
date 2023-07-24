@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Helpers\WorktimeUtil;
+use App\Helpers\WorktimeValidationUtil;
 use App\Rules\PhoneNumberRule;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -96,15 +96,15 @@ class UpdateInstitutionRequest extends FormRequest
                 'string',
                 'max:3',
             ],
-            ...WorktimeUtil::buildWorktimeValidationRules(),
+            ...WorktimeValidationUtil::buildWorktimeValidationRules(),
         ];
     }
 
     public function after(): array
     {
         return [
-            WorktimeUtil::validateAllWorktimeFieldsArePresentOrAllMissing(...),
-            WorktimeUtil::validateEachWorktimeStartIsBeforeEndOrBothUndefined(...),
+            WorktimeValidationUtil::validateAllWorktimeFieldsArePresentOrAllMissing(...),
+            WorktimeValidationUtil::validateEachWorktimeStartIsBeforeEndOrBothUndefined(...),
         ];
     }
 }

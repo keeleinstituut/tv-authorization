@@ -3,7 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\InstitutionUserStatus;
-use App\Helpers\WorktimeUtil;
+use App\Helpers\WorktimeValidationUtil;
 use App\Models\Department;
 use App\Models\InstitutionUser;
 use App\Models\Role;
@@ -133,7 +133,7 @@ class UpdateInstitutionUserRequest extends FormRequest
             'department_id' => [
                 'nullable', 'bail', 'uuid', $this->existsDepartmentInSameInstitution(),
             ],
-            ...WorktimeUtil::buildWorktimeValidationRules(),
+            ...WorktimeValidationUtil::buildWorktimeValidationRules(),
         ];
     }
 
@@ -189,7 +189,7 @@ class UpdateInstitutionUserRequest extends FormRequest
 
     public function getValidatedWorktimeInput(): array
     {
-        $worktimeAttributeKeys = WorktimeUtil::getWorktimeIntervalEdgesByDay()
+        $worktimeAttributeKeys = WorktimeValidationUtil::getWorktimeIntervalEdgesByDay()
             ->flatten()
             ->push('worktime_timezone')
             ->all();
@@ -205,8 +205,8 @@ class UpdateInstitutionUserRequest extends FormRequest
     public function after(): array
     {
         return [
-            WorktimeUtil::validateAllWorktimeFieldsArePresentOrAllMissing(...),
-            WorktimeUtil::validateEachWorktimeStartIsBeforeEndOrBothUndefined(...),
+            WorktimeValidationUtil::validateAllWorktimeFieldsArePresentOrAllMissing(...),
+            WorktimeValidationUtil::validateEachWorktimeStartIsBeforeEndOrBothUndefined(...),
         ];
     }
 }

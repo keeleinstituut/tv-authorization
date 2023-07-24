@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
-class WorktimeUtil
+class WorktimeValidationUtil
 {
     /**
      * @return array<string, array>
@@ -58,7 +58,7 @@ class WorktimeUtil
             return;
         }
 
-        $worktimeAttributes = WorktimeUtil::getWorktimeIntervalEdgesByDay()
+        $worktimeAttributes = WorktimeValidationUtil::getWorktimeIntervalEdgesByDay()
             ->flatten()
             ->push('worktime_timezone');
 
@@ -91,7 +91,7 @@ class WorktimeUtil
      */
     private static function buildOnlyWorktimeIntervalValidationRules(): array
     {
-        return WorktimeUtil::getWorktimeIntervalEdgesByDay()
+        return WorktimeValidationUtil::getWorktimeIntervalEdgesByDay()
             ->flatten()
             ->mapWithKeys(fn (string $attribute) => [
                 $attribute => [
