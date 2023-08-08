@@ -23,6 +23,7 @@ use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use League\Csv\ByteSequence;
 use League\Csv\CannotInsertRecord;
 use League\Csv\Exception;
 use League\Csv\Writer;
@@ -109,6 +110,7 @@ class InstitutionUserController extends Controller
         $this->authorize('export', InstitutionUser::class);
 
         $csvDocument = Writer::createFromString()->setDelimiter(';');
+        $csvDocument->setOutputBOM(ByteSequence::BOM_UTF8);
 
         $csvDocument->insertOne([
             'Isikukood', 'Nimi', 'Meiliaadress', 'Telefoninumber', 'Üksus', 'Roll',
