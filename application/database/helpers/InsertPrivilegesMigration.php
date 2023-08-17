@@ -20,6 +20,8 @@ abstract class InsertPrivilegesMigration extends Migration
                 ];
             }, $this->getPrivilegesKeys())
         );
+
+
     }
 
     public function down(): void

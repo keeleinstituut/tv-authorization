@@ -29,4 +29,11 @@ enum PrivilegeKey: string
     case ViewVendorTask = 'VIEW_VENDOR_TASK';
     case EditInstitution = 'EDIT_INSTITUTION';
     case EditInstitutionWorktime = 'EDIT_INSTITUTION_WORKTIME';
+    case CreateProject = 'CREATE_PROJECT';
+    case ManageProject = 'MANAGE_PROJECT';
+    case ReceiveAndManageProject = 'RECEIVE_AND_MANAGE_PROJECT';
+    case ViewPersonalProject = 'VIEW_PERSONAL_PROJECT';
+    case ViewInstitutionProjectList = 'VIEW_INSTITUTION_PROJECT_LIST';
+    case ViewInstitutionProjectDetail = 'VIEW_INSTITUTION_PROJECT_DETAIL';
+    case ChangeClient = 'CHANGE_CLIENT';
 }
