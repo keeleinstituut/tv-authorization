@@ -2,8 +2,6 @@
 
 namespace Database\Helpers;
 
-use App\Models\Privilege;
-use App\Models\Role;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -22,8 +20,6 @@ abstract class InsertPrivilegesMigration extends Migration
                 ];
             }, $this->getPrivilegesKeys())
         );
-
-        self::populateRootRolesWithAllPrivileges();
     }
 
     public function down(): void
@@ -31,14 +27,6 @@ abstract class InsertPrivilegesMigration extends Migration
         DB::table('privileges')
             ->whereIn('key', $this->getPrivilegesKeys())
             ->delete();
-    }
-
-    public static function populateRootRolesWithAllPrivileges() {
-        $allPrivilegeIds = Privilege::plucK('id');
-        $rootRoles = Role::where('is_root', true)->get();
-        $rootRoles->each(function ($role) use ($allPrivilegeIds) {
-            $role->privileges()->sync($allPrivilegeIds);
-        });
     }
 
     /**
