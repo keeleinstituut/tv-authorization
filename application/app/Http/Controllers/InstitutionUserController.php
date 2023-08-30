@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\InstitutionUserStatus;
+use App\Enums\PrivilegeKey;
 use App\Http\OpenApiHelpers as OAH;
 use App\Http\Requests\ActivateInstitutionUserRequest;
 use App\Http\Requests\ArchiveInstitutionUserRequest;
@@ -11,6 +12,7 @@ use App\Http\Requests\GetInstitutionUserRequest;
 use App\Http\Requests\InstitutionUserListRequest;
 use App\Http\Requests\UpdateInstitutionUserRequest;
 use App\Http\Resources\InstitutionUserResource;
+use App\Http\Resources\RedactedInstitutionUserResource;
 use App\Models\InstitutionUser;
 use App\Models\InstitutionUserRole;
 use App\Models\Role;
@@ -228,6 +230,50 @@ class InstitutionUserController extends Controller
             $institutionUsersQuery
                 ->paginate($request->validated('per_page', 10))
                 ->appends($request->validated())
+        );
+    }
+
+    /** @throws AuthorizationException */
+    #[OA\Get(
+        path: '/institution-users/project-managers-assignable-by-client',
+        summary: 'List project managers assignable by a client in the current institution (inferred from JWT)',
+        responses: [new OAH\Forbidden, new OAH\Unauthorized]
+    )]
+    #[OAH\CollectionResponse(
+        itemsRef: RedactedInstitutionUserResource::class,
+        description: 'With redacted details, institution users who possess the privilege RECEIVE_AND_MANAGE_PROJECT'
+    )]
+    public function indexProjectManagersAssignableByClient(): AnonymousResourceCollection
+    {
+        $this->authorize('viewProjectManagersAssignableByClientWithRedaction', InstitutionUser::class);
+
+        return RedactedInstitutionUserResource::collection(
+            $this->getBaseQuery()
+                ->with(['user', 'department', 'institution'])
+                ->hasPrivileges(PrivilegeKey::ReceiveAndManageProject)
+                ->get()
+        );
+    }
+
+    /** @throws AuthorizationException */
+    #[OA\Get(
+        path: '/institution-users/assignable-clients',
+        summary: 'List assignable clients in the current institution (inferred from JWT)',
+        responses: [new OAH\Forbidden, new OAH\Unauthorized]
+    )]
+    #[OAH\CollectionResponse(
+        itemsRef: RedactedInstitutionUserResource::class,
+        description: 'With redacted details, institution users who possess the privilege CREATE_PROJECT'
+    )]
+    public function indexAssignableClients(): AnonymousResourceCollection
+    {
+        $this->authorize('viewAssignableClientsWithRedaction', InstitutionUser::class);
+
+        return RedactedInstitutionUserResource::collection(
+            $this->getBaseQuery()
+                ->with(['user', 'department', 'institution'])
+                ->hasPrivileges(PrivilegeKey::CreateProject)
+                ->get()
         );
     }
 

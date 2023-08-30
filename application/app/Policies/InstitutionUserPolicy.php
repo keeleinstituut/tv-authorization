@@ -17,6 +17,20 @@ class InstitutionUserPolicy
         return Auth::hasPrivilege(PrivilegeKey::ViewUser->value);
     }
 
+    /** @noinspection PhpUnused PhpUnusedParameterInspection */
+    public function viewAssignableClientsWithRedaction(JwtPayloadUser $jwtPayloadUser): bool
+    {
+        return Auth::hasPrivilege(PrivilegeKey::ChangeClient->value);
+    }
+
+    /** @noinspection PhpUnused PhpUnusedParameterInspection */
+    public function viewProjectManagersAssignableByClientWithRedaction(JwtPayloadUser $jwtPayloadUser): bool
+    {
+        return Auth::hasPrivilege(PrivilegeKey::CreateProject->value)
+            || Auth::hasPrivilege(PrivilegeKey::ManageProject->value)
+            || Auth::hasPrivilege(PrivilegeKey::ReceiveAndManageProject->value);
+    }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function view(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
     {

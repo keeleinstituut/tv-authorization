@@ -10,6 +10,7 @@ use App\Models\Privilege;
 use App\Models\Role;
 use App\Models\User;
 use Closure;
+use Database\Factories\InstitutionUserFactory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -167,5 +168,21 @@ trait InstitutionUserHelpers
         }
 
         return $institutionUserBuilder->create();
+    }
+
+    public function createUserInGivenInstitutionWithGivenPrivileges(Institution|Factory $institution, PrivilegeKey ...$privileges): InstitutionUser
+    {
+        $privilegeValues = collect($privileges)
+            ->map(fn (PrivilegeKey $privilege) => $privilege->value)
+            ->all();
+
+        return InstitutionUser::factory()
+            ->for($institution)
+            ->unless(empty($privileges), fn (InstitutionUserFactory $factory) => $factory
+                ->has(Role::factory()->hasAttached(
+                    Privilege::whereIn('key', $privilegeValues)->get()
+                ))
+            )
+            ->create();
     }
 }

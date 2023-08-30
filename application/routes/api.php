@@ -57,6 +57,8 @@ Route::prefix('/institution-users')
         Route::post('/deactivate', 'deactivate');
         Route::post('/activate', 'activate');
         Route::post('/archive', 'archive');
+        Route::get('/assignable-clients', 'indexAssignableClients');
+        Route::get('/project-managers-assignable-by-client', 'indexProjectManagersAssignableByClient');
     });
 
 Route::prefix('/institution-users')

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\InstitutionUserStatus;
+use App\Enums\PrivilegeKey;
 use App\Models\Scopes\ExcludeArchivedInstitutionUsersScope;
 use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Models\Scopes\ExcludeIfRelatedUserSoftDeletedScope;
@@ -63,6 +64,7 @@ use Illuminate\Support\Facades\Date;
  * @method static Builder|InstitutionUser withoutTrashed()
  * @method static Builder|InstitutionUser status(InstitutionUserStatus $value)
  * @method static Builder|InstitutionUser statusIn(array $statuses)
+ * @method static Builder|InstitutionUser hasPrivileges(PrivilegeKey|string ...$privileges)
  *
  * @mixin Eloquent
  */
@@ -202,5 +204,44 @@ class InstitutionUser extends Model
         return $this->roles()
             ->where('is_root', true)
             ->exists();
+    }
+
+    /**
+     * @noinspection PhpUnused
+     */
+    public function scopeHasPrivileges(Builder $query, PrivilegeKey|string ...$privileges): void
+    {
+        collect($privileges)
+            ->map(fn (PrivilegeKey|string $privilege) => is_string($privilege)
+                ? InstitutionUserStatus::from($privilege)
+                : $privilege
+            )
+            ->each(function (PrivilegeKey $privilege) use ($query) {
+                $query->whereHas('roles', function (Builder $roleQuery) use ($privilege) {
+                    $roleQuery
+                        ->whereNull('deleted_at')
+                        ->whereHas('privileges', function (Builder $privilegeQuery) use ($privilege) {
+                            $privilegeQuery->whereNull('deleted_at')->where('key', $privilege->value);
+                        });
+                });
+            });
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<PrivilegeKey>
+     */
+    public function collectPrivileges(): \Illuminate\Support\Collection
+    {
+        return $this->roles
+            ->flatMap(fn (Role $role) => $role->privileges)
+            ->map(fn (Privilege $privilege) => $privilege->key);
+    }
+
+    public function hasPrivileges(PrivilegeKey ...$expectedPrivileges): bool
+    {
+        return collect($expectedPrivileges)
+            ->map(fn (PrivilegeKey $privilege) => $privilege->value)
+            ->diff($this->collectPrivileges()->map(fn (PrivilegeKey $privilege) => $privilege->value))
+            ->isEmpty();
     }
 }
