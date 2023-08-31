@@ -10,6 +10,7 @@ use App\Http\Requests\ArchiveInstitutionUserRequest;
 use App\Http\Requests\DeactivateInstitutionUserRequest;
 use App\Http\Requests\GetInstitutionUserRequest;
 use App\Http\Requests\InstitutionUserListRequest;
+use App\Http\Requests\SearchByNameRequest;
 use App\Http\Requests\UpdateInstitutionUserRequest;
 use App\Http\Resources\InstitutionUserResource;
 use App\Http\Resources\RedactedInstitutionUserResource;
@@ -237,13 +238,14 @@ class InstitutionUserController extends Controller
     #[OA\Get(
         path: '/institution-users/project-managers-assignable-by-client',
         summary: 'List project managers assignable by a client in the current institution (inferred from JWT)',
+        parameters: [new OA\QueryParameter(name: 'name', schema: new OA\Schema(type: 'string'))],
         responses: [new OAH\Forbidden, new OAH\Unauthorized]
     )]
     #[OAH\CollectionResponse(
         itemsRef: RedactedInstitutionUserResource::class,
         description: 'With redacted details, institution users who possess the privilege RECEIVE_AND_MANAGE_PROJECT'
     )]
-    public function indexProjectManagersAssignableByClient(): AnonymousResourceCollection
+    public function indexProjectManagersAssignableByClient(SearchByNameRequest $request): AnonymousResourceCollection
     {
         $this->authorize('viewProjectManagersAssignableByClientWithRedaction', InstitutionUser::class);
 
@@ -251,6 +253,10 @@ class InstitutionUserController extends Controller
             $this->getBaseQuery()
                 ->with(['user', 'department', 'institution'])
                 ->hasPrivileges(PrivilegeKey::ReceiveAndManageProject)
+                ->when(
+                    $request->safe()->has('name'),
+                    fn (Builder $builder) => $builder->isLikeName($request->validated('name'))
+                )
                 ->get()
         );
     }
@@ -259,13 +265,14 @@ class InstitutionUserController extends Controller
     #[OA\Get(
         path: '/institution-users/assignable-clients',
         summary: 'List assignable clients in the current institution (inferred from JWT)',
+        parameters: [new OA\QueryParameter(name: 'name', schema: new OA\Schema(type: 'string'))],
         responses: [new OAH\Forbidden, new OAH\Unauthorized]
     )]
     #[OAH\CollectionResponse(
         itemsRef: RedactedInstitutionUserResource::class,
         description: 'With redacted details, institution users who possess the privilege CREATE_PROJECT'
     )]
-    public function indexAssignableClients(): AnonymousResourceCollection
+    public function indexAssignableClients(SearchByNameRequest $request): AnonymousResourceCollection
     {
         $this->authorize('viewAssignableClientsWithRedaction', InstitutionUser::class);
 
@@ -273,6 +280,10 @@ class InstitutionUserController extends Controller
             $this->getBaseQuery()
                 ->with(['user', 'department', 'institution'])
                 ->hasPrivileges(PrivilegeKey::CreateProject)
+                ->when(
+                    $request->safe()->has('name'),
+                    fn (Builder $builder) => $builder->isLikeName($request->validated('name'))
+                )
                 ->get()
         );
     }

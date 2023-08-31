@@ -244,4 +244,11 @@ class InstitutionUser extends Model
             ->diff($this->collectPrivileges()->map(fn (PrivilegeKey $privilege) => $privilege->value))
             ->isEmpty();
     }
+
+    public function scopeIsLikeName(Builder $query, string $name): void
+    {
+        $query->whereHas('user', function (Builder $userQuery) use ($name) {
+            $userQuery->whereRaw("forename || ' ' || surname ILIKE ?", ["%$name%"]);
+        });
+    }
 }
