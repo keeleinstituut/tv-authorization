@@ -23,7 +23,7 @@ class CreateInstitutionWithMainUser extends Command
                             {email? : The email of the user}
                             {phone? : The phone number of the user}
                             {iname? : The name of the institution}
-                            {isname? : The name of the institution}
+                            {isname? : The short name of the institution}
                             {logo? : The logo of the institution}';
 
     /**
