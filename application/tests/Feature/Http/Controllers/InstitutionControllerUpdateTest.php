@@ -69,13 +69,6 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
                 'payload' => ['phone' => '  +372 7123456  '],
                 'expectedStateOverride' => ['phone' => '+372 7123456'],
             ],
-            'Clearing previously filled short name' => [
-                'modifyInstitution' => function (Institution $institution): void {
-                    $institution->short_name = 'SHO';
-                },
-                'payload' => ['short_name' => null],
-                'expectedStateOverride' => [],
-            ],
             'Setting previously empty short name' => [
                 'modifyInstitution' => function (Institution $institution): void {
                     $institution->short_name = null;
@@ -286,6 +279,10 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
             'short_name: "ABCD"' => [
                 'validInitialState' => [],
                 'invalidChange' => [...static::createExampleValidPayload(), 'short_name' => 'ABCD'],
+            ],
+            'short_name: ""' => [
+                'validInitialState' => ['short_name' => null],
+                'invalidChange' => [...static::createExampleValidPayload(), 'short_name' => ''],
             ],
         ];
     }
