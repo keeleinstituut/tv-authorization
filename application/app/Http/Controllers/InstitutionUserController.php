@@ -9,6 +9,7 @@ use App\Http\Requests\ArchiveInstitutionUserRequest;
 use App\Http\Requests\DeactivateInstitutionUserRequest;
 use App\Http\Requests\GetInstitutionUserRequest;
 use App\Http\Requests\InstitutionUserListRequest;
+use App\Http\Requests\UpdateCurrentInstitutionUserRequest;
 use App\Http\Requests\UpdateInstitutionUserRequest;
 use App\Http\Resources\InstitutionUserResource;
 use App\Models\InstitutionUser;
@@ -18,6 +19,7 @@ use App\Models\Scopes\ExcludeArchivedInstitutionUsersScope;
 use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Policies\InstitutionUserPolicy;
 use App\Util\DateUtil;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -81,6 +83,35 @@ class InstitutionUserController extends Controller
             }
             if ($request->has('department_id')) {
                 $institutionUser->department()->associate($request->validated('department_id'));
+            }
+
+            $institutionUser->saveOrFail();
+            // TODO: audit log
+
+            return new InstitutionUserResource($institutionUser->refresh());
+        });
+    }
+
+    /**
+     * @throws AuthorizationException|Throwable
+     */
+    #[OA\Put(
+        path: '/institution-users',
+        summary: 'Update the active institution user received from JWT token',
+        requestBody: new OAH\RequestBody(UpdateCurrentInstitutionUserRequest::class),
+        responses: [new OAH\NotFound, new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
+    )]
+    #[OAH\ResourceResponse(dataRef: InstitutionUserResource::class, description: 'Modified institution user')]
+    public function updateCurrentInstitutionUser(UpdateCurrentInstitutionUserRequest $request): InstitutionUserResource
+    {
+        return DB::transaction(function () use ($request) {
+            /** @var $institutionUser InstitutionUser */
+            $institutionUser = $this->getBaseQuery()->findOrFail(Auth::user()->institutionUserId);
+
+            $institutionUser->fill($request->safe(['email', 'phone']));
+
+            if ($request->has('user')) {
+                $institutionUser->user->update($request->validated('user'));
             }
 
             $institutionUser->saveOrFail();

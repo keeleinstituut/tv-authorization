@@ -23,7 +23,7 @@ abstract class InsertPrivilegesMigration extends Migration
             }, $this->getPrivilegesKeys())
         );
 
-        self::populateRootRolesWithAllPrivileges();
+        //self::populateRootRolesWithAllPrivileges();
     }
 
     public function down(): void
