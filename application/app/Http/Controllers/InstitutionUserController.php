@@ -56,9 +56,10 @@ class InstitutionUserController extends Controller
      * @throws AuthorizationException|Throwable
      */
     #[OA\Put(
-        path: '/institution-users',
+        path: '/institution-users/{institution_user_id}',
         summary: 'Update the institution user with the given UUID',
         requestBody: new OAH\RequestBody(UpdateInstitutionUserRequest::class),
+        parameters: [new OAH\UuidPath('institution_user_id')],
         responses: [new OAH\NotFound, new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
     )]
     #[OAH\ResourceResponse(dataRef: InstitutionUserResource::class, description: 'Modified institution user')]
