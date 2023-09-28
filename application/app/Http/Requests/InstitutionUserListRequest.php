@@ -43,6 +43,7 @@ class InstitutionUserListRequest extends FormRequest
             ],
             'sort_by' => ['nullable', Rule::in('name', 'created_at')],
             'sort_order' => ['nullable', Rule::in(['asc', 'desc'])],
+            'fullname' => ['sometimes', 'string'],
         ];
     }
 

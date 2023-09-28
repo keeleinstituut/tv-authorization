@@ -142,6 +142,7 @@ class InstitutionUserController extends Controller
         path: '/institution-users',
         summary: 'List and optionally filter institution users belonging to the current institution (inferred from JWT)',
         parameters: [
+            new OA\QueryParameter(name: 'fullname', schema: new OA\Schema(type: 'string', nullable: true)),
             new OA\QueryParameter(name: 'page', schema: new OA\Schema(type: 'integer', default: 1)),
             new OA\QueryParameter(name: 'per_page', schema: new OA\Schema(type: 'integer', default: 10, enum: [10, 50, 100])),
             new OA\QueryParameter(name: 'sort_by', schema: new OA\Schema(type: 'string', enum: ['name', 'created_at'])),
@@ -187,6 +188,15 @@ class InstitutionUserController extends Controller
                     'institutionUserRoles',
                     fn (Builder $iurClause) => $iurClause->whereIn('role_id', $roles)
                 );
+            }
+        );
+
+        $institutionUsersQuery->when(
+            $request->validated('fullname'),
+            function (Builder $iuQuery, string $fullName) {
+                $iuQuery->whereRelation('user', function (Builder $uQuery) use ($fullName) {
+                    $uQuery->where(DB::raw("CONCAT(forename, ' ', surname)"), 'ILIKE', "%$fullName%");
+                });
             }
         );
 
