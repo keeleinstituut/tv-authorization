@@ -197,44 +197,70 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
     }
 
     /** @return array<array{
-     *    Closure(InstitutionUser):void,
-     *    int
+     *    modifyActingInstitutionUser: Closure(InstitutionUser):void,
+     *    payload: array,
+     *    expectedResponseStatus: int
      * }> */
     public static function provideActingUserInvalidatorsAndExpectedResponseStatus(): array
     {
         return [
-            'Acting institution user with all privileges except EDIT_INSTITUTION' => [
-                function (InstitutionUser $institutionUser) {
+            'Attempting to update non-calendar attributes without having EDIT_INSTITUTION privilege' => [
+                'modifyActingInstitutionUser' => function (InstitutionUser $institutionUser) {
                     $institutionUser->roles()->sync(
                         Role::factory()
-                            ->hasAttached(Privilege::where('key', '!=', PrivilegeKey::EditInstitution->value)->get())
+                            ->hasAttached(Privilege::whereNot('key', PrivilegeKey::EditInstitution->value)->get())
                             ->create()
                     );
                 },
-                Response::HTTP_FORBIDDEN,
+                'payload' => ['email' => 'some@email.com'],
+                'expectedResponseStatus' => Response::HTTP_FORBIDDEN,
+            ],
+            'Attempting to update worktime attributes without having EDIT_INSTITUTION_WORKTIME privilege' => [
+                'modifyActingInstitutionUser' => function (InstitutionUser $institutionUser) {
+                    $institutionUser->roles()->sync(
+                        Role::factory()
+                            ->hasAttached(Privilege::whereNot('key', PrivilegeKey::EditInstitutionWorktime->value)->get())
+                            ->create()
+                    );
+                },
+                'payload' => [
+                    ...static::createNullWorktimeIntervals(),
+                    'worktime_timezone' => 'Asia/Singapore',
+                    'monday_worktime_start' => '14:00:00',
+                    'monday_worktime_end' => '22:00:00',
+                ],
+                'expectedResponseStatus' => Response::HTTP_FORBIDDEN,
             ],
             'Acting institution user in other institution' => [
-                function (InstitutionUser $institutionUser) {
+                'modifyActingInstitutionUser' => function (InstitutionUser $institutionUser) {
                     $institutionUser->institution()->associate(Institution::factory()->create());
                 },
-                Response::HTTP_NOT_FOUND,
+                'payload' => static::createExampleValidPayload(),
+                'expectedResponseStatus' => Response::HTTP_NOT_FOUND,
             ],
         ];
     }
 
     /** @dataProvider provideActingUserInvalidatorsAndExpectedResponseStatus
+     * @param  Closure(InstitutionUser):void  $modifyActingInstitutionUser
+     *
      * @throws Throwable */
-    public function test_nothing_is_changed_when_acting_user_forbidden(Closure $modifyActingInstitutionUser, int $expectedResponseStatus): void
-    {
+    public function test_nothing_is_changed_when_acting_user_forbidden(
+        Closure $modifyActingInstitutionUser,
+        array $payload,
+        int $expectedResponseStatus
+    ): void {
         [
             'institution' => $institution,
             'actingInstitutionUser' => $actingInstitutionUser,
-        ] = $this->createInstitutionAndPrivilegedActingUser(modifyActingInstitutionUser: $modifyActingInstitutionUser);
+        ] = $this->createInstitutionAndPrivilegedActingUser(
+            modifyActingInstitutionUser: $modifyActingInstitutionUser
+        );
 
         $this->assertInstitutionUnchangedAfterAction(
             fn () => $this->sendUpdateRequestWithExpectedHeaders(
                 $institution->id,
-                static::createExampleValidPayload(),
+                $payload,
                 $actingInstitutionUser
             ),
             $institution,
@@ -496,7 +522,12 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
             function (InstitutionUser $institutionUser) use ($modifyActingInstitutionUser) {
                 $institutionUser->roles()->attach(
                     Role::factory()
-                        ->hasAttached(Privilege::firstWhere('key', PrivilegeKey::EditInstitution->value))
+                        ->hasAttached(
+                            Privilege::whereIn(
+                                'key',
+                                [PrivilegeKey::EditInstitution->value, PrivilegeKey::EditInstitutionWorktime->value]
+                            )->get()
+                        )
                         ->create()
                 );
 

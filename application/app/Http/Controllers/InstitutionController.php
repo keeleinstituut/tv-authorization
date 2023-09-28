@@ -61,12 +61,20 @@ class InstitutionController extends Controller
     #[OAH\ResourceResponse(dataRef: InstitutionResource::class, description: 'Modified institution')]
     public function update(UpdateInstitutionRequest $request): InstitutionResource
     {
-        $id = $request->route('institution_id');
-        $institution = $this->getBaseQuery()->findOrFail($id);
+        $institution = $this->getBaseQuery()->findOrFail($request->route('institution_id'));
 
-        $this->authorize('update', $institution);
+        if ($request->hasAnyNonCalendarInput()) {
+            $this->authorize('update', $institution);
+            $institution->fill($request->getValidatedNonCalendarInput());
+        }
 
-        $institution->fill($request->validated())->saveOrFail();
+        if ($request->hasAnyWorktimeInput()) {
+            $this->authorize('updateWorktime', $institution);
+            $institution->fill($request->getValidatedWorktimeInput());
+        }
+
+        $institution->saveOrFail();
+        // TODO: audit log
 
         return new InstitutionResource($institution->refresh());
     }
