@@ -1,6 +1,6 @@
 <?php
 
-use Database\Helpers\InsertPrivilegesMigration;
+use Database\Helpers\RootRoleAwareInsertPrivilegesMigration;
 use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
@@ -10,7 +10,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        InsertPrivilegesMigration::populateRootRolesWithAllPrivileges();
+        RootRoleAwareInsertPrivilegesMigration::populateRootRolesWithAllPrivileges();
     }
 
     /**
