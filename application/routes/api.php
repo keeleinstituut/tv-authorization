@@ -51,6 +51,7 @@ Route::prefix('/institution-users')
     ->whereUuid('institution_user_id')
     ->group(function (): void {
         Route::get('/', 'index');
+        Route::put('/', 'updateCurrentInstitutionUser');
         Route::get('/{institution_user_id}', 'show');
         Route::put('/{institution_user_id}', 'update');
         Route::get('/export-csv', 'exportCsv');
