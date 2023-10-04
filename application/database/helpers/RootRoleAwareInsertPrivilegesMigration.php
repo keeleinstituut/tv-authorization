@@ -15,7 +15,7 @@ abstract class RootRoleAwareInsertPrivilegesMigration extends InsertPrivilegesMi
 
     public static function populateRootRolesWithAllPrivileges(): void
     {
-        $allPrivilegeIds = Privilege::plucK('id');
+        $allPrivilegeIds = Privilege::pluck('id');
         $rootRoles = Role::where('is_root', true)->get();
         $rootRoles->each(function ($role) use ($allPrivilegeIds) {
             $role->privileges()->sync($allPrivilegeIds);
