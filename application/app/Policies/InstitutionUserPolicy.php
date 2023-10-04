@@ -39,6 +39,14 @@ class InstitutionUserPolicy
     }
 
     /** @noinspection PhpUnusedParameterInspection */
+    public function updateWorktime(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
+    {
+        return $this->isCurrentUser($institutionUser)
+            || Auth::hasPrivilege(PrivilegeKey::EditUserWorktime->value)
+            && $this->isInSameInstitutionAsCurrentUser($institutionUser);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
     public function delete(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
     {
         throw new BadMethodCallException();
@@ -88,7 +96,7 @@ class InstitutionUserPolicy
 
     public function isCurrentUser(InstitutionUser $institutionUser): bool
     {
-        return filled($currentUserId = Auth::user()?->id)
+        return filled($currentUserId = Auth::user()?->institutionUserId)
             && $currentUserId === $institutionUser->id;
     }
 

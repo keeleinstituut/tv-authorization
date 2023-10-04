@@ -20,6 +20,7 @@ use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Policies\InstitutionUserPolicy;
 use App\Util\DateUtil;
 use Illuminate\Support\Facades\Auth;
+use Arr;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -71,18 +72,14 @@ class InstitutionUserController extends Controller
             /** @var $institutionUser InstitutionUser */
             $institutionUser = $this->getBaseQuery()->findOrFail($request->getInstitutionUserId());
 
-            $this->authorize('update', $institutionUser);
-
-            $institutionUser->fill($request->safe(['email', 'phone']));
-
-            if ($request->has('user')) {
-                $institutionUser->user->update($request->validated('user'));
+            if ($request->hasAnyNonCalendarInput()) {
+                $this->authorize('update', $institutionUser);
+                $this->updateNonCalendarAttributes($institutionUser, $request->getValidatedNonCalendarInput());
             }
-            if ($request->has('roles')) {
-                $institutionUser->roles()->sync($request->validated('roles'));
-            }
-            if ($request->has('department_id')) {
-                $institutionUser->department()->associate($request->validated('department_id'));
+
+            if ($request->hasAnyWorktimeInput()) {
+                $this->authorize('updateWorktime', $institutionUser);
+                $institutionUser->fill($request->getValidatedWorktimeInput());
             }
 
             $institutionUser->saveOrFail();
@@ -177,6 +174,7 @@ class InstitutionUserController extends Controller
         path: '/institution-users',
         summary: 'List and optionally filter institution users belonging to the current institution (inferred from JWT)',
         parameters: [
+            new OA\QueryParameter(name: 'fullname', schema: new OA\Schema(type: 'string', nullable: true)),
             new OA\QueryParameter(name: 'page', schema: new OA\Schema(type: 'integer', default: 1)),
             new OA\QueryParameter(name: 'per_page', schema: new OA\Schema(type: 'integer', default: 10, enum: [10, 50, 100])),
             new OA\QueryParameter(name: 'sort_by', schema: new OA\Schema(type: 'string', enum: ['name', 'created_at'])),
@@ -222,6 +220,15 @@ class InstitutionUserController extends Controller
                     'institutionUserRoles',
                     fn (Builder $iurClause) => $iurClause->whereIn('role_id', $roles)
                 );
+            }
+        );
+
+        $institutionUsersQuery->when(
+            $request->validated('fullname'),
+            function (Builder $iuQuery, string $fullName) {
+                $iuQuery->whereRelation('user', function (Builder $uQuery) use ($fullName) {
+                    $uQuery->where(DB::raw("CONCAT(forename, ' ', surname)"), 'ILIKE', "%$fullName%");
+                });
             }
         );
 
@@ -361,5 +368,23 @@ class InstitutionUserController extends Controller
             ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
             ->withGlobalScope('policy', InstitutionUserPolicy::scope())
             ->whereHas('user');
+    }
+
+    /**
+     * @throws Throwable
+     */
+    private function updateNonCalendarAttributes(InstitutionUser $institutionUser, array $validatedInput): void
+    {
+        $institutionUser->fill(Arr::only($validatedInput, ['email', 'phone']));
+
+        if (Arr::has($validatedInput, 'user')) {
+            $institutionUser->user->updateOrFail($validatedInput['user']);
+        }
+        if (Arr::has($validatedInput, 'roles')) {
+            $institutionUser->roles()->sync($validatedInput['roles']);
+        }
+        if (Arr::has($validatedInput, 'department_id')) {
+            $institutionUser->department()->associate($validatedInput['department_id']);
+        }
     }
 }

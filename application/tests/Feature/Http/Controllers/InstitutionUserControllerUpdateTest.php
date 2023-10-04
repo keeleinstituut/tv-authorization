@@ -6,11 +6,10 @@ use App\Enums\PrivilegeKey;
 use App\Models\Department;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
+use App\Models\Privilege;
 use App\Models\Role;
-use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
-use App\Models\User;
+use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
@@ -33,687 +32,901 @@ class InstitutionUserControllerUpdateTest extends TestCase
         Carbon::setTestNow(Carbon::now());
     }
 
-    /**
-     * @throws Throwable
-     */
-    public function test_fields_are_updated(): void
+    /** @return array<array{
+     *     modifyStateUsingTargetUser: null|Closure(InstitutionUser):void,
+     *     payload: array,
+     *     expectedStateOverride: array
+     * }> */
+    public static function provideStateModifiersAndValidSimplePayloadsAndExpectedState(): array
     {
-        // GIVEN the following data is in database
-        [
-            'institution' => $createdInstitution,
-            'department' => $createdDepartment,
-            'user' => $createdUser,
-            'institutionUser' => $createdInstitutionUser,
-            'roles' => [$addUserRole, $editUserRole]
-        ] = $this->createBasicModels(
-            email: $expectedEmail = 'test123@test.dev',
-            pic: '50608024740',
-            forename: 'Testjana',
-            surname: $expectedSurname = 'Testjovka',
-            attachInstitutionUserToDepartment: false,
-            privileges: [PrivilegeKey::AddUser, PrivilegeKey::EditUser]
-        );
-        $viewUserRole = $this->createFactoryRole(PrivilegeKey::ViewUser, $createdInstitution->id);
-        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
-
-        // WHEN request sent to endpoint
-        $response = $this->sendPutRequestWithTokenFor(
-            $createdInstitutionUser->id,
-            [
-                'user' => [
-                    'forename' => $expectedForename = 'Testander',
-                ],
-                'phone' => $expectedPhoneNumber = '+372 5678901',
-                'roles' => [$editUserRole->id, $viewUserRole->id],
-                'department_id' => $createdDepartment->id,
+        return [
+            'Multiple modifications at once' => [
+                'modifyStateUsingTargetUser' => null,
+                'payload' => static::createExampleValidPayload(),
+                'expectedStateOverride' => [],
             ],
-            $actingUser
-        );
-
-        // THEN the database state should be what is expected after update
-        $actualState = RepresentationHelpers::createInstitutionUserNestedRepresentation(
-            InstitutionUser::findOrFail($createdInstitutionUser->id)
-        );
-        $expectedFragment = [
-            'phone' => $expectedPhoneNumber,
-            'email' => $expectedEmail,
-            'roles' => Arr::map(
-                [$editUserRole, $viewUserRole],
-                RepresentationHelpers::createRoleNestedRepresentation(...)
-            ),
-            'user' => [
-                ...RepresentationHelpers::createUserFlatRepresentation($createdUser),
-                'forename' => $expectedForename,
-                'surname' => $expectedSurname,
+            'Changing forename of an active user' => [
+                'modifyStateUsingTargetUser' => null,
+                'payload' => ['user' => ['forename' => ' Testforename ']],
+                'expectedStateOverride' => ['user' => ['forename' => 'Testforename']],
+            ],
+            'Changing surname of an active user' => [
+                'modifyStateUsingTargetUser' => null,
+                'payload' => ['user' => ['surname' => ' Testsurname ']],
+                'expectedStateOverride' => ['user' => ['surname' => 'Testsurname']],
+            ],
+            'Changing email of an active user' => [
+                'modifyStateUsingTargetUser' => null,
+                'payload' => ['email' => ' testemail@singleton.ee '],
+                'expectedStateOverride' => ['email' => 'testemail@singleton.ee'],
+            ],
+            'Changing phone of an active user' => [
+                'modifyStateUsingTargetUser' => null,
+                'payload' => ['phone' => ' +372 6123456 '],
+                'expectedStateOverride' => ['phone' => '+372 6123456'],
+            ],
+            'Changing forename of a deactivated user' => [
+                'modifyStateUsingTargetUser' => function (InstitutionUser $institutionUser) {
+                    $institutionUser->deactivation_date = Date::yesterday();
+                },
+                'payload' => ['user' => ['forename' => ' Testforename ']],
+                'expectedStateOverride' => ['user' => ['forename' => 'Testforename']],
+            ],
+            'Changing surname of a deactivated user' => [
+                'modifyStateUsingTargetUser' => function (InstitutionUser $institutionUser) {
+                    $institutionUser->deactivation_date = Date::yesterday();
+                },
+                'payload' => ['user' => ['surname' => ' Testsurname ']],
+                'expectedStateOverride' => ['user' => ['surname' => 'Testsurname']],
+            ],
+            'Changing email of a deactivated user' => [
+                'modifyStateUsingTargetUser' => function (InstitutionUser $institutionUser) {
+                    $institutionUser->deactivation_date = Date::yesterday();
+                },
+                'payload' => ['email' => ' testemail@singleton.ee '],
+                'expectedStateOverride' => ['email' => 'testemail@singleton.ee'],
+            ],
+            'Changing phone of a deactivated user' => [
+                'modifyStateUsingTargetUser' => function (InstitutionUser $institutionUser) {
+                    $institutionUser->deactivation_date = Date::yesterday();
+                },
+                'payload' => ['phone' => ' +372 6123456 '],
+                'expectedStateOverride' => ['phone' => '+372 6123456'],
             ],
         ];
-        $this->assertArrayHasSubsetIgnoringOrder($expectedFragment, $actualState);
+    }
 
-        // And request response should correspond to the actual state
-        $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
+    /** @return array<array{
+     *     modifyStateUsingTargetUser: null|Closure(InstitutionUser):void,
+     *     payload: array,
+     *     expectedStateOverride: array
+     * }> */
+    public static function provideStateModifiersAndValidWorktimePayloadsAndExpectedState(): array
+    {
+        return [
+            'Setting the workings hours of an active user' => [
+                'modifyStateUsingTargetUser' => null,
+                'payload' => [
+                    'worktime_timezone' => 'Europe/Tallinn',
+                    'monday_worktime_start' => '08:00:00',
+                    'monday_worktime_end' => '16:00:00',
+                    'tuesday_worktime_start' => '08:00:00',
+                    'tuesday_worktime_end' => '16:00:00',
+                    'wednesday_worktime_start' => '08:00:00',
+                    'wednesday_worktime_end' => '16:00:00',
+                    'thursday_worktime_start' => '08:00:00',
+                    'thursday_worktime_end' => '16:00:00',
+                    'friday_worktime_start' => '08:00:00',
+                    'friday_worktime_end' => '16:00:00',
+                    'saturday_worktime_start' => null,
+                    'saturday_worktime_end' => null,
+                    'sunday_worktime_start' => null,
+                    'sunday_worktime_end' => null,
+                ],
+                'expectedStateOverride' => [],
+            ],
+            'Unsetting the workings hours of an active user' => [
+                'modifyStateUsingTargetUser' => function (InstitutionUser $institutionUser) {
+                    $institutionUser->fill([
+                        'worktime_timezone' => 'Europe/Tallinn',
+                        'monday_worktime_start' => '08:00:00',
+                        'monday_worktime_end' => '16:00:00',
+                        'tuesday_worktime_start' => '08:00:00',
+                        'tuesday_worktime_end' => '16:00:00',
+                        'wednesday_worktime_start' => '08:00:00',
+                        'wednesday_worktime_end' => '16:00:00',
+                        'thursday_worktime_start' => '08:00:00',
+                        'thursday_worktime_end' => '16:00:00',
+                        'friday_worktime_start' => '08:00:00',
+                        'friday_worktime_end' => '16:00:00',
+                        'saturday_worktime_start' => null,
+                        'saturday_worktime_end' => null,
+                        'sunday_worktime_start' => null,
+                        'sunday_worktime_end' => null,
+                    ]);
+                },
+                'payload' => [
+                    'worktime_timezone' => null,
+                    'monday_worktime_start' => null,
+                    'monday_worktime_end' => null,
+                    'tuesday_worktime_start' => null,
+                    'tuesday_worktime_end' => null,
+                    'wednesday_worktime_start' => null,
+                    'wednesday_worktime_end' => null,
+                    'thursday_worktime_start' => null,
+                    'thursday_worktime_end' => null,
+                    'friday_worktime_start' => null,
+                    'friday_worktime_end' => null,
+                    'saturday_worktime_start' => null,
+                    'saturday_worktime_end' => null,
+                    'sunday_worktime_start' => null,
+                    'sunday_worktime_end' => null,
+                ],
+                'expectedStateOverride' => [],
+            ],
+            'Setting the workings hours of a deactivated user' => [
+                'modifyStateUsingTargetUser' => function (InstitutionUser $institutionUser) {
+                    $institutionUser->deactivation_date = Date::yesterday();
+                },
+                'payload' => [
+                    'worktime_timezone' => 'Europe/Tallinn',
+                    'monday_worktime_start' => '08:00:00',
+                    'monday_worktime_end' => '16:00:00',
+                    'tuesday_worktime_start' => '08:00:00',
+                    'tuesday_worktime_end' => '16:00:00',
+                    'wednesday_worktime_start' => '08:00:00',
+                    'wednesday_worktime_end' => '16:00:00',
+                    'thursday_worktime_start' => '08:00:00',
+                    'thursday_worktime_end' => '16:00:00',
+                    'friday_worktime_start' => '08:00:00',
+                    'friday_worktime_end' => '16:00:00',
+                    'saturday_worktime_start' => null,
+                    'saturday_worktime_end' => null,
+                    'sunday_worktime_start' => null,
+                    'sunday_worktime_end' => null,
+                ],
+                'expectedStateOverride' => [],
+            ],
+            'Unsetting the workings hours of a deactivated user' => [
+                'modifyStateUsingTargetUser' => function (InstitutionUser $institutionUser) {
+                    $institutionUser->deactivation_date = Date::yesterday();
+                    $institutionUser->fill([
+                        'worktime_timezone' => 'Europe/Tallinn',
+                        'monday_worktime_start' => '08:00:00',
+                        'monday_worktime_end' => '16:00:00',
+                        'tuesday_worktime_start' => '08:00:00',
+                        'tuesday_worktime_end' => '16:00:00',
+                        'wednesday_worktime_start' => '08:00:00',
+                        'wednesday_worktime_end' => '16:00:00',
+                        'thursday_worktime_start' => '08:00:00',
+                        'thursday_worktime_end' => '16:00:00',
+                        'friday_worktime_start' => '08:00:00',
+                        'friday_worktime_end' => '16:00:00',
+                        'saturday_worktime_start' => null,
+                        'saturday_worktime_end' => null,
+                        'sunday_worktime_start' => null,
+                        'sunday_worktime_end' => null,
+                    ]);
+                },
+                'payload' => [
+                    'worktime_timezone' => null,
+                    'monday_worktime_start' => null,
+                    'monday_worktime_end' => null,
+                    'tuesday_worktime_start' => null,
+                    'tuesday_worktime_end' => null,
+                    'wednesday_worktime_start' => null,
+                    'wednesday_worktime_end' => null,
+                    'thursday_worktime_start' => null,
+                    'thursday_worktime_end' => null,
+                    'friday_worktime_start' => null,
+                    'friday_worktime_end' => null,
+                    'saturday_worktime_start' => null,
+                    'saturday_worktime_end' => null,
+                    'sunday_worktime_start' => null,
+                    'sunday_worktime_end' => null,
+                ],
+                'expectedStateOverride' => [],
+            ],
+        ];
+    }
+
+    /** @dataProvider provideStateModifiersAndValidSimplePayloadsAndExpectedState
+     * @dataProvider provideStateModifiersAndValidWorktimePayloadsAndExpectedState
+     *
+     * @param  null|Closure(InstitutionUser):void  $modifyStateUsingTargetUser
+     *
+     * @throws Throwable
+     */
+    public function test_institution_user_is_updated_as_expected_with_simple_payload(
+        ?Closure $modifyStateUsingTargetUser,
+        array $payload,
+        array $expectedStateOverride
+    ): void {
+        [
+            'actingInstitutionUser' => $actingInstitutionUser,
+            'targetInstitutionUser' => $targetInstitutionUser,
+        ] = $this->createInstitutionTargetUserAndPrivilegedActingUser(
+            modifyStateUsingTargetUser: $modifyStateUsingTargetUser
+        );
+
+        $this->assertModelInExpectedStateAfterActionAndCheckResponseData(
+            fn () => $this->sendRequestWithExpectedHeaders($targetInstitutionUser->id, $payload, $actingInstitutionUser),
+            RepresentationHelpers::createInstitutionUserNestedRepresentation(...),
+            $targetInstitutionUser,
+            [...$payload, ...$expectedStateOverride]
+        );
     }
 
     /**
+     * @dataProvider provideStateModifiersAndValidWorktimePayloadsAndExpectedState
+     *
      * @throws Throwable
      */
-    public function test_updating_deactivated_user(): void
-    {
-        // GIVEN there’s a deactivated institution user
+    public function test_institution_user_own_worktimes_are_updated_as_expected_without_having_privilege(
+        ?Closure $ignored,
+        array $payload,
+        array $expectedStateOverride
+    ): void {
         [
-            'institution' => $createdInstitution,
-            'institutionUser' => $createdInstitutionUser,
-        ] = $this->createBasicModels(forename: 'Activa');
-        $createdInstitutionUser->deactivation_date = Date::yesterday();
-        $createdInstitutionUser->saveOrFail();
-        $createdInstitutionUser->refresh();
+            'targetInstitutionUser' => $targetInstitutionUser,
+        ] = $this->createInstitutionTargetUserAndPrivilegedActingUser();
 
-        // WHEN authorizated request sent to endpoint
-        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
-        $response = $this->sendPutRequestWithTokenFor(
-            $createdInstitutionUser->id,
-            ['user' => ['forename' => $expectedForename = 'Deactiva']],
-            $actingUser
+        $this->assertModelInExpectedStateAfterActionAndCheckResponseData(
+            fn () => $this->sendRequestWithExpectedHeaders($targetInstitutionUser->id, $payload, $targetInstitutionUser),
+            RepresentationHelpers::createInstitutionUserNestedRepresentation(...),
+            $targetInstitutionUser,
+            [...$payload, ...$expectedStateOverride]
         );
-
-        // THEN the database state should have updated data
-        $actualState = RepresentationHelpers::createInstitutionUserNestedRepresentation(
-            InstitutionUser::withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
-                ->findOrFail($createdInstitutionUser->id)
-        );
-        $expectedSubset = ['user' => ['forename' => $expectedForename]];
-        $this->assertArrayHasSubsetIgnoringOrder($expectedSubset, $actualState);
-
-        // And request response should correspond to the actual state
-        $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
     }
 
-    /**
+    /** @return array<array{
+     *     modifyStateUsingTargetUser: Closure(InstitutionUser):void,
+     *     createPayloadGivenTargetUser: Closure(InstitutionUser):array,
+     *     createExpectedStateGivenTargetUser: Closure(InstitutionUser):array
+     * }> */
+    public static function provideStateModifiersAndValidDepartmentPayloadsAndExpectedState(): array
+    {
+        return [
+            'Attaching department to an active user' => [
+                'modifyStateUsingTargetUser' => function (InstitutionUser $institutionUser) {
+                    Department::factory()->for($institutionUser->institution)->create();
+                },
+                'createPayloadGivenTargetUser' => fn (InstitutionUser $institutionUser) => [
+                    'department_id' => $institutionUser->institution->departments->first()->id,
+                ],
+                'createExpectedStateGivenTargetUser' => fn (InstitutionUser $institutionUser) => [
+                    ...RepresentationHelpers::createInstitutionUserNestedRepresentation($institutionUser),
+                    'department' => RepresentationHelpers::createDepartmentFlatRepresentation(
+                        $institutionUser->institution->departments->first()
+                    ),
+                ],
+            ],
+            'Detaching department from an active user' => [
+                'modifyStateUsingTargetUser' => function (InstitutionUser $institutionUser) {
+                    $institutionUser->department()->associate(
+                        Department::factory()->for($institutionUser->institution)->create()
+                    );
+                },
+                'createPayloadGivenInstitution' => fn () => ['department_id' => null],
+                'createExpectedStateGivenInstitution' => fn (InstitutionUser $institutionUser) => [
+                    ...RepresentationHelpers::createInstitutionUserNestedRepresentation($institutionUser),
+                    'department' => null,
+                ],
+            ],
+            'Attaching department to deactivated user' => [
+                'modifyStateUsingTargetUser' => function (InstitutionUser $institutionUser) {
+                    $institutionUser->deactivation_date = Date::yesterday();
+                    Department::factory()->for($institutionUser->institution)->create();
+                },
+                'createPayloadGivenTargetUser' => fn (InstitutionUser $institutionUser) => [
+                    'department_id' => $institutionUser->institution->departments->first()->id,
+                ],
+                'createExpectedStateGivenTargetUser' => fn (InstitutionUser $institutionUser) => [
+                    ...RepresentationHelpers::createInstitutionUserNestedRepresentation($institutionUser),
+                    'department' => RepresentationHelpers::createDepartmentFlatRepresentation(
+                        $institutionUser->institution->departments->first()
+                    ),
+                ],
+            ],
+            'Detaching department from deactivated user' => [
+                'modifyStateUsingTargetUser' => function (InstitutionUser $institutionUser) {
+                    $institutionUser->deactivation_date = Date::yesterday();
+                    $institutionUser->saveOrFail();
+                    $institutionUser->department()->associate(
+                        Department::factory()->for($institutionUser->institution)->create()
+                    );
+                },
+                'createPayloadGivenInstitution' => fn () => ['department_id' => null],
+                'createExpectedStateGivenInstitution' => fn (InstitutionUser $institutionUser) => [
+                    ...RepresentationHelpers::createInstitutionUserNestedRepresentation($institutionUser),
+                    'department' => null,
+                ],
+            ],
+        ];
+    }
+
+    /** @return array<array{
+     *     modifyStateUsingTargetUser: Closure(InstitutionUser):void,
+     *     createPayloadGivenTargetUser: Closure(InstitutionUser):array,
+     *     createExpectedStateGivenTargetUser: Closure(InstitutionUser):array
+     * }> */
+    public static function provideStateModifiersAndValidRolePayloadsAndExpectedState(): array
+    {
+        return [
+            'Attaching roles' => [
+                'modifyStateUsingTargetUser' => function (InstitutionUser $institutionUser) {
+                    Role::factory()->for($institutionUser->institution)->create();
+                },
+                'createPayloadGivenTargetUser' => fn (InstitutionUser $institutionUser) => [
+                    'roles' => [$institutionUser->institution->roles->first()->id],
+                ],
+                'createExpectedStateGivenTargetUser' => fn (InstitutionUser $institutionUser) => [
+                    ...RepresentationHelpers::createInstitutionUserNestedRepresentation($institutionUser),
+                    'roles' => [
+                        RepresentationHelpers::createRoleNestedRepresentation(
+                            $institutionUser->institution->roles->first()
+                        ),
+                    ],
+                ],
+            ],
+            'Detaching roles' => [
+                'modifyStateUsingTargetUser' => function (InstitutionUser $institutionUser) {
+                    $institutionUser->roles()->sync(
+                        Role::factory()->for($institutionUser->institution)->create()
+                    );
+                },
+                'createPayloadGivenTargetUser' => fn () => ['roles' => []],
+                'createExpectedStateGivenTargetUser' => fn (InstitutionUser $institutionUser) => [
+                    ...RepresentationHelpers::createInstitutionUserNestedRepresentation($institutionUser),
+                    'roles' => [],
+                ],
+            ],
+            'Attach one role, detach one role' => [
+                'modifyStateUsingTargetUser' => function (InstitutionUser $institutionUser) {
+                    $institutionUser->roles()->sync(
+                        Role::factory()->for($institutionUser->institution)->create()
+                    );
+                    Role::factory()->for($institutionUser->institution)->create();
+                },
+                'createPayloadGivenTargetUser' => fn (InstitutionUser $institutionUser) => [
+                    'roles' => $institutionUser->institution->roles
+                        ->pluck('id')
+                        ->diff($institutionUser->roles->pluck('id'))
+                        ->all(),
+                ],
+                'createExpectedStateGivenTargetUser' => fn (InstitutionUser $institutionUser) => [
+                    ...RepresentationHelpers::createInstitutionUserNestedRepresentation($institutionUser),
+                    'roles' => $institutionUser->institution->roles
+                        ->diff($institutionUser->roles)
+                        ->map(RepresentationHelpers::createRoleNestedRepresentation(...))
+                        ->all(),
+                ],
+            ],
+        ];
+    }
+
+    /** @dataProvider provideStateModifiersAndValidDepartmentPayloadsAndExpectedState
+     * @dataProvider provideStateModifiersAndValidRolePayloadsAndExpectedState
+     *
+     * @param  Closure(InstitutionUser):void  $modifyStateUsingTargetUser
+     * @param  Closure(InstitutionUser):array  $createPayloadGivenTargetUser
+     * @param  Closure(InstitutionUser):array  $createExpectedStateGivenTargetUser
+
+     *
      * @throws Throwable
      */
-    public function test_updating_deactivated_user_roles(): void
-    {
-        // GIVEN there’s a deactivated institution user
+    public function test_institution_user_is_updated_as_expected_with_referencing_payload(
+        Closure $modifyStateUsingTargetUser,
+        Closure $createPayloadGivenTargetUser,
+        Closure $createExpectedStateGivenTargetUser
+    ): void {
         [
-            'institution' => $createdInstitution,
-            'institutionUser' => $createdInstitutionUser
-        ] = $this->createBasicModels();
-        $createdInstitutionUser->deactivation_date = Date::yesterday();
-        $createdInstitutionUser->saveOrFail();
-        $createdInstitutionUser->refresh();
-        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
+            'actingInstitutionUser' => $actingInstitutionUser,
+            'targetInstitutionUser' => $targetInstitutionUser,
+        ] = $this->createInstitutionTargetUserAndPrivilegedActingUser(
+            modifyStateUsingTargetUser: $modifyStateUsingTargetUser
+        );
 
-        // WHEN authorizated request with role modifications sent to endpoint
-        // THEN database state should not change and response should be 422
-        $this->assertModelsWithoutChangeAfterAction(
-            fn () => $this->sendPutRequestWithTokenFor(
-                $createdInstitutionUser->id,
-                ['roles' => [Role::factory()->for($createdInstitution)->create()->id]],
-                $actingUser
+        $this->assertModelInExpectedStateAfterActionAndCheckResponseData(
+            fn () => $this->sendRequestWithExpectedHeaders(
+                $targetInstitutionUser->id,
+                $createPayloadGivenTargetUser($targetInstitutionUser),
+                $actingInstitutionUser
             ),
             RepresentationHelpers::createInstitutionUserNestedRepresentation(...),
-            [$createdInstitutionUser],
+            $targetInstitutionUser,
+            $createExpectedStateGivenTargetUser($targetInstitutionUser)
+        );
+    }
+
+    /**
+     * @return array<string, array{array}>
+     */
+    public static function provideValidInitialStateAndInvalidChanges(): array
+    {
+        return [
+            'email: null' => [[...static::createExampleValidPayload(), 'email' => null]],
+            'email: empty string' => [[...static::createExampleValidPayload(), 'email' => '']],
+            'email: not-email' => [[...static::createExampleValidPayload(), 'email' => 'not-email']],
+            'phone: null' => [[...static::createExampleValidPayload(), 'phone' => null]],
+            'phone: empty string' => [[...static::createExampleValidPayload(), 'phone' => '']],
+            'phone: -1' => [[...static::createExampleValidPayload(), 'phone' => '-1']],
+            'phone: abc' => [[...static::createExampleValidPayload(), 'phone' => 'abc']],
+            'phone: 5123456' => [[...static::createExampleValidPayload(), 'phone' => '5123456']],
+            'phone: 5123 456' => [[...static::createExampleValidPayload(), 'phone' => '5123 456']],
+            'phone: 51234567' => [[...static::createExampleValidPayload(), 'phone' => '51234567']],
+            'phone: 5123 4567' => [[...static::createExampleValidPayload(), 'phone' => '5123 4567']],
+            'phone: 37251234567' => [[...static::createExampleValidPayload(), 'phone' => '37251234567']],
+            'phone: 372 5123 4567' => [[...static::createExampleValidPayload(), 'phone' => '372 5123 4567']],
+            'phone: 372 5123 456' => [[...static::createExampleValidPayload(), 'phone' => '372 5123 456']],
+            'phone: 0037251234567' => [[...static::createExampleValidPayload(), 'phone' => '0037251234567']],
+            'phone: 003725123456' => [[...static::createExampleValidPayload(), 'phone' => '003725123456']],
+            'phone: 00 372 5123 4567' => [[...static::createExampleValidPayload(), 'phone' => '00 372 5123 4567']],
+            'phone: 00 372 5123 456' => [[...static::createExampleValidPayload(), 'phone' => '00 372 5123 456']],
+            'phone: 123' => [[...static::createExampleValidPayload(), 'phone' => '123']],
+            'phone: 1234567' => [[...static::createExampleValidPayload(), 'phone' => '1234567']],
+            'phone: 1234 567' => [[...static::createExampleValidPayload(), 'phone' => '1234 567']],
+            'phone: 12345678' => [[...static::createExampleValidPayload(), 'phone' => '12345678']],
+            'phone: 1234 5678' => [[...static::createExampleValidPayload(), 'phone' => '1234 5678']],
+            'phone: +37201234567' => [[...static::createExampleValidPayload(), 'phone' => '+37201234567']],
+            'phone: +372 0123 4567' => [[...static::createExampleValidPayload(), 'phone' => '+372 0123 4567']],
+            'phone: +37212345678' => [[...static::createExampleValidPayload(), 'phone' => '+37212345678']],
+            'phone: +372 1234 5678' => [[...static::createExampleValidPayload(), 'phone' => '+372 1234 5678']],
+            'phone: +37223456789' => [[...static::createExampleValidPayload(), 'phone' => '+37223456789']],
+            'phone: +372 2345 6789' => [[...static::createExampleValidPayload(), 'phone' => '+372 2345 6789']],
+            'phone: +37289012345' => [[...static::createExampleValidPayload(), 'phone' => '+37289012345']],
+            'phone: +372 8901 2345' => [[...static::createExampleValidPayload(), 'phone' => '+372 8901 2345']],
+            'phone: +37290123456' => [[...static::createExampleValidPayload(), 'phone' => '+37290123456']],
+            'phone: +372 9012 3456' => [[...static::createExampleValidPayload(), 'phone' => '+372 9012 3456']],
+            'phone: +372567890' => [[...static::createExampleValidPayload(), 'phone' => '+372567890']],
+            'phone: +372 5678 90' => [[...static::createExampleValidPayload(), 'phone' => '+372 5678 90']],
+            'phone: +372 5678 901' => [[...static::createExampleValidPayload(), 'phone' => '+372 5678 901']],
+            'phone: +372 5678 9012' => [[...static::createExampleValidPayload(), 'phone' => '+372 5678 9012']],
+            'phone: +372567890123' => [[...static::createExampleValidPayload(), 'phone' => '+372567890123']],
+            'phone: 372 5678 9012 3' => [[...static::createExampleValidPayload(), 'phone' => '372 5678 9012 3']],
+            'phone: +372 5 6 7 8 9 0' => [[...static::createExampleValidPayload(), 'phone' => '+372 5 6 7 8 9 0']],
+            'phone: +3 7 2 5 6 7 8 9 0' => [[...static::createExampleValidPayload(), 'phone' => '+3 7 2 5 6 7 8 9 0']],
+            'phone: + 372 567890' => [[...static::createExampleValidPayload(), 'phone' => '+ 372 567890']],
+            'phone:  +372 567890' => [[...static::createExampleValidPayload(), 'phone' => ' +372 567890']],
+            'roles: null' => [[...static::createExampleValidPayload(), 'roles' => null]],
+            'roles: empty string' => [[...static::createExampleValidPayload(), 'roles' => '']],
+            'roles: null in array' => [[...static::createExampleValidPayload(), 'roles' => [null]]],
+            'roles: empty string in array' => [[...static::createExampleValidPayload(), 'roles' => ['']]],
+            'roles: abc in array' => [[...static::createExampleValidPayload(), 'roles' => ['abc']]],
+            'roles: 1 in array' => [[...static::createExampleValidPayload(), 'roles' => [1]]],
+            'user: null' => [[...static::createExampleValidPayload(), 'user' => null]],
+            'user: empty string' => [[...static::createExampleValidPayload(), 'user' => '']],
+            'user: empty array' => [[...static::createExampleValidPayload(), 'user' => []]],
+            'department_id: 1' => [[...static::createExampleValidPayload(), 'department_id' => 1]],
+            'department_id: abc' => [[...static::createExampleValidPayload(), 'department_id' => 'abc']],
+            'user.forename: empty string' => [[...static::createExampleValidPayload(), 'user' => ['forename' => '']]],
+            'user.forename: null' => [[...static::createExampleValidPayload(), 'user' => ['forename' => null]]],
+            'user.surname: empty string' => [[...static::createExampleValidPayload(), 'user' => ['surname' => '']]],
+            'user.surname: null' => [[...static::createExampleValidPayload(), 'user' => ['surname' => null]]],
+        ];
+    }
+
+    /**
+     * @return array<string, array{array}>
+     */
+    public static function provideValidInitialWorktimesAndInvalidChanges(): array
+    {
+        return [
+            'Worktime timezone missing' => [[
+                ...static::createNullWorktimeIntervals(),
+                'monday_worktime_start' => '08:00:00',
+                'monday_worktime_end' => '16:00:00',
+                'worktime_timezone' => null,
+            ]],
+            'Worktime in invalid format: AM/PM' => [[
+                ...static::createNullWorktimeIntervals(),
+                'monday_worktime_start' => '8 AM',
+                'monday_worktime_end' => '16:00:00',
+                'worktime_timezone' => 'Europe/Tallinn',
+            ]],
+            'Worktime in invalid format: ISO Datetime' => [[
+                ...static::createNullWorktimeIntervals(),
+                'monday_worktime_start' => '2023-07-01T12:00:00Z',
+                'monday_worktime_end' => '16:00:00',
+                'worktime_timezone' => 'Europe/Tallinn',
+            ]],
+            'Not sending all worktime fields' => [[
+                'worktime_timezone' => 'Europe/Tallinn',
+                'monday_worktime_start' => '08:00:00',
+                'monday_worktime_end' => '16:00:00',
+            ]],
+            'Worktimes end missing' => [[
+                ...static::createNullWorktimeIntervals(),
+                'worktime_timezone' => 'Europe/Tallinn',
+                'monday_worktime_start' => '08:00:00',
+            ]],
+            'Worktime start missing' => [[
+                ...static::createNullWorktimeIntervals(),
+                'worktime_timezone' => 'Europe/Tallinn',
+                'monday_worktime_start' => null,
+                'monday_worktime_end' => '16:00:00',
+            ]],
+            'Worktime end before start' => [[
+                ...static::createNullWorktimeIntervals(),
+                'worktime_timezone' => 'Europe/Tallinn',
+                'monday_worktime_start' => '16:00:00',
+                'monday_worktime_end' => '08:00:00',
+            ]],
+            'Worktime end equal to start' => [[
+                ...static::createNullWorktimeIntervals(),
+                'worktime_timezone' => 'Europe/Tallinn',
+                'monday_worktime_start' => '08:00:00',
+                'monday_worktime_end' => '08:00:00',
+            ]],
+            'Worktime timezone as non-IANA value: gibberish' => [[
+                ...static::createNullWorktimeIntervals(),
+                'worktime_timezone' => 'Essos/Braavos',
+                'monday_worktime_start' => '08:00:00',
+                'monday_worktime_end' => '16:00:00',
+            ]],
+            'Worktime timezone as non-IANA value: timezone abbreviation' => [[
+                ...static::createNullWorktimeIntervals(),
+                'worktime_timezone' => 'PST',
+                'monday_worktime_start' => '08:00:00',
+                'monday_worktime_end' => '16:00:00',
+            ]],
+            'Worktime timezone as non-IANA value: numerical offset (+2)' => [[
+                ...static::createNullWorktimeIntervals(),
+                'worktime_timezone' => '+2',
+                'monday_worktime_start' => '08:00:00',
+                'monday_worktime_end' => '16:00:00',
+            ]],
+            'Worktime timezone as non-IANA value: numerical offset (+3:00)' => [[
+                ...static::createNullWorktimeIntervals(),
+                'worktime_timezone' => '+2',
+                'monday_worktime_start' => '08:00:00',
+                'monday_worktime_end' => '16:00:00',
+            ]],
+        ];
+    }
+
+    /**
+     * @dataProvider provideValidInitialStateAndInvalidChanges
+     * @dataProvider provideValidInitialWorktimesAndInvalidChanges
+     *
+     * @throws Throwable
+     */
+    public function test_nothing_is_changed_when_payload_has_basic_validation_problems(array $invalidPayload): void
+    {
+        [
+            'actingInstitutionUser' => $actingInstitutionUser,
+            'targetInstitutionUser' => $targetInstitutionUser,
+        ] = $this->createInstitutionTargetUserAndPrivilegedActingUser();
+
+        $this->assertInstitutionUserUnchangedAfterAction(
+            fn () => $this->sendRequestWithExpectedHeaders(
+                $targetInstitutionUser->id,
+                $invalidPayload,
+                $actingInstitutionUser
+            ),
+            $targetInstitutionUser,
             Response::HTTP_UNPROCESSABLE_ENTITY
         );
     }
 
+    /** @return array<array{
+     *     transformStateAndGenerateInvalidPayload: Closure(InstitutionUser):array,
+     *     expectedStatusCode: int
+     * }> */
+    public static function provideStateModifiersAndInvalidPayloadCreators(): array
+    {
+        return [
+            'Attaching role from another institution' => [
+                'transformStateAndGenerateInvalidPayload' => fn () => [
+                    'roles' => [Role::factory()->for(Institution::factory())->create()->id],
+                ],
+                'expectedStatusCode' => Response::HTTP_UNPROCESSABLE_ENTITY,
+            ],
+            'Attaching department from another institution' => [
+                'transformStateAndGenerateInvalidPayload' => fn () => [
+                    'department_id' => Department::factory()->for(Institution::factory())->create()->id,
+                ],
+                'expectedStatusCode' => Response::HTTP_UNPROCESSABLE_ENTITY,
+            ],
+            'Attaching nonexistant department' => [
+                'transformStateAndGenerateInvalidPayload' => fn () => [
+                    'department_id' => Str::uuid()->toString(),
+                ],
+                'expectedStatusCode' => Response::HTTP_UNPROCESSABLE_ENTITY,
+            ],
+            'Attaching nonexistant role' => [
+                'transformStateAndGenerateInvalidPayload' => fn () => [
+                    'roles' => [Str::uuid()->toString()],
+                ],
+                'expectedStatusCode' => Response::HTTP_UNPROCESSABLE_ENTITY,
+            ],
+            'Attaching roles when user is deactivated' => [
+                'transformStateAndGenerateInvalidPayload' => function (InstitutionUser $institutionUser) {
+                    $institutionUser->deactivation_date = Date::yesterday();
+                    $institutionUser->saveOrFail();
+                    $role = Role::factory()->for($institutionUser->institution)->create();
+
+                    return [
+                        'roles' => [$role->id],
+                    ];
+                },
+                'expectedStatusCode' => Response::HTTP_UNPROCESSABLE_ENTITY,
+            ],
+            'Detaching root role when the target user is its sole holder' => [
+                'transformStateAndGenerateInvalidPayload' => function (InstitutionUser $institutionUser) {
+                    $rootRole = $institutionUser->institution->roles()->firstWhere('is_root', true)
+                        ?? Role::factory()->for($institutionUser->institution)->create(['is_root' => true]);
+
+                    $institutionUser->roles()->sync($rootRole);
+                    throw_unless($institutionUser->isOnlyUserWithRootRole());
+
+                    return [
+                        'roles' => [],
+                    ];
+                },
+                'expectedStatusCode' => Response::HTTP_BAD_REQUEST,
+            ],
+        ];
+    }
+
     /**
+     * @dataProvider provideStateModifiersAndInvalidPayloadCreators
+     *
+     * @param  Closure(InstitutionUser):array  $transformStateAndGenerateInvalidPayload
+     *
      * @throws Throwable
      */
-    public function test_removing_is_root_role_from_sole_owner(): void
-    {
-        // GIVEN there’s an institution user who is the sole owner of the institution’s root role
+    public function test_nothing_is_changed_when_payload_is_invalid_considering_given_state(
+        Closure $transformStateAndGenerateInvalidPayload,
+        int $expectedResponseCode
+    ): void {
         [
-            'institution' => $createdInstitution,
-            'institutionUser' => $createdInstitutionUser
-        ] = $this->createBasicModels();
-        $createdInstitutionUser->roles()->sync(Role::factory()->for($createdInstitution)->create(['is_root' => true]));
-        $createdInstitutionUser->saveOrFail();
-        $createdInstitutionUser->refresh();
-        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
+            'actingInstitutionUser' => $actingInstitutionUser,
+            'targetInstitutionUser' => $targetInstitutionUser,
+        ] = $this->createInstitutionTargetUserAndPrivilegedActingUser();
 
-        // WHEN authorizated request which removes all roles sent to endpoint
-        // THEN database state should not change and response should be 422
-        $this->assertModelsWithoutChangeAfterAction(
-            fn () => $this->sendPutRequestWithTokenFor(
-                $createdInstitutionUser->id,
-                ['roles' => []],
-                $actingUser
+        $invalidPayload = $transformStateAndGenerateInvalidPayload($targetInstitutionUser);
+
+        $this->assertInstitutionUserUnchangedAfterAction(
+            fn () => $this->sendRequestWithExpectedHeaders(
+                $targetInstitutionUser->refresh()->id,
+                $invalidPayload,
+                $actingInstitutionUser->refresh()
             ),
-            RepresentationHelpers::createInstitutionUserNestedRepresentation(...),
-            [$createdInstitutionUser],
-            Response::HTTP_BAD_REQUEST
+            $targetInstitutionUser->refresh(),
+            $expectedResponseCode
         );
     }
 
-    /**
-     * @throws Throwable
-     */
-    public function test_removing_roles(): void
+    /** @return array<array{
+     *    modifyActingInstitutionUser: Closure(InstitutionUser):void,
+     *    payload: array,
+     *    expectedResponseStatus: int
+     * }> */
+    public static function provideActingUserInvalidatorsAndExpectedResponseStatus(): array
     {
-        // GIVEN the following data is in database
-        [
-            'institution' => $createdInstitution,
-            'institutionUser' => $createdInstitutionUser,
-        ] = $this->createBasicModels(
-            privileges: [PrivilegeKey::AddUser, PrivilegeKey::EditUser]
-        );
-        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
-
-        // WHEN request sent to endpoint
-        $response = $this->sendPutRequestWithTokenFor(
-            $createdInstitutionUser->id,
-            ['roles' => []],
-            $actingUser
-        );
-
-        // THEN the database state should be what is expected after update
-        $actualState = RepresentationHelpers::createInstitutionUserNestedRepresentation(
-            InstitutionUser::findOrFail($createdInstitutionUser->id)
-        );
-        $this->assertArrayHasSubsetIgnoringOrder(['roles' => []], $actualState);
-
-        // And request response should correspond to the actual state
-        $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
+        return [
+            'Attempting to update institution user without acting user having EDIT_USER privilege' => [
+                'modifyActingInstitutionUser' => function (InstitutionUser $institutionUser) {
+                    $institutionUser->roles()->sync(
+                        Role::factory()
+                            ->hasAttached(
+                                Privilege::whereNot('key', PrivilegeKey::EditUser->value)->get()
+                            )
+                            ->create()
+                    );
+                },
+                'payload' => ['email' => 'some@email.com'],
+                'expectedResponseStatus' => Response::HTTP_FORBIDDEN,
+            ],
+            'Attempting to update institution user worktime without acting user having EDIT_USER_WORKTIME privilege' => [
+                'modifyActingInstitutionUser' => function (InstitutionUser $institutionUser) {
+                    $institutionUser->roles()->sync(
+                        Role::factory()
+                            ->hasAttached(
+                                Privilege::whereNot('key', PrivilegeKey::EditUserWorktime->value)->get()
+                            )
+                            ->create()
+                    );
+                },
+                'payload' => [
+                    ...static::createNullWorktimeIntervals(),
+                    'worktime_timezone' => 'Asia/Singapore',
+                    'monday_worktime_start' => '14:00:00',
+                    'monday_worktime_end' => '22:00:00',
+                ],
+                'expectedResponseStatus' => Response::HTTP_FORBIDDEN,
+            ],
+            'Acting institution user in other institution' => [
+                'modifyActingInstitutionUser' => function (InstitutionUser $institutionUser) {
+                    $institutionUser->institution()->associate(Institution::factory()->create());
+                },
+                'payload' => static::createExampleValidPayload(),
+                'expectedResponseStatus' => Response::HTTP_NOT_FOUND,
+            ],
+        ];
     }
 
-    /**
-     * @throws Throwable
-     */
-    public function test_removing_department(): void
-    {
-        // GIVEN the following data is in database
-        [
-            'institution' => $createdInstitution,
-            'institutionUser' => $createdInstitutionUser,
-        ] = $this->createBasicModels();
-        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
-
-        // WHEN request sent to endpoint
-        $response = $this->sendPutRequestWithTokenFor(
-            $createdInstitutionUser->id,
-            ['department_id' => null],
-            $actingUser
-        );
-
-        // THEN the database state should be what is expected after update
-        $actualState = RepresentationHelpers::createInstitutionUserNestedRepresentation(
-            InstitutionUser::findOrFail($createdInstitutionUser->id)
-        );
-        $this->assertArrayHasSubsetIgnoringOrder(['department' => null], $actualState);
-
-        // And request response should correspond to the actual state
-        $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
-    }
-
-    /**
-     * @dataProvider provideInvalidRequestPayloads
+    /** @dataProvider provideActingUserInvalidatorsAndExpectedResponseStatus
+     * @param  Closure(InstitutionUser):void  $modifyActingInstitutionUser
      *
      * @throws Throwable
      */
-    public function test_request_validation(array $invalidPayload): void
-    {
-        // GIVEN the following data is in database
+    public function test_nothing_is_changed_when_acting_user_forbidden(
+        Closure $modifyActingInstitutionUser,
+        array $payload,
+        int $expectedResponseStatus
+    ): void {
         [
-            'institution' => $createdInstitution,
-            'institutionUser' => $createdInstitutionUser,
-        ] = $this->createBasicModels(
-            email: ($expectedEmail = 'testarok@email.tv'),
-            phone: ($expectedPhone = '+372 34567890'),
+            'actingInstitutionUser' => $actingInstitutionUser,
+            'targetInstitutionUser' => $targetInstitutionUser,
+        ] = $this->createInstitutionTargetUserAndPrivilegedActingUser(modifyStateUsingActingUser: $modifyActingInstitutionUser);
+
+        $this->assertInstitutionUserUnchangedAfterAction(
+            fn () => $this->sendRequestWithExpectedHeaders(
+                $targetInstitutionUser->id,
+                $payload,
+                $actingInstitutionUser
+            ),
+            $targetInstitutionUser,
+            $expectedResponseStatus
         );
-        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
-
-        // WHEN invalid payload is sent to endpoint
-        $response = $this->sendPutRequestWithTokenFor(
-            $createdInstitutionUser->id,
-            [
-                'email' => 'someother@email.com',
-                'phone' => '+372 45678901',
-                ...$invalidPayload,
-            ],
-            $actingUser
-        );
-
-        // THEN the database state should not change
-        $this->assertEquals($expectedEmail, InstitutionUser::findOrFail($createdInstitutionUser->id)->email);
-        $this->assertEquals($expectedPhone, InstitutionUser::findOrFail($createdInstitutionUser->id)->phone);
-
-        // And response should indicate validation errors
-        $response->assertUnprocessable();
     }
 
-    /**
-     * @dataProvider provideValidPhoneNumbers
+    /** @dataProvider \Tests\Feature\DataProviders::provideInvalidHeaderCreators
+     * @param  Closure():array  $createHeader
      *
      * @throws Throwable
      */
-    public function test_valid_phone_numbers(string $validPhoneNumber): void
+    public function test_nothing_is_changed_when_authentication_impossible(Closure $createHeader): void
     {
-        // GIVEN the following data is in database
         [
-            'institution' => $createdInstitution,
-            'institutionUser' => $createdInstitutionUser,
-        ] = $this->createBasicModels(
-            phone: '+372 50000000'
-        );
-        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
+            'targetInstitutionUser' => $targetInstitutionUser,
+        ] = $this->createInstitutionTargetUserAndPrivilegedActingUser();
 
-        // WHEN request sent to endpoint
-        $response = $this->sendPutRequestWithTokenFor(
-            $createdInstitutionUser->id,
-            ['phone' => $validPhoneNumber],
-            $actingUser
+        $this->assertInstitutionUserUnchangedAfterAction(
+            fn () => $this->sendRequestWithCustomHeaders(
+                $targetInstitutionUser->id,
+                static::createExampleValidPayload(),
+                $createHeader()
+            ),
+            $targetInstitutionUser,
+            Response::HTTP_UNAUTHORIZED
         );
-
-        // THEN the database state should have updated phone number
-        $actualState = RepresentationHelpers::createInstitutionUserNestedRepresentation(
-            InstitutionUser::findOrFail($createdInstitutionUser->id)
-        );
-        $this->assertArrayHasSubsetIgnoringOrder(['phone' => $validPhoneNumber], $actualState);
-
-        // And request response should correspond to the actual state
-        $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
     }
 
-    public function test_updating_nonexistent_user(): void
-    {
-        // GIVEN institution has only one (acting) user
-        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege(
-            Institution::factory(),
-            PrivilegeKey::EditUser
-        );
-
-        // WHEN request targets nonexistent institution user
-        $response = $this->sendPutRequestWithTokenFor(
-            ($randomUuid = Str::uuid()),
-            Arr::undot(['user.forename' => 'Testjalina']),
-            $actingUser
-        );
-
-        // THEN database state should not change
-        $this->assertDatabaseMissing(
-            InstitutionUser::class,
-            ['id' => $randomUuid]
-        );
-
-        // And response status should indicate resource not found
-        $response->assertNotFound();
-    }
-
-    public function test_updating_user_in_another_institution(): void
-    {
-        // GIVEN there are two institutions and with separate users
-        $targetInstitutionUser = InstitutionUser::factory()
-            ->for($createdInstitutionWithUser = Institution::factory()->create())
-            ->for(User::factory()->create())
-            ->create([
-                'email' => ($expectedEmail = 'testafana@testy.dev'),
-            ]);
-        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege(
-            $secondInstitution = Institution::factory()->create(),
-            PrivilegeKey::EditUser
-        );
-
-        // WHEN request token authenticates user from one institution, but targets user from other institution
-        $response = $this->sendPutRequestWithTokenFor(
-            $targetInstitutionUser->id,
-            ['email' => 'someother@email.com'],
-            $actingUser
-        );
-
-        // THEN the database state should not change
-        $this->assertEquals($expectedEmail, InstitutionUser::findOrFail($targetInstitutionUser->id)->email);
-        $this->assertDatabaseHas(Institution::class, ['id' => $secondInstitution->id])
-            ->assertDatabaseHas(Institution::class, ['id' => $createdInstitutionWithUser->id])
-            ->assertEquals(
-                [$targetInstitutionUser->id],
-                InstitutionUser::whereInstitutionId($createdInstitutionWithUser->id)->get()->pluck('id')->toArray()
-            );
-
-        // And response should indicate resource is not found
-        $response->assertNotFound();
-    }
-
-    /**
-     * @throws Throwable
-     */
-    public function test_updating_user_without_privilege(): void
-    {
-        // GIVEN the following data is in database
-        [
-            'institution' => $createdInstitution,
-            'institutionUser' => $createdInstitutionUser,
-        ] = $this->createBasicModels(
-            email: ($expectedEmail = 'test123@eki.ee')
-        );
-        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::ViewUser);
-
-        // WHEN request sent without EDIT_USER privilege in token
-        $response = $this->sendPutRequestWithTokenFor(
-            $createdInstitutionUser->id,
-            ['email' => 'someother@email.com'],
-            $actingUser
-        );
-
-        // THEN the database state should not change
-        $this->assertEquals($expectedEmail, InstitutionUser::findOrFail($createdInstitutionUser->id)->email);
-
-        // And request response should indicate action is forbidden
-        $response->assertForbidden();
-    }
-
-    /**
-     * @throws Throwable
-     */
-    public function test_adding_role_from_another_institution(): void
-    {
-        // GIVEN the following data is in database
-        [
-            'institution' => $createdInstitution,
-            'institutionUser' => $createdInstitutionUser,
-            'roles' => $expectedRoles
-        ] = $this->createBasicModels(
-            email: ($expectedEmail = 'test321@ike.ee'),
-            privileges: [PrivilegeKey::ViewUser]
-        );
-        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
-
-        $roleInAnotherInstitution = $this->createFactoryRole(
-            PrivilegeKey::ViewRole,
-            Institution::factory()->create()->id
-        );
-
-        // WHEN request input has role from another institution
-        $response = $this->sendPutRequestWithTokenFor(
-            $createdInstitutionUser->id,
-            [
-                'email' => 'someother@email.com',
-                'roles' => [$roleInAnotherInstitution->id],
-            ],
-            $actingUser
-        );
-
-        // THEN the database state should not change
-        $this->assertEquals($expectedEmail, InstitutionUser::findOrFail($createdInstitutionUser->id)->email);
-        $this->assertEqualsCanonicalizing(
-            collect($expectedRoles)->pluck('id'),
-            InstitutionUser::findOrFail($createdInstitutionUser->id)->roles->pluck('id')
-        );
-
-        // And request response should indicate validation errors
-        $response->assertUnprocessable();
-    }
-
-    /**
-     * @throws Throwable
-     */
-    public function test_adding_department_from_another_institution(): void
-    {
-        // GIVEN the following data is in database
-        [
-            'institution' => $createdInstitution,
-            'institutionUser' => $createdInstitutionUser,
-            'department' => $expectedDepartment
-        ] = $this->createBasicModels(
-            email: ($expectedEmail = 'test321@ike.ee'),
-        );
-        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
-
-        $departmentInAnotherInstitution = Department::factory()
-            ->for(Institution::factory()->create())
-            ->create();
-
-        // WHEN request input has department from another institution
-        $response = $this->sendPutRequestWithTokenFor(
-            $createdInstitutionUser->id,
-            [
-                'email' => 'someother@email.com',
-                'department_id' => [$departmentInAnotherInstitution->id],
-            ],
-            $actingUser
-        );
-
-        // THEN the database state should not change
-        $this->assertEquals($expectedEmail, InstitutionUser::findOrFail($createdInstitutionUser->id)->email);
-        $this->assertEquals(
-            $expectedDepartment->id,
-            InstitutionUser::findOrFail($createdInstitutionUser->id)->department_id
-        );
-
-        // And request response should indicate validation errors
-        $response->assertUnprocessable();
-    }
-
-    /**
-     * @throws Throwable
-     */
-    public function test_adding_nonexistent_department(): void
-    {
-        // GIVEN the following data is in database
-        [
-            'institution' => $createdInstitution,
-            'institutionUser' => $createdInstitutionUser,
-            'department' => $expectedDepartment
-        ] = $this->createBasicModels(
-            email: ($expectedEmail = 'test321@ike.ee'),
-        );
-        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
-
-        // WHEN request input has nonexistent department
-        $response = $this->sendPutRequestWithTokenFor(
-            $createdInstitutionUser->id,
-            [
-                'email' => 'someother@email.com',
-                'department_id' => ($randomUuid = Str::uuid()),
-            ],
-            $actingUser
-        );
-
-        // THEN database state should not change
-        $this->assertEquals($expectedEmail, InstitutionUser::findOrFail($createdInstitutionUser->id)->email);
-        $this->assertEquals(
-            $expectedDepartment->id,
-            InstitutionUser::findOrFail($createdInstitutionUser->id)->department_id
-        );
-        $this->assertDatabaseMissing(
-            Department::class,
-            ['id' => $randomUuid]
-        );
-
-        // And request response should indicate validation errors
-        $response->assertUnprocessable();
-    }
-
-    /**
-     * @throws Throwable
-     */
-    public function test_adding_nonexistent_role(): void
-    {
-        // GIVEN the following data is in database
-        [
-            'institution' => $createdInstitution,
-            'institutionUser' => $createdInstitutionUser,
-            'roles' => $expectedRoles
-        ] = $this->createBasicModels(
-            email: ($expectedEmail = 'test321@ike.ee'),
-            privileges: [PrivilegeKey::ViewUser]
-        );
-        $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::EditUser);
-
-        // WHEN request input has nonexistent role
-        $response = $this->sendPutRequestWithTokenFor(
-            $createdInstitutionUser->id,
-            [
-                'email' => 'someother@email.com',
-                'roles' => [$randomUuid = Str::uuid()],
-            ],
-            $actingUser
-        );
-
-        // THEN database state should not change
-        $this->assertEquals($expectedEmail, InstitutionUser::findOrFail($createdInstitutionUser->id)->email);
-        $this->assertEqualsCanonicalizing(
-            collect($expectedRoles)->pluck('id'),
-            InstitutionUser::findOrFail($createdInstitutionUser->id)->roles->pluck('id')
-        );
-        $this->assertDatabaseMissing(
-            Role::class,
-            ['id' => $randomUuid]
-        );
-
-        // And request response should indicate validation errors
-        $response->assertUnprocessable();
-    }
-
-    /**
-     * @throws Throwable
-     */
-    public function test_updating_user_without_access_token(): void
-    {
-        // GIVEN the following data is in database
-        [
-            'institutionUser' => $createdInstitutionUser,
-        ] = $this->createBasicModels(
-            email: ($expectedEmail = 'test123@eki.ee')
-        );
-
-        // WHEN request sent without access token in header
-        $response = $this
-            ->withHeaders(['Accept' => 'application/json'])
-            ->putJson(
-                "/api/institution-users/$createdInstitutionUser->id",
-                ['email' => 'someother@email.com']
-            );
-
-        // THEN the database state should not change
-        $this->assertEquals($expectedEmail, InstitutionUser::findOrFail($createdInstitutionUser->id)->email);
-
-        // And response should indicate that the request failed authentication
-        $response->assertUnauthorized();
-    }
-
-    private function sendPutRequestWithTokenFor(
+    private function sendRequestWithExpectedHeaders(
         string $targetId,
         array $requestPayload,
         InstitutionUser $actingUser,
         array $tolkevaravClaimsOverride = []): TestResponse
     {
-        return $this->sendPutRequestWithCustomToken(
+        $jwt = AuthHelpers::generateAccessTokenForInstitutionUser($actingUser, $tolkevaravClaimsOverride);
+
+        return $this->sendRequestWithCustomHeaders(
             $targetId,
             $requestPayload,
-            AuthHelpers::generateAccessTokenForInstitutionUser($actingUser, $tolkevaravClaimsOverride)
+            ['Authorization' => 'Bearer '.$jwt]
         );
     }
 
-    private function sendPutRequestWithCustomToken(
+    private function sendRequestWithCustomHeaders(
         string $targetId,
         array $requestPayload,
-        string $accessToken): TestResponse
+        array $headers): TestResponse
     {
         return $this
-            ->withHeaders(['Authorization' => "Bearer $accessToken"])
+            ->withHeaders($headers)
             ->putJson("/api/institution-users/$targetId", $requestPayload);
     }
 
-    /**
-     * @return array<array<array>>
-     */
-    public static function provideInvalidRequestPayloads(): array
+    private function assertInstitutionUserUnchangedAfterAction(Closure $action, InstitutionUser $institutionUser, int $expectedResponseStatus): void
     {
-        return collect([
-            ['email' => null],
-            ['email' => ''],
-            ['email' => 'not-email'],
-            ['phone' => null],
-            ['phone' => ''],
-            ['phone' => '-1'],
-            ['phone' => 'abc'],
-            ['phone' => '5123456'],
-            ['phone' => '5123 456'],
-            ['phone' => '51234567'],
-            ['phone' => '5123 4567'],
-            ['phone' => '37251234567'],
-            ['phone' => '372 5123 4567'],
-            ['phone' => '372 5123 456'],
-            ['phone' => '0037251234567'],
-            ['phone' => '003725123456'],
-            ['phone' => '00 372 5123 4567'],
-            ['phone' => '00 372 5123 456'],
-            ['phone' => '123'],
-            ['phone' => '1234567'],
-            ['phone' => '1234 567'],
-            ['phone' => '12345678'],
-            ['phone' => '1234 5678'],
-            ['phone' => '+37201234567'],
-            ['phone' => '+372 0123 4567'],
-            ['phone' => '+37212345678'],
-            ['phone' => '+372 1234 5678'],
-            ['phone' => '+37223456789'],
-            ['phone' => '+372 2345 6789'],
-            ['phone' => '+37289012345'],
-            ['phone' => '+372 8901 2345'],
-            ['phone' => '+37290123456'],
-            ['phone' => '+372 9012 3456'],
-            ['phone' => '+372567890'],
-            ['phone' => '+372 5678 90'],
-            ['phone' => '+372 5678 901'],
-            ['phone' => '+372 5678 9012'],
-            ['phone' => '+372567890123'],
-            ['phone' => '372 5678 9012 3'],
-            ['phone' => '+372 5 6 7 8 9 0'],
-            ['phone' => '+3 7 2 5 6 7 8 9 0'],
-            ['phone' => '+ 372 567890'],
-            ['phone' => ' +372 567890'],
-            ['roles' => null],
-            ['roles' => ''],
-            ['roles' => [null]],
-            ['roles' => ['']],
-            ['roles' => ['abc']],
-            ['roles' => [1]],
-            ['user' => null],
-            ['user' => ''],
-            ['user' => []],
-            ['department_id' => 1],
-            ['department_id' => 'abc'],
-            ['user.forename' => ''],
-            ['user.forename' => null],
-            ['user.surname' => ''],
-            ['user.surname' => null],
-        ])
-            ->mapWithKeys(fn ($payload) => [json_encode($payload) => $payload]) // for test reports - otherwise only param index is reported
-            ->map(Arr::undot(...))
-            ->map(fn ($payload) => [$payload])
-            ->toArray();
+        $this->assertModelsWithoutChangeAfterAction(
+            $action,
+            RepresentationHelpers::createInstitutionUserNestedRepresentation(...),
+            [$institutionUser],
+            $expectedResponseStatus
+        );
+    }
+
+    private static function createExampleValidPayload(): array
+    {
+        return [
+            'user' => [
+                'forename' => 'Exampleforename',
+                'surname' => 'Examplesurname',
+            ],
+            'email' => 'example-email@singleton.ee',
+            'phone' => '+372 45678901',
+            'roles' => [],
+            'worktime_timezone' => 'Europe/Tallinn',
+            'monday_worktime_start' => '08:00:00',
+            'monday_worktime_end' => '16:00:00',
+            'tuesday_worktime_start' => '08:00:00',
+            'tuesday_worktime_end' => '16:00:00',
+            'wednesday_worktime_start' => '08:00:00',
+            'wednesday_worktime_end' => '16:00:00',
+            'thursday_worktime_start' => '08:00:00',
+            'thursday_worktime_end' => '16:00:00',
+            'friday_worktime_start' => '08:00:00',
+            'friday_worktime_end' => '16:00:00',
+            'saturday_worktime_start' => null,
+            'saturday_worktime_end' => null,
+            'sunday_worktime_start' => null,
+            'sunday_worktime_end' => null,
+        ];
     }
 
     /**
-     * @return array<array<array>>
+     * @param  Closure(Institution):void|null  $modifyStateUsingInstitution
+     * @param  Closure(InstitutionUser):void|null  $modifyStateUsingActingUser
+     * @param  Closure(InstitutionUser):void|null  $modifyStateUsingTargetUser
+     * @return array{
+     *     institution: Institution,
+     *     actingInstitutionUser: InstitutionUser,
+     *     targetInstitutionUser: InstitutionUser
+     * }
+     *
+     * @throws Throwable
      */
-    public static function provideValidPhoneNumbers(): array
+    private function createInstitutionTargetUserAndPrivilegedActingUser(
+        ?Closure $modifyStateUsingInstitution = null,
+        ?Closure $modifyStateUsingActingUser = null,
+        ?Closure $modifyStateUsingTargetUser = null,
+    ): array {
+        [
+            'institution' => $institution,
+            'actingInstitutionUser' => $actingInstitutionUser,
+        ] = $this->createInstitutionAndActingUser(
+            $modifyStateUsingInstitution,
+            function (InstitutionUser $institutionUser) use ($modifyStateUsingActingUser) {
+                $institutionUser->roles()->attach(
+                    Role::factory()
+                        ->hasAttached([
+                            Privilege::firstWhere('key', PrivilegeKey::EditUser->value),
+                            Privilege::firstWhere('key', PrivilegeKey::EditUserWorktime->value),
+                        ])
+                        ->create()
+                );
+
+                if (filled($modifyStateUsingActingUser)) {
+                    $modifyStateUsingActingUser($institutionUser);
+                }
+            }
+        );
+
+        $targetInstitutionUser = InstitutionUser::factory()->for($institution)->create();
+
+        if (filled($modifyStateUsingTargetUser)) {
+            $modifyStateUsingTargetUser($targetInstitutionUser);
+            $targetInstitutionUser->saveOrFail();
+        }
+
+        return [
+            'institution' => $institution,
+            'actingInstitutionUser' => $actingInstitutionUser,
+            'targetInstitutionUser' => $targetInstitutionUser,
+        ];
+    }
+
+    private static function createNullWorktimeIntervals(): array
     {
-        return collect([
-            '+37234567890',
-            '+372 34567890',
-            '+37245678901',
-            '+372 45678901',
-            '+37256789012',
-            '+372 56789012',
-            '+37267890123',
-            '+372 67890123',
-            '+37278901234',
-            '+372 78901234',
-            '+3723456789',
-            '+372 3456789',
-            '+3724567890',
-            '+372 4567890',
-            '+3725678901',
-            '+372 5678901',
-            '+3726789012',
-            '+372 6789012',
-            '+3727890123',
-            '+372 7890123',
-        ])
-            ->mapWithKeys(fn ($phone) => [$phone => $phone]) // for test reports - otherwise only param index is reported
-            ->map(fn ($phone) => [$phone])
-            ->toArray();
+        return [
+            'monday_worktime_start' => null,
+            'monday_worktime_end' => null,
+            'tuesday_worktime_start' => null,
+            'tuesday_worktime_end' => null,
+            'wednesday_worktime_start' => null,
+            'wednesday_worktime_end' => null,
+            'thursday_worktime_start' => null,
+            'thursday_worktime_end' => null,
+            'friday_worktime_start' => null,
+            'friday_worktime_end' => null,
+            'saturday_worktime_start' => null,
+            'saturday_worktime_end' => null,
+            'sunday_worktime_start' => null,
+            'sunday_worktime_end' => null,
+        ];
     }
 }

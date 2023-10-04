@@ -23,6 +23,7 @@ class CreateInstitutionWithMainUser extends Command
                             {email? : The email of the user}
                             {phone? : The phone number of the user}
                             {iname? : The name of the institution}
+                            {isname? : The short name of the institution}
                             {logo? : The logo of the institution}';
 
     /**
@@ -42,6 +43,7 @@ class CreateInstitutionWithMainUser extends Command
             'email' => fn () => $this->argument('email') ?: $this->ask('What is the email of the main user?'),
             'phone' => fn () => $this->argument('phone') ?: $this->ask('What is the phone number of the main user?'),
             'iname' => fn () => $this->argument('iname') ?: $this->ask('What is the name of the institution?'),
+            'isname' => fn () => $this->argument('isname') ?: $this->ask('What is the short name of the institution?'),
             'logo' => fn () => $this->argument('logo') ?: $this->ask('What is the logo of the institution?'),
         ];
 
@@ -54,6 +56,7 @@ class CreateInstitutionWithMainUser extends Command
 
             $validator = Validator::make($values, [
                 'iname' => ['required', 'min:2'],
+                'isname' => ['required', 'min:2', 'max:3'],
                 'fname' => ['required', 'min:2'],
                 'sname' => ['required', 'min:2'],
                 'email' => ['required', 'email'],
@@ -75,6 +78,7 @@ class CreateInstitutionWithMainUser extends Command
             $createInstitutionWithMainUserAction->execute(
                 new InstitutionData(
                     $values['iname'],
+                    $values['isname'],
                     $values['logo']
                 ),
                 new UserData(

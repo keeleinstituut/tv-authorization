@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\InstitutionUserStatus;
 use App\Models\InstitutionUser;
 use App\Models\InstitutionUserRole;
+use Arr;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -123,9 +124,10 @@ trait ModelAssertions
     {
         $expectedStateAfterAction = collect($modelsWithExpectedChanges)
             ->mapSpread(fn (Model $model, array $expectedChange) => [
-                ...$convertModelToArray($model->refresh()),
-                ...$expectedChange,
+                ...Arr::dot($convertModelToArray($model->refresh())),
+                ...Arr::dot($expectedChange),
             ])
+            ->map(Arr::undot(...))
             ->all();
 
         $response = $action();
