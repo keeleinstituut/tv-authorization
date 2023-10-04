@@ -2,13 +2,50 @@
 
 namespace Tests;
 
+use App\Models\Institution;
+use App\Models\InstitutionUser;
+use Closure;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Arr;
 use Illuminate\Testing\TestResponse;
+use Throwable;
 
 abstract class TestCase extends BaseTestCase
 {
     use CreatesApplication;
+
+    /**
+     * @param  Closure(Institution):void|null  $modifyInstitution
+     * @param  Closure(InstitutionUser):void|null  $modifyActingInstitutionUser
+     * @return array{
+     *     institution: Institution,
+     *     actingInstitutionUser: InstitutionUser,
+     * }
+     *
+     * @throws Throwable
+     */
+    public static function createInstitutionAndActingUser(
+        ?Closure $modifyInstitution = null,
+        ?Closure $modifyActingInstitutionUser = null
+    ): array {
+        $institution = Institution::factory()->create();
+        $actingInstitutionUser = InstitutionUser::factory()->for($institution)->create();
+
+        if (filled($modifyInstitution)) {
+            $modifyInstitution($institution);
+            $institution->saveOrFail();
+        }
+
+        if (filled($modifyActingInstitutionUser)) {
+            $modifyActingInstitutionUser($actingInstitutionUser);
+            $actingInstitutionUser->saveOrFail();
+        }
+
+        return [
+            'institution' => $institution->refresh(),
+            'actingInstitutionUser' => $actingInstitutionUser->refresh(),
+        ];
+    }
 
     public function assertResponseJsonDataEqualsIgnoringOrder(array $expectedData, TestResponse $actualResponse): void
     {

@@ -61,9 +61,9 @@ class InstitutionUserControllerExportTest extends TestCase
             ]);
         $actualResponseCsvDocument = static::createCsvReader($response);
 
-        $this->assertJsonStringEqualsJsonString(
-            json_encode($expectedResponseData),
-            json_encode($actualResponseCsvDocument)
+        $this->assertArraysEqualIgnoringOrder(
+            $expectedResponseData->jsonSerialize(),
+            $actualResponseCsvDocument->jsonSerialize()
         );
     }
 
