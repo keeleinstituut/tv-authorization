@@ -36,7 +36,7 @@ use OpenApi\Attributes as OA;
                     new OA\Property(property: 'name', type: 'string'),
                     new OA\Property(property: 'phone', type: 'string', format: 'phone', nullable: true),
                     new OA\Property(property: 'email', type: 'string', format: 'email', nullable: true),
-                    new OA\Property(property: 'short_name', type: 'string', maxLength: 3, nullable: true),
+                    new OA\Property(property: 'short_name', type: 'string', maxLength: 3),
                     new OA\Property(property: 'worktime_timezone', description: 'IANA Timezone Name', type: 'string', example: 'Europe/Tallinn'),
                     new OA\Property(property: 'monday_worktime_start', type: 'string', format: 'time', example: '08:00:00', nullable: true),
                     new OA\Property(property: 'monday_worktime_end', type: 'string', format: 'time', example: '16:00:00', nullable: true),
@@ -81,6 +81,11 @@ class UpdateInstitutionRequest extends FormRequest
                 'string',
                 'filled',
             ],
+            'short_name' => [
+                'string',
+                'filled',
+                'max:3',
+            ],
             'phone' => [
                 'nullable',
                 'string',
@@ -90,11 +95,6 @@ class UpdateInstitutionRequest extends FormRequest
                 'nullable',
                 'string',
                 'email',
-            ],
-            'short_name' => [
-                'nullable',
-                'string',
-                'max:3',
             ],
             ...WorktimeValidationUtil::buildWorktimeValidationRules(),
         ];
