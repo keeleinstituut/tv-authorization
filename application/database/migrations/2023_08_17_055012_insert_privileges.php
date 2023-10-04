@@ -1,8 +1,8 @@
 <?php
 
-use Database\Helpers\InsertPrivilegesWithUpdateRootRoleMigration;
+use Database\Helpers\RootRoleAwareInsertPrivilegesMigration;
 
-return new class extends InsertPrivilegesWithUpdateRootRoleMigration
+return new class extends RootRoleAwareInsertPrivilegesMigration
 {
     public function getPrivilegesKeys(): array
     {

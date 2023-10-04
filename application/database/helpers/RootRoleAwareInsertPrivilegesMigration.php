@@ -5,8 +5,14 @@ namespace Database\Helpers;
 use App\Models\Privilege;
 use App\Models\Role;
 
-abstract class InsertPrivilegesWithUpdateRootRoleMigration extends InsertPrivilegesMigration
+abstract class RootRoleAwareInsertPrivilegesMigration extends InsertPrivilegesMigration
 {
+    public function up(): void
+    {
+        parent::up();
+        static::populateRootRolesWithAllPrivileges();
+    }
+
     public static function populateRootRolesWithAllPrivileges(): void
     {
         $allPrivilegeIds = Privilege::pluck('id');
