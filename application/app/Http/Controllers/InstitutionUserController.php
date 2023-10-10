@@ -138,8 +138,8 @@ class InstitutionUserController extends Controller
     {
         $this->authorize('export', InstitutionUser::class);
 
-        $csvDocument = Writer::createFromString()->setDelimiter(';');
-        $csvDocument->setOutputBOM(ByteSequence::BOM_UTF8);
+        $csvDocument = Writer::createFromString()->setDelimiter(';')
+            ->setOutputBOM(ByteSequence::BOM_UTF8);
 
         $csvDocument->insertOne([
             'Isikukood', 'Nimi', 'Meiliaadress', 'Telefoninumber', 'Üksus', 'Roll',
