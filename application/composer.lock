@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "79bd2463ac2dd6c010cddfac6744818c",
+    "content-hash": "6afe8299245157bc6248db61e05505f1",
     "packages": [
         {
             "name": "brick/math",
@@ -1198,20 +1198,21 @@
         },
         {
             "name": "keeleinstituut/tv-common-laravel-amqp",
-            "version": "0.0.17",
+            "version": "0.0.40",
             "source": {
                 "type": "git",
                 "url": "https://github.com/keeleinstituut/tv-common-laravel-amqp.git",
-                "reference": "60884b407481d289a35d99249ea9f877dac2f5a5"
+                "reference": "5946e5f5ad5052ec2ab151a44b650fa2b7657f59"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/keeleinstituut/tv-common-laravel-amqp/zipball/60884b407481d289a35d99249ea9f877dac2f5a5",
-                "reference": "60884b407481d289a35d99249ea9f877dac2f5a5",
+                "url": "https://api.github.com/repos/keeleinstituut/tv-common-laravel-amqp/zipball/5946e5f5ad5052ec2ab151a44b650fa2b7657f59",
+                "reference": "5946e5f5ad5052ec2ab151a44b650fa2b7657f59",
                 "shasum": ""
             },
             "require": {
                 "illuminate/support": "^10.0",
+                "keeleinstituut/tv-common-laravel-security": "0.0.18",
                 "php": "^8.2",
                 "php-amqplib/php-amqplib": "^3.5"
             },
@@ -1232,7 +1233,8 @@
             },
             "autoload": {
                 "psr-4": {
-                    "SyncTools\\": "src/",
+                    "SyncTools\\": "src/SyncTools",
+                    "AuditLogClient\\": "src/AuditLogClient",
                     "SyncTools\\Database\\Helpers\\": "database/helpers/"
                 }
             },
@@ -1253,23 +1255,23 @@
                 "rabbitmq"
             ],
             "support": {
-                "source": "https://github.com/keeleinstituut/tv-common-laravel-amqp/tree/0.0.17",
+                "source": "https://github.com/keeleinstituut/tv-common-laravel-amqp/tree/0.0.40",
                 "issues": "https://github.com/keeleinstituut/tv-common-laravel-amqp/issues"
             },
-            "time": "2023-06-29T10:57:49+00:00"
+            "time": "2023-10-25T20:59:13+00:00"
         },
         {
             "name": "keeleinstituut/tv-common-laravel-security",
-            "version": "0.0.14",
+            "version": "0.0.18",
             "source": {
                 "type": "git",
                 "url": "https://github.com/keeleinstituut/tv-common-laravel-security.git",
-                "reference": "5a5b7717263a71dc9ad64438b8c2f5627c7f77ec"
+                "reference": "ab0fde37b41f66a4ef15a7886952c266a4e9cec3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/keeleinstituut/tv-common-laravel-security/zipball/5a5b7717263a71dc9ad64438b8c2f5627c7f77ec",
-                "reference": "5a5b7717263a71dc9ad64438b8c2f5627c7f77ec",
+                "url": "https://api.github.com/repos/keeleinstituut/tv-common-laravel-security/zipball/ab0fde37b41f66a4ef15a7886952c266a4e9cec3",
+                "reference": "ab0fde37b41f66a4ef15a7886952c266a4e9cec3",
                 "shasum": ""
             },
             "require": {
@@ -1314,10 +1316,10 @@
                 "laravel"
             ],
             "support": {
-                "source": "https://github.com/keeleinstituut/tv-common-laravel-security/tree/0.0.14",
+                "source": "https://github.com/keeleinstituut/tv-common-laravel-security/tree/0.0.18",
                 "issues": "https://github.com/keeleinstituut/tv-common-laravel-security/issues"
             },
-            "time": "2023-06-19T10:12:40+00:00"
+            "time": "2023-10-23T14:44:30+00:00"
         },
         {
             "name": "laravel/framework",
@@ -3864,6 +3866,50 @@
                 }
             ],
             "time": "2023-05-29T22:02:16+00:00"
+        },
+        {
+            "name": "rogervila/array-diff-multidimensional",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/rogervila/array-diff-multidimensional.git",
+                "reference": "042d0ee5607f74b14d355dfe67ab8329b5ea26af"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/rogervila/array-diff-multidimensional/zipball/042d0ee5607f74b14d355dfe67ab8329b5ea26af",
+                "reference": "042d0ee5607f74b14d355dfe67ab8329b5ea26af",
+                "shasum": ""
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^4.8 || ^5.0 || ^6.0 || ^7.0 || ^8.0 || ^9.0 || ^10.0"
+            },
+            "default-branch": true,
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "src/helpers.php"
+                ],
+                "psr-4": {
+                    "Rogervila\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Roger Vilà",
+                    "email": "rogervila@me.com"
+                }
+            ],
+            "description": "Compare the difference between two multidimensional arrays",
+            "support": {
+                "issues": "https://github.com/rogervila/array-diff-multidimensional/issues",
+                "source": "https://github.com/rogervila/array-diff-multidimensional/tree/master"
+            },
+            "time": "2023-04-19T11:35:15+00:00"
         },
         {
             "name": "swagger-api/swagger-ui",

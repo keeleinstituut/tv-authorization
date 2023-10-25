@@ -3,19 +3,12 @@
 namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\PrivilegeKey;
-use App\Models\Department;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
-use App\Models\Role;
-use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
-use Symfony\Component\HttpFoundation\Response;
 use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\ModelAssertions;
@@ -47,10 +40,10 @@ class InstitutionUserControllerUpdateCurrentTest extends TestCase
             [
                 'user' => [
                     'forename' => $expectedForename = 'Forename',
-                    'surname' => $expectedSurname = 'Surname'
+                    'surname' => $expectedSurname = 'Surname',
                 ],
                 'phone' => $expectedPhoneNumber = '+372 5678901',
-                'email' => $expectedEmail = 'new@email.com'
+                'email' => $expectedEmail = 'new@email.com',
             ],
             $actingInstitutionUser
         );
@@ -115,7 +108,7 @@ class InstitutionUserControllerUpdateCurrentTest extends TestCase
         $response = $this
             ->withHeaders(['Accept' => 'application/json'])
             ->putJson(
-                "/api/institution-users",
+                '/api/institution-users',
                 ['email' => 'someother@email.com']
             );
 
@@ -140,7 +133,7 @@ class InstitutionUserControllerUpdateCurrentTest extends TestCase
     {
         return $this
             ->withHeaders(['Authorization' => "Bearer $accessToken"])
-            ->putJson("/api/institution-users", $requestPayload);
+            ->putJson('/api/institution-users', $requestPayload);
     }
 
     /**

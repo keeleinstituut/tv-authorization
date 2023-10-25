@@ -11,7 +11,6 @@ use App\Models\InstitutionUser;
 use App\Models\InstitutionUserRole;
 use App\Models\Privilege;
 use App\Models\Role;
-use App\Models\User;
 use Closure;
 use Illuminate\Database\Eloquent\Factories\Sequence;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -80,10 +79,10 @@ class InstitutionUserControllerIndexTest extends TestCase
 
         $searchingInstitutionUser = $institutionUsers->first();
         $response = $this->queryInstitutionUsers($accessToken, [
-            'fullname' => join(' ', [
+            'fullname' => implode(' ', [
                 $searchingInstitutionUser->user->forename,
                 $searchingInstitutionUser->user->surname,
-            ])
+            ]),
         ]);
 
         $response->assertOk()
@@ -204,8 +203,8 @@ class InstitutionUserControllerIndexTest extends TestCase
      * The "definitions" or "locations" refer to data in the array returned by @return array<array{
      *     queryParamsBuildDefinition: array<string, string|array<string>>,
      *     expectedResponseDataBuildDefinition: array<string>,
-     * }> *@link createDifferentInstitutionUsersInNewInstitution
      *
+     * }> *@link createDifferentInstitutionUsersInNewInstitution
      */
     public static function provideQueryParamsAndExpectedResponseDataBuildDefinitions(): array
     {
@@ -287,8 +286,8 @@ class InstitutionUserControllerIndexTest extends TestCase
     }
 
     /** @dataProvider provideQueryParamsAndExpectedResponseDataBuildDefinitions
-     * @param array<string, string|array<string>> $queryParamsBuildDefinition
-     * @param array<string> $expectedResponseDataBuildDefinition
+     * @param  array<string, string|array<string>>  $queryParamsBuildDefinition
+     * @param  array<string>  $expectedResponseDataBuildDefinition
      */
     public function test_filtering_institution_users(
         array $queryParamsBuildDefinition,
@@ -297,15 +296,15 @@ class InstitutionUserControllerIndexTest extends TestCase
         $createdData = $this->createDifferentInstitutionUsersInNewInstitution();
 
         $queryParameters = collect($queryParamsBuildDefinition)
-            ->map(fn(array $paramDefinitionOrValues) => collect($paramDefinitionOrValues)
-                ->map(fn($itemDefinitionOrValue) => Arr::get($createdData, $itemDefinitionOrValue, $itemDefinitionOrValue))
+            ->map(fn (array $paramDefinitionOrValues) => collect($paramDefinitionOrValues)
+                ->map(fn ($itemDefinitionOrValue) => Arr::get($createdData, $itemDefinitionOrValue, $itemDefinitionOrValue))
                 ->all()
             )
             ->put('per_page', 100)
             ->all();
 
         $expectedResponseData = collect($expectedResponseDataBuildDefinition)
-            ->flatMap(fn($institutionUsersLocation) => Arr::wrap(Arr::get($createdData, $institutionUsersLocation)))
+            ->flatMap(fn ($institutionUsersLocation) => Arr::wrap(Arr::get($createdData, $institutionUsersLocation)))
             ->unique('id')
             ->map(RepresentationHelpers::createInstitutionUserNestedRepresentation(...))
             ->all();
@@ -478,49 +477,49 @@ class InstitutionUserControllerIndexTest extends TestCase
     public static function provideQueryParamInvalidators(): array
     {
         return [
-            'per_page=15' => [fn($params) => [
+            'per_page=15' => [fn ($params) => [
                 ...$params,
                 'per_page' => 15,
             ]],
-            'sort_by=unknown' => [fn($params) => [
+            'sort_by=unknown' => [fn ($params) => [
                 ...$params,
                 'sort_by' => 'unknown',
             ]],
-            'sort_order' => [fn($params) => [
+            'sort_order' => [fn ($params) => [
                 ...$params,
                 'sort_order' => 'unknown',
             ]],
-            'roles not an array' => [fn($params) => [
+            'roles not an array' => [fn ($params) => [
                 ...$params,
                 'roles' => collect($params['roles'])->join(','),
             ]],
-            'role from another institution' => [fn($params) => [
+            'role from another institution' => [fn ($params) => [
                 ...$params,
                 'roles' => [$params['roles'][0], Role::factory()->create()->id],
             ]],
-            'non-existent role' => [fn($params) => [
+            'non-existent role' => [fn ($params) => [
                 ...$params,
                 'roles' => [$params['roles'][0], Str::uuid()->toString()],
             ]],
-            'departments not an array' => [fn($params) => [
+            'departments not an array' => [fn ($params) => [
                 ...$params,
                 'departments' => collect($params['departments'])->join(','),
             ]],
-            'department from another institution' => [fn($params) => [
+            'department from another institution' => [fn ($params) => [
                 ...$params,
                 'departments' => [$params['departments'][0], Department::factory()->create()->id],
             ]],
-            'non-existent department' => [fn($params) => [
+            'non-existent department' => [fn ($params) => [
                 ...$params,
                 'departments' => [$params['departments'][0], Str::uuid()->toString()],
             ]],
-            'statuses not an array' => [fn($params) => [
+            'statuses not an array' => [fn ($params) => [
                 ...$params,
                 'statuses' => collect(InstitutionUserStatus::cases())
-                    ->map(fn($status) => $status->value)
+                    ->map(fn ($status) => $status->value)
                     ->join(','),
             ]],
-            'unknown status' => [fn($params) => [
+            'unknown status' => [fn ($params) => [
                 ...$params,
                 'statuses' => [InstitutionUserStatus::Active->value, 'BAMBOOZLED'],
             ]],
@@ -530,7 +529,7 @@ class InstitutionUserControllerIndexTest extends TestCase
     /**
      * @dataProvider provideQueryParamInvalidators
      *
-     * @param Closure(array): array $invalidateQueryParameters
+     * @param  Closure(array): array  $invalidateQueryParameters
      */
     public function test_invalid_parameters_causes_422(Closure $invalidateQueryParameters): void
     {
@@ -562,7 +561,7 @@ class InstitutionUserControllerIndexTest extends TestCase
 
     private function queryInstitutionUsers(?string $accessToken = null, ?array $queryParams = null): TestResponse
     {
-        if (!empty($accessToken)) {
+        if (! empty($accessToken)) {
             $this->withHeaders([
                 'Authorization' => "Bearer $accessToken",
                 'Accept' => 'application/json',
@@ -602,7 +601,7 @@ class InstitutionUserControllerIndexTest extends TestCase
             'sort_order' => 'asc',
             'roles' => Arr::pluck($roles, 'id'),
             'departments' => Arr::pluck($departments, 'id'),
-            'statuses' => Arr::map(InstitutionUserStatus::cases(), fn($status) => $status->value),
+            'statuses' => Arr::map(InstitutionUserStatus::cases(), fn ($status) => $status->value),
         ];
     }
 }

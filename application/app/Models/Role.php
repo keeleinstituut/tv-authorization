@@ -86,4 +86,9 @@ class Role extends Model
     {
         return $this->belongsToMany(InstitutionUser::class, InstitutionUserRole::class)->withTimestamps();
     }
+
+    public function getIdentitySubset(): array
+    {
+        return $this->only(['id', 'name']);
+    }
 }

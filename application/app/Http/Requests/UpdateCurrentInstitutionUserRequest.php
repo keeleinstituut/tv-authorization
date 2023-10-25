@@ -2,17 +2,10 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\InstitutionUserStatus;
-use App\Models\Department;
 use App\Models\InstitutionUser;
-use App\Models\Role;
-use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
-use App\Rules\ModelBelongsToInstitutionRule;
 use App\Rules\PhoneNumberRule;
-use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use OpenApi\Attributes as OA;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
  * @property string forename
@@ -39,7 +32,7 @@ use Symfony\Component\HttpFoundation\Response;
                 type: 'object'
             ),
             new OA\Property(property: 'email', type: 'string', format: 'email'),
-            new OA\Property(property: 'phone', type: 'string', format: 'phone')
+            new OA\Property(property: 'phone', type: 'string', format: 'phone'),
         ]
     )
 )]

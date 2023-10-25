@@ -7,6 +7,8 @@ use App\Http\Requests\UpdateInstitutionRequest;
 use App\Http\Resources\InstitutionResource;
 use App\Models\Institution;
 use App\Policies\InstitutionPolicy;
+use AuditLogClient\Enums\AuditLogEventObjectType;
+use AuditLogClient\Services\AuditLogMessageBuilder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -66,7 +68,21 @@ class InstitutionController extends Controller
 
         $this->authorize('update', $institution);
 
+        $institutionBeforeChanges = $institution->withoutRelations()->toArray();
+        $institutionIdentitySubsetBeforeChanges = $institution->getIdentitySubset();
+
         $institution->fill($request->validated())->saveOrFail();
+
+        $institutionAfterChanges = $institution->withoutRelations()->toArray();
+
+        $this->auditLogPublisher->publish(
+            AuditLogMessageBuilder::makeUsingJWT()->toModifyObjectEventComputingDiff(
+                AuditLogEventObjectType::Institution,
+                $institutionIdentitySubsetBeforeChanges,
+                $institutionBeforeChanges,
+                $institutionAfterChanges
+            )
+        );
 
         return new InstitutionResource($institution->refresh());
     }

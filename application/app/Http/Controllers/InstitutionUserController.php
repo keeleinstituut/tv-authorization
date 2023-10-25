@@ -19,16 +19,20 @@ use App\Models\Scopes\ExcludeArchivedInstitutionUsersScope;
 use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Policies\InstitutionUserPolicy;
 use App\Util\DateUtil;
-use Illuminate\Support\Facades\Auth;
 use Arr;
+use AuditLogClient\Enums\AuditLogEventObjectType;
+use AuditLogClient\Services\AuditLogMessageBuilder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use League\Csv\ByteSequence;
 use League\Csv\CannotInsertRecord;
 use League\Csv\Exception;
+use League\Csv\InvalidArgument;
 use League\Csv\Writer;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
@@ -71,6 +75,8 @@ class InstitutionUserController extends Controller
         return DB::transaction(function () use ($request) {
             /** @var $institutionUser InstitutionUser */
             $institutionUser = $this->getBaseQuery()->findOrFail($request->getInstitutionUserId());
+            $institutionUserBeforeChanges = $institutionUser->withoutRelations()->load(['user', 'roles', 'roles.privileges'])->toArray();
+            $institutionUserIdentitySubsetBeforeChanges = $institutionUser->getIdentitySubset();
 
             if ($request->hasAnyNonCalendarInput()) {
                 $this->authorize('update', $institutionUser);
@@ -83,7 +89,17 @@ class InstitutionUserController extends Controller
             }
 
             $institutionUser->saveOrFail();
-            // TODO: audit log
+
+            $institutionUserAfterChanges = $institutionUser->withoutRelations()->load(['user', 'roles', 'roles.privileges'])->toArray();
+
+            $this->auditLogPublisher->publish(
+                AuditLogMessageBuilder::makeUsingJWT()->toModifyObjectEventComputingDiff(
+                    AuditLogEventObjectType::InstitutionUser,
+                    $institutionUserIdentitySubsetBeforeChanges,
+                    $institutionUserBeforeChanges,
+                    $institutionUserAfterChanges
+                )
+            );
 
             return new InstitutionUserResource($institutionUser->refresh());
         });
@@ -105,6 +121,9 @@ class InstitutionUserController extends Controller
             /** @var $institutionUser InstitutionUser */
             $institutionUser = $this->getBaseQuery()->findOrFail(Auth::user()->institutionUserId);
 
+            $institutionUserBeforeChanges = $institutionUser->withoutRelations()->load('user')->toArray();
+            $institutionUserIdentitySubsetBeforeChanges = $institutionUser->getIdentitySubset();
+
             $institutionUser->fill($request->safe(['email', 'phone']));
 
             if ($request->has('user')) {
@@ -112,14 +131,29 @@ class InstitutionUserController extends Controller
             }
 
             $institutionUser->saveOrFail();
-            // TODO: audit log
+
+            $institutionUserAfterChanges = $institutionUser->withoutRelations()->load('user')->toArray();
+
+            $this->auditLogPublisher->publish(
+                AuditLogMessageBuilder::makeUsingJWT()->toModifyObjectEventComputingDiff(
+                    AuditLogEventObjectType::InstitutionUser,
+                    $institutionUserIdentitySubsetBeforeChanges,
+                    $institutionUserBeforeChanges,
+                    $institutionUserAfterChanges
+                )
+            );
 
             return new InstitutionUserResource($institutionUser->refresh());
         });
     }
 
     /**
-     * @throws AuthorizationException|CannotInsertRecord|Exception
+     * @throws AuthorizationException
+     * @throws CannotInsertRecord
+     * @throws Exception
+     * @throws Throwable
+     * @throws ValidationException
+     * @throws InvalidArgument
      */
     #[OA\Get(
         path: '/institution-users/export-csv',
@@ -158,7 +192,7 @@ class InstitutionUserController extends Controller
                 ])
         );
 
-        // TODO: audit log
+        $this->auditLogPublisher->publish(AuditLogMessageBuilder::makeUsingJWT()->toExportInstitutionUsers());
 
         return response()->streamDownload(
             $csvDocument->output(...),
@@ -287,6 +321,9 @@ class InstitutionUserController extends Controller
 
             $this->authorize('deactivate', $institutionUser);
 
+            $institutionUserBeforeChanges = $institutionUser->withoutRelations()->load(['roles', 'roles.privileges'])->toArray();
+            $institutionUserIdentitySubsetBeforeChanges = $institutionUser->getIdentitySubset();
+
             $institutionUser->deactivation_date = $request->validated('deactivation_date');
             $institutionUser->saveOrFail();
 
@@ -294,7 +331,16 @@ class InstitutionUserController extends Controller
                 $institutionUser->institutionUserRoles()->each(fn (InstitutionUserRole $pivot) => $pivot->deleteOrFail());
             }
 
-            // TODO: audit log
+            $institutionUserAfterChanges = $institutionUser->withoutRelations()->load(['roles', 'roles.privileges'])->toArray();
+
+            $this->auditLogPublisher->publish(
+                AuditLogMessageBuilder::makeUsingJWT()->toModifyObjectEventComputingDiff(
+                    AuditLogEventObjectType::InstitutionUser,
+                    $institutionUserIdentitySubsetBeforeChanges,
+                    $institutionUserBeforeChanges,
+                    $institutionUserAfterChanges
+                )
+            );
 
             return new InstitutionUserResource($institutionUser->refresh());
         });
@@ -317,13 +363,25 @@ class InstitutionUserController extends Controller
 
             $this->authorize('activate', $institutionUser);
 
+            $institutionUserBeforeChanges = $institutionUser->withoutRelations()->load(['roles', 'roles.privileges'])->toArray();
+            $institutionUserIdentitySubsetBeforeChanges = $institutionUser->getIdentitySubset();
+
             $institutionUser->deactivation_date = null;
             $institutionUser->saveOrFail();
             $institutionUser->roles()->sync(
                 Role::findMany($request->validated('roles'))
             );
 
-            // TODO: audit log
+            $institutionUserAfterChanges = $institutionUser->withoutRelations()->load(['roles', 'roles.privileges'])->toArray();
+
+            $this->auditLogPublisher->publish(
+                AuditLogMessageBuilder::makeUsingJWT()->toModifyObjectEventComputingDiff(
+                    AuditLogEventObjectType::InstitutionUser,
+                    $institutionUserIdentitySubsetBeforeChanges,
+                    $institutionUserBeforeChanges,
+                    $institutionUserAfterChanges
+                )
+            );
 
             /** @noinspection PhpStatementHasEmptyBodyInspection */
             if (filter_var($request->validated('notify_user'), FILTER_VALIDATE_BOOLEAN)) {
@@ -351,11 +409,23 @@ class InstitutionUserController extends Controller
 
             $this->authorize('archive', $institutionUser);
 
+            $institutionUserBeforeChanges = $institutionUser->withoutRelations()->load(['roles', 'roles.privileges'])->toArray();
+            $institutionUserIdentitySubsetBeforeChanges = $institutionUser->getIdentitySubset();
+
             $institutionUser->archived_at = Date::now();
             $institutionUser->institutionUserRoles()->each(fn (InstitutionUserRole $pivot) => $pivot->deleteOrFail());
             $institutionUser->saveOrFail();
 
-            // TODO: audit log
+            $institutionUserAfterChanges = $institutionUser->withoutRelations()->load(['roles', 'roles.privileges'])->toArray();
+
+            $this->auditLogPublisher->publish(
+                AuditLogMessageBuilder::makeUsingJWT()->toModifyObjectEventComputingDiff(
+                    AuditLogEventObjectType::InstitutionUser,
+                    $institutionUserIdentitySubsetBeforeChanges,
+                    $institutionUserBeforeChanges,
+                    $institutionUserAfterChanges
+                )
+            );
 
             return new InstitutionUserResource($institutionUser->refresh());
         });

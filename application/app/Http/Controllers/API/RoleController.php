@@ -13,6 +13,8 @@ use App\Http\Resources\API\RoleResource;
 use App\Models\Privilege;
 use App\Models\Role;
 use App\Policies\RolePolicy;
+use AuditLogClient\Enums\AuditLogEventObjectType;
+use AuditLogClient\Services\AuditLogMessageBuilder;
 use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
@@ -78,7 +80,13 @@ class RoleController extends Controller
             $role->refresh();
             $role->load('privileges');
 
-            // TODO: add auditlog creation
+            $this->auditLogPublisher->publish(
+                AuditLogMessageBuilder::makeUsingJWT()->toCreateObjectEvent(
+                    AuditLogEventObjectType::Role,
+                    $role->withoutRelations()->load('privileges')->toArray()
+                )
+            );
+
             return new RoleResource($role);
         });
     }
@@ -125,9 +133,12 @@ class RoleController extends Controller
 
         $this->authorize('update', $role);
 
+        $roleBeforeChanges = $role->load('privileges')->toArray();
+        $roleIdentitySubsetBeforeChanges = $role->withoutRelations()->getIdentitySubset();
         $params = $request->validated();
 
-        return DB::transaction(function () use ($params, $role) {
+        return DB::transaction(function () use ($roleIdentitySubsetBeforeChanges, $roleBeforeChanges, $params, $role) {
+
             $role->fill($params);
             $role->save();
 
@@ -138,9 +149,17 @@ class RoleController extends Controller
             $role->privileges()->sync($privilegeIds);
 
             $role->refresh();
-            $role->load('privileges');
+            $roleAfterChanges = $role->withoutRelations()->load('privileges')->toArray();
 
-            // TODO: add auditlog creation
+            $this->auditLogPublisher->publish(
+                AuditLogMessageBuilder::makeUsingJWT()->toModifyObjectEventComputingDiff(
+                    AuditLogEventObjectType::Role,
+                    $roleIdentitySubsetBeforeChanges,
+                    $roleBeforeChanges,
+                    $roleAfterChanges
+                )
+            );
+
             return new RoleResource($role);
         });
     }
@@ -167,7 +186,13 @@ class RoleController extends Controller
         return DB::transaction(function () use ($role) {
             $role->delete();
 
-            // TODO: add auditlog creation
+            $this->auditLogPublisher->publish(
+                AuditLogMessageBuilder::makeUsingJWT()->toRemoveObjectEvent(
+                    AuditLogEventObjectType::Role,
+                    $role->getIdentitySubset()
+                )
+            );
+
             return new RoleResource($role);
         });
     }

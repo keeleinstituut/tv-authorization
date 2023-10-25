@@ -14,6 +14,12 @@ abstract class TestCase extends BaseTestCase
 {
     use CreatesApplication;
 
+    public function setUp(): void
+    {
+        parent::setup();
+        AuthHelpers::fakeServiceAccountJWTResponse();
+    }
+
     /**
      * @param  Closure(Institution):void|null  $modifyInstitution
      * @param  Closure(InstitutionUser):void|null  $modifyActingInstitutionUser

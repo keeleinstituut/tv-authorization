@@ -239,4 +239,17 @@ class InstitutionUser extends Model
             ->where('is_root', true)
             ->exists();
     }
+
+    public function getIdentitySubset(): array
+    {
+        return [
+            'id' => $this->id,
+            'user' => [
+                'id' => $this->user->id,
+                'personal_identification_code' => $this->user->personal_identification_code,
+                'forename' => $this->user->forename,
+                'surname' => $this->user->surname,
+            ],
+        ];
+    }
 }

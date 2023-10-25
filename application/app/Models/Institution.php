@@ -136,4 +136,9 @@ class Institution extends Model
             )
         );
     }
+
+    public function getIdentitySubset(): array
+    {
+        return $this->only(['id', 'name']);
+    }
 }
