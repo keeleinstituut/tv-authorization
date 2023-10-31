@@ -10,13 +10,16 @@ use App\Models\InstitutionUser;
 use App\Models\Privilege;
 use App\Models\Role;
 use App\Models\User;
+use AuditLogClient\Enums\AuditLogEventFailureType;
+use AuditLogClient\Enums\AuditLogEventType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
 use League\Csv\Reader;
 use Tests\AuthHelpers;
-use Tests\TestCase;
+use Tests\MockedAmqpPublisherTestCase;
 
-class InstitutionUserControllerExportTest extends TestCase
+class InstitutionUserControllerExportTest extends MockedAmqpPublisherTestCase
 {
     use RefreshDatabase;
 
@@ -64,6 +67,14 @@ class InstitutionUserControllerExportTest extends TestCase
         $this->assertArraysEqualIgnoringOrder(
             $expectedResponseData->jsonSerialize(),
             $actualResponseCsvDocument->jsonSerialize()
+        );
+
+        $this->assertSuccessfulAuditLogMessageWasPublished(
+            AuditLogEventType::ExportInstitutionUsers,
+            $firstInstitutionUser,
+            static::TRACE_ID,
+            null,
+            Date::getTestNow()
         );
     }
 
@@ -220,6 +231,15 @@ class InstitutionUserControllerExportTest extends TestCase
 
         // THEN response should indicate action is forbidden
         $response->assertForbidden();
+
+        $this->assertAuditLogMessageWasPublished(
+            AuditLogEventType::ExportInstitutionUsers,
+            $currentInstitutionUser,
+            AuditLogEventFailureType::FORBIDDEN,
+            static::TRACE_ID,
+            null,
+            Date::getTestNow()
+        );
     }
 
     public function test_exporting_users_without_access_token(): void
@@ -253,7 +273,10 @@ class InstitutionUserControllerExportTest extends TestCase
         $token = AuthHelpers::generateAccessTokenForInstitutionUser($institutionUser, $tolkevaravClaimsOverride);
 
         return $this
-            ->withHeaders(['Authorization' => "Bearer $token"])
+            ->withHeaders([
+                'Authorization' => "Bearer $token",
+                'X-Request-Id' => static::TRACE_ID,
+            ])
             ->getJson('/api/institution-users/export-csv');
     }
 

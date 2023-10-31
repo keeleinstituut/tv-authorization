@@ -12,6 +12,8 @@ use App\Models\InstitutionUserRole;
 use App\Models\Privilege;
 use App\Models\Role;
 use App\Util\DateUtil;
+use AuditLogClient\Enums\AuditLogEventObjectType;
+use AuditLogClient\Enums\AuditLogEventType;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Closure;
@@ -27,10 +29,10 @@ use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
-use Tests\TestCase;
+use Tests\MockedAmqpPublisherTestCase;
 use Throwable;
 
-class InstitutionUserControllerDeactivateTest extends TestCase
+class InstitutionUserControllerDeactivateTest extends MockedAmqpPublisherTestCase
 {
     use RefreshDatabase,
         InstitutionUserHelpers,
@@ -111,6 +113,19 @@ class InstitutionUserControllerDeactivateTest extends TestCase
         $this->assertInstitutionUserDeactivationDateInDatabaseIs($requestDeactivationDate, $targetInstitutionUser->id);
         $this->assertInstitutionUserIsIncludedAndActive($targetInstitutionUser->id);
         $this->assertInstitutionUserRolePivotsExist($targetInstitutionUserRolePivots);
+
+        $this->assertSuccessfulAuditLogMessageWasPublished(
+            AuditLogEventType::ModifyObject,
+            $actingInstitutionUser,
+            static::TRACE_ID,
+            [
+                'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+                'object_identity_subset' => $targetInstitutionUser->getIdentitySubset(),
+                'pre_modification_subset' => ['deactivation_date' => $existingDeactivationDate],
+                'post_modification_subset' => ['deactivation_date' => $requestDeactivationDate],
+            ],
+            Date::getTestNow()
+        );
     }
 
     /** @return array<array{CarbonInterface, string, ?string}> */
@@ -541,7 +556,7 @@ class InstitutionUserControllerDeactivateTest extends TestCase
     private function sendDeactivateRequestWithCustomPayloadAndHeaders(array $payload, array $headers): TestResponse
     {
         return $this
-            ->withHeaders($headers)
+            ->withHeaders(['X-Request-Id' => static::TRACE_ID, ...$headers])
             ->postJson(
                 action([InstitutionUserController::class, 'deactivate']),
                 $payload

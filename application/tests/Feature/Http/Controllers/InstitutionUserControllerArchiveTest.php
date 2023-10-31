@@ -11,20 +11,23 @@ use App\Models\InstitutionUserRole;
 use App\Models\Privilege;
 use App\Models\Role;
 use App\Util\DateUtil;
+use AuditLogClient\Enums\AuditLogEventObjectType;
+use AuditLogClient\Enums\AuditLogEventType;
 use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
-use Tests\TestCase;
+use Tests\MockedAmqpPublisherTestCase;
 use Throwable;
 
-class InstitutionUserControllerArchiveTest extends TestCase
+class InstitutionUserControllerArchiveTest extends MockedAmqpPublisherTestCase
 {
     use RefreshDatabase, InstitutionUserHelpers, ModelAssertions;
 
@@ -114,6 +117,19 @@ class InstitutionUserControllerArchiveTest extends TestCase
         $this->assertInstitutionUserArchivedAtInDatabaseIs(Carbon::now()->toJSON(), $targetInstitutionUser->id);
         $this->assertNull(InstitutionUser::find($targetInstitutionUser->id));
         $this->assertInstitutionUserRolePivotsAreMissing($targetInstitutionUserRolePivots);
+
+        $this->assertSuccessfulAuditLogMessageWasPublished(
+            AuditLogEventType::ModifyObject,
+            $actingInstitutionUser,
+            static::TRACE_ID,
+            [
+                'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+                'object_identity_subset' => $targetInstitutionUser->getIdentitySubset(),
+                'pre_modification_subset' => ['archived_at' => null],
+                'post_modification_subset' => ['archived_at' => Date::getTestNow()->toISOString()],
+            ],
+            Date::getTestNow()
+        );
     }
 
     /** @return array<array{Closure(InstitutionUser): void, int}> */
@@ -373,7 +389,7 @@ class InstitutionUserControllerArchiveTest extends TestCase
     private function sendArchiveRequestWithCustomPayloadAndHeaders(array $payload, array $headers): TestResponse
     {
         return $this
-            ->withHeaders($headers)
+            ->withHeaders(['X-Request-Id' => static::TRACE_ID, ...$headers])
             ->postJson(
                 action([InstitutionUserController::class, 'archive']),
                 $payload

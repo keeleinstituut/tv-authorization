@@ -5,18 +5,22 @@ namespace Tests\Feature\Http\Controllers;
 use App\Enums\PrivilegeKey;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
+use AuditLogClient\Enums\AuditLogEventFailureType;
+use AuditLogClient\Enums\AuditLogEventObjectType;
+use AuditLogClient\Enums\AuditLogEventType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
 use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
-use Tests\TestCase;
+use Tests\MockedAmqpPublisherTestCase;
 use Throwable;
 
-class InstitutionUserControllerUpdateCurrentTest extends TestCase
+class InstitutionUserControllerUpdateCurrentTest extends MockedAmqpPublisherTestCase
 {
     use RefreshDatabase, InstitutionUserHelpers, ModelAssertions;
 
@@ -35,9 +39,12 @@ class InstitutionUserControllerUpdateCurrentTest extends TestCase
         $createdInstitution = Institution::factory()->create();
         $actingInstitutionUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::ViewUser);
 
+        $institutionUserBeforeRequest = $actingInstitutionUser->toArray();
+        $institutionUserIdentityBeforeRequest = $actingInstitutionUser->getIdentitySubset();
+
         // WHEN request sent to endpoint
         $response = $this->sendPutRequestWithTokenFor(
-            [
+            $payload = [
                 'user' => [
                     'forename' => $expectedForename = 'Forename',
                     'surname' => $expectedSurname = 'Surname',
@@ -66,6 +73,24 @@ class InstitutionUserControllerUpdateCurrentTest extends TestCase
 
         // And request response should correspond to the actual state
         $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
+
+        $this->assertSuccessfulAuditLogMessageWasPublished(
+            AuditLogEventType::ModifyObject,
+            $actingInstitutionUser,
+            static::TRACE_ID,
+            [
+                'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+                'object_identity_subset' => $institutionUserIdentityBeforeRequest,
+                'pre_modification_subset' => collect($institutionUserBeforeRequest)
+                    ->only(collect($payload)->keys())
+                    ->diffAssoc(collect($payload))
+                    ->all(),
+                'post_modification_subset' => collect($payload)
+                    ->diffAssoc($institutionUserBeforeRequest)
+                    ->all(),
+            ],
+            Date::getTestNow()
+        );
     }
 
     /**
@@ -82,7 +107,7 @@ class InstitutionUserControllerUpdateCurrentTest extends TestCase
         $expectedPhone = $actingUser->phone;
         // WHEN invalid payload is sent to endpoint
         $response = $this->sendPutRequestWithTokenFor(
-            [
+            $payload = [
                 'email' => 'someother@email.com',
                 'phone' => '+372 45678901',
                 ...$invalidPayload,
@@ -96,6 +121,19 @@ class InstitutionUserControllerUpdateCurrentTest extends TestCase
 
         // And response should indicate validation errors
         $response->assertUnprocessable();
+
+        $this->assertAuditLogMessageWasPublished(
+            AuditLogEventType::ModifyObject,
+            $actingUser,
+            AuditLogEventFailureType::UNPROCESSABLE_ENTITY,
+            static::TRACE_ID,
+            [
+                'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+                'object_identity_subset' => $actingUser->getIdentitySubset(),
+                'input' => static::convertTrimWhiteSpaceToNullRecursively($payload),
+            ],
+            Date::getTestNow()
+        );
     }
 
     /**
@@ -132,7 +170,10 @@ class InstitutionUserControllerUpdateCurrentTest extends TestCase
         string $accessToken): TestResponse
     {
         return $this
-            ->withHeaders(['Authorization' => "Bearer $accessToken"])
+            ->withHeaders([
+                'Authorization' => "Bearer $accessToken",
+                'X-Request-Id' => static::TRACE_ID,
+            ])
             ->putJson('/api/institution-users', $requestPayload);
     }
 

@@ -9,16 +9,21 @@ use App\Models\InstitutionUser;
 use App\Models\Privilege;
 use App\Models\Role;
 use App\Models\User;
+use AuditLogClient\Enums\AuditLogEventFailureType;
+use AuditLogClient\Enums\AuditLogEventObjectType;
+use AuditLogClient\Enums\AuditLogEventType;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Tests\AuthHelpers;
 use Tests\EntityHelpers;
-use Tests\TestCase;
+use Tests\MockedAmqpPublisherTestCase;
 use Throwable;
 
-class InstitutionUserImportControllerImportTest extends TestCase
+class InstitutionUserImportControllerImportTest extends MockedAmqpPublisherTestCase
 {
     use RefreshDatabase, EntityHelpers;
 
@@ -50,16 +55,13 @@ class InstitutionUserImportControllerImportTest extends TestCase
             $department->name
         );
 
+        $actingInstitutionUser = $this->getActingInstitutionUserWithAddUserPrivilege($institution);
         $this->sendImportFileRequest(
             $this->composeContent([
                 $this->getValidCsvHeader(),
                 $csvRow,
             ]),
-            AuthHelpers::generateAccessTokenForInstitutionUser(
-                $this->getActingInstitutionUserWithAddUserPrivilege(
-                    $institution
-                )
-            )
+            AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser)
         )->assertOk();
 
         $user = User::where('personal_identification_code', $csvRow[0])->first();
@@ -75,6 +77,30 @@ class InstitutionUserImportControllerImportTest extends TestCase
             $institutionUser->institutionUserRoles->pluck('role_id')
         );
         $this->assertEquals($department->id, $institutionUser->department_id);
+
+        [$pic, $fullName, $email, $phone] = $csvRow;
+        [$forename, $surname] = Str::of($fullName)->explode(' ');
+
+        $this->assertSuccessfulAuditLogMessageWasPublished(
+            AuditLogEventType::CreateObject,
+            $actingInstitutionUser,
+            static::TRACE_ID,
+            [
+                'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+                'object_data' => [
+                    'phone' => $phone,
+                    'email' => $email,
+                    'department_id' => $department->id,
+                    'roles' => $roles->toArray(),
+                    'user' => [
+                        'forename' => $forename,
+                        'surname' => $surname,
+                        'personal_identification_code' => $pic,
+                    ],
+                ],
+            ],
+            Date::getTestNow()
+        );
     }
 
     public function test_import_already_existing_user_to_the_same_institution_dont_change_anything(): void
@@ -122,6 +148,8 @@ class InstitutionUserImportControllerImportTest extends TestCase
 
         $this->assertCount(1, $importedInstitutionUser->institutionUserRoles);
         $this->assertEquals($role->id, $importedInstitutionUser->institutionUserRoles->first()->role_id);
+
+        $this->amqpPublisher->shouldNotHaveReceived('publish');
     }
 
     /**
@@ -173,6 +201,8 @@ class InstitutionUserImportControllerImportTest extends TestCase
         $newInstitutionUserAttributes = $institutionUser->getAttributes();
         $this->assertEquals($oldInstitutionUserAttributes, $newInstitutionUserAttributes);
         $this->assertEquals([$role->id], $institutionUser->institutionUserRoles->pluck('role_id')->toArray());
+
+        $this->amqpPublisher->shouldNotHaveReceived('publish');
     }
 
     /**
@@ -225,6 +255,8 @@ class InstitutionUserImportControllerImportTest extends TestCase
         $this->assertEquals($oldInstitutionUserAttributes, $newInstitutionUserAttributes);
 
         $this->assertNotContains([$newRole->id], $institutionUser->institutionUserRoles->pluck('role_id')->toArray());
+
+        $this->amqpPublisher->shouldNotHaveReceived('publish');
     }
 
     public function test_import_acting_user_dont_change_anything(): void
@@ -275,6 +307,8 @@ class InstitutionUserImportControllerImportTest extends TestCase
 
         $this->assertCount(1, $importedInstitutionUser->institutionUserRoles);
         $this->assertEquals($role->id, $importedInstitutionUser->institutionUserRoles->first()->role_id);
+
+        $this->amqpPublisher->shouldNotHaveReceived('publish');
     }
 
     public function test_import_already_existing_user_to_another_institution()
@@ -329,17 +363,31 @@ class InstitutionUserImportControllerImportTest extends TestCase
 
     public function test_import_file_with_errors(): void
     {
+        $actingInstitutionUser = $this->getActingInstitutionUserWithAddUserPrivilege(
+            $this->createInstitution()
+        );
+
+        $fileContent = $this->composeContent([
+            $this->getValidCsvHeader(),
+            $this->getValidCsvRow('wrong-role'),
+        ]);
+
         $this->sendImportFileRequest(
-            $this->composeContent([
-                $this->getValidCsvHeader(),
-                $this->getValidCsvRow('wrong-role'),
-            ]),
-            AuthHelpers::generateAccessTokenForInstitutionUser(
-                $this->getActingInstitutionUserWithAddUserPrivilege(
-                    $this->createInstitution()
-                )
-            )
+            $fileContent,
+            AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser)
         )->assertBadRequest();
+
+        $this->assertAuditLogMessageWasPublished(
+            AuditLogEventType::CreateObject,
+            $actingInstitutionUser,
+            AuditLogEventFailureType::UNPROCESSABLE_ENTITY,
+            static::TRACE_ID,
+            [
+                'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+                'input' => ['file' => $fileContent],
+            ],
+            Date::getTestNow()
+        );
     }
 
     public function test_import_without_auth_token_returned_403(): void
@@ -355,21 +403,33 @@ class InstitutionUserImportControllerImportTest extends TestCase
     public function test_import_without_corresponding_privilege_returned_403()
     {
         $institution = $this->createInstitution();
-        $this->sendImportFileRequest(
-            $this->composeContent([
-                $this->getValidCsvHeader(),
-                $this->getValidCsvRow('some-name'),
-            ]),
-            AuthHelpers::generateAccessTokenForInstitutionUser(
-                $this->createInstitutionUserWithRoles(
-                    $institution,
-                    $this->createRoleWithPrivileges(
-                        $institution,
-                        [PrivilegeKey::ActivateUser]
-                    )
-                )
+        $fileContent = $this->composeContent([
+            $this->getValidCsvHeader(),
+            $this->getValidCsvRow('some-name'),
+        ]);
+        $actingInstitutionUser = $this->createInstitutionUserWithRoles(
+            $institution,
+            $this->createRoleWithPrivileges(
+                $institution,
+                [PrivilegeKey::ActivateUser]
             )
+        );
+        $this->sendImportFileRequest(
+            $fileContent,
+            AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser)
         )->assertForbidden();
+
+        $this->assertAuditLogMessageWasPublished(
+            AuditLogEventType::CreateObject,
+            $actingInstitutionUser,
+            AuditLogEventFailureType::FORBIDDEN,
+            static::TRACE_ID,
+            [
+                'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+                'input' => ['file' => $fileContent],
+            ],
+            Date::getTestNow()
+        );
     }
 
     private function sendImportFileRequest(string $fileContent, string $accessToken = ''): TestResponse
@@ -378,6 +438,7 @@ class InstitutionUserImportControllerImportTest extends TestCase
             $this->withHeaders([
                 'Authorization' => "Bearer $accessToken",
                 'Accept' => 'application/json',
+                'X-Request-Id' => static::TRACE_ID,
             ]);
         }
 

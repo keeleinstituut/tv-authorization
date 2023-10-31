@@ -12,6 +12,8 @@ use App\Models\InstitutionUser;
 use App\Models\Privilege;
 use App\Models\Role;
 use App\Util\DateUtil;
+use AuditLogClient\Enums\AuditLogEventObjectType;
+use AuditLogClient\Enums\AuditLogEventType;
 use Carbon\CarbonInterval;
 use Closure;
 use Exception;
@@ -19,6 +21,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,10 +29,10 @@ use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
-use Tests\TestCase;
+use Tests\MockedAmqpPublisherTestCase;
 use Throwable;
 
-class InstitutionUserControllerActivateTest extends TestCase
+class InstitutionUserControllerActivateTest extends MockedAmqpPublisherTestCase
 {
     use RefreshDatabase, InstitutionUserHelpers, ModelAssertions;
 
@@ -71,6 +74,8 @@ class InstitutionUserControllerActivateTest extends TestCase
             }
         );
 
+        $originalDeactivationDate = $targetInstitutionUser->deactivation_date;
+
         $modelsWithExpectedChanges = [
             [$untargetedInstitutionUser, []],
             [$actingInstitutionUser, []],
@@ -102,6 +107,19 @@ class InstitutionUserControllerActivateTest extends TestCase
         if ($notifyUser) {
             // TODO: Test user is notified (e.g. email is in queue)
         }
+
+        $this->assertSuccessfulAuditLogMessageWasPublished(
+            AuditLogEventType::ModifyObject,
+            $actingInstitutionUser,
+            static::TRACE_ID,
+            [
+                'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+                'object_identity_subset' => $targetInstitutionUser->getIdentitySubset(),
+                'pre_modification_subset' => ['deactivation_date' => $originalDeactivationDate, 'roles' => []],
+                'post_modification_subset' => ['deactivation_date' => null, 'roles' => $roles->toArray()],
+            ],
+            Date::getTestNow()
+        );
     }
 
     /** @return array<array{Closure(array): array, int}> */
@@ -449,7 +467,7 @@ class InstitutionUserControllerActivateTest extends TestCase
     private function sendActivateRequestWithCustomPayloadAndHeaders(array $payload, array $headers): TestResponse
     {
         return $this
-            ->withHeaders($headers)
+            ->withHeaders(['X-Request-Id' => static::TRACE_ID, ...$headers])
             ->postJson(
                 action([InstitutionUserController::class, 'activate']),
                 $payload

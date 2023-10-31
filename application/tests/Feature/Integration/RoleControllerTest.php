@@ -9,13 +9,15 @@ use App\Models\Privilege;
 use App\Models\PrivilegeRole;
 use App\Models\Role;
 use App\Models\User;
+use AuditLogClient\Enums\AuditLogEventObjectType;
+use AuditLogClient\Enums\AuditLogEventType;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
-use Tests\TestCase;
+use Tests\MockedAmqpPublisherTestCase;
 
-class RoleControllerTest extends TestCase
+class RoleControllerTest extends MockedAmqpPublisherTestCase
 {
     use RefreshDatabase, InstitutionUserHelpers;
 
@@ -103,6 +105,7 @@ class RoleControllerTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
             'Accept' => 'application/json',
+            'X-Request-Id' => $traceId = '123',
         ])->postJson('/api/roles', $payload);
 
         $savedRole = Role::findOrFail($response->json('data.id'));
@@ -112,16 +115,26 @@ class RoleControllerTest extends TestCase
             ->assertJson([
                 'data' => $this->constructRoleRepresentation($savedRole),
             ]);
+
+        $this->assertSuccessfulAuditLogMessageWasPublished(
+            AuditLogEventType::CreateObject,
+            $actingUser,
+            $traceId,
+            [
+                'object_type' => AuditLogEventObjectType::Role->value,
+                'object_data' => $savedRole->withoutRelations()->load('privileges')->toArray(),
+            ],
+            $this->testNow
+        );
     }
 
     public function test_api_roles_update_endpoint(): void
     {
-        $role = Role::factory()->for(
-            $institution = Institution::factory()->create()
-        )->create();
-        PrivilegeRole::factory(3)->create([
-            'role_id' => $role->id,
-        ]);
+        $role = Role::factory()
+            ->for($institution = Institution::factory()->create())
+            ->has(PrivilegeRole::factory(3))
+            ->create();
+
         $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($institution, PrivilegeKey::EditRole);
         $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingUser);
 
@@ -135,9 +148,12 @@ class RoleControllerTest extends TestCase
             }
         EOT, true);
 
+        $roleBeforeRequest = $role->load('privileges')->toArray();
+
         $response = $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
             'Accept' => 'application/json',
+            'X-Request-Id' => '123',
         ])->putJson("/api/roles/$role->id", $payload);
 
         $savedRole = Role::find($role->id);
@@ -147,6 +163,19 @@ class RoleControllerTest extends TestCase
             ->assertJson([
                 'data' => $this->constructRoleRepresentation($savedRole),
             ]);
+
+        $this->assertSuccessfulAuditLogMessageWasPublished(
+            AuditLogEventType::ModifyObject,
+            $actingUser,
+            '123',
+            [
+                'object_type' => AuditLogEventObjectType::Role->value,
+                'object_identity_subset' => ['id' => $roleBeforeRequest['id'], 'name' => $roleBeforeRequest['name']],
+                'pre_modification_subset' => ['name' => $roleBeforeRequest['name'], 'privileges' => $roleBeforeRequest['privileges']],
+                'post_modification_subset' => ['name' => 'Test Role', 'privileges' => Privilege::where('key', 'VIEW_ROLE')->get()->toArray()],
+            ],
+            $this->testNow
+        );
     }
 
     public function test_api_roles_update_endpoint_removing_and_adding_privilege(): void
@@ -212,9 +241,12 @@ class RoleControllerTest extends TestCase
         $actingUser = $this->createUserInGivenInstitutionWithGivenPrivilege($institution, PrivilegeKey::DeleteRole);
         $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingUser);
 
+        $roleBeforeRequest = $role->toArray();
+
         $response = $this->withHeaders([
             'Authorization' => "Bearer $accessToken",
             'Accept' => 'application/json',
+            'X-Request-Id' => $traceId = '123',
         ])->deleteJson("/api/roles/$role->id");
 
         $savedRole = Role::find($role->id);
@@ -226,6 +258,17 @@ class RoleControllerTest extends TestCase
             ]);
 
         $this->assertNull($savedRole);
+
+        $this->assertSuccessfulAuditLogMessageWasPublished(
+            AuditLogEventType::RemoveObject,
+            $actingUser,
+            $traceId,
+            [
+                'object_type' => AuditLogEventObjectType::Role->value,
+                'object_identity_subset' => ['id' => $roleBeforeRequest['id'], 'name' => $roleBeforeRequest['name']],
+            ],
+            $this->testNow
+        );
     }
 
     public function test_unauthorized_institution(): void

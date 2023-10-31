@@ -8,7 +8,11 @@ use App\Models\Institution;
 use App\Models\InstitutionUser;
 use App\Models\Privilege;
 use App\Models\Role;
+use AuditLogClient\Enums\AuditLogEventFailureType;
+use AuditLogClient\Enums\AuditLogEventObjectType;
+use AuditLogClient\Enums\AuditLogEventType;
 use Closure;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
@@ -19,10 +23,10 @@ use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
-use Tests\TestCase;
+use Tests\MockedAmqpPublisherTestCase;
 use Throwable;
 
-class InstitutionUserControllerUpdateTest extends TestCase
+class InstitutionUserControllerUpdateTest extends MockedAmqpPublisherTestCase
 {
     use RefreshDatabase, InstitutionUserHelpers, ModelAssertions;
 
@@ -249,12 +253,43 @@ class InstitutionUserControllerUpdateTest extends TestCase
             modifyStateUsingTargetUser: $modifyStateUsingTargetUser
         );
 
+        $institutionUserIdentityBeforeRequest = $targetInstitutionUser->getIdentitySubset();
+        $institutionUserBeforeRequest = $targetInstitutionUser->refresh()->toArray();
+
         $this->assertModelInExpectedStateAfterActionAndCheckResponseData(
             fn () => $this->sendRequestWithExpectedHeaders($targetInstitutionUser->id, $payload, $actingInstitutionUser),
             RepresentationHelpers::createInstitutionUserNestedRepresentation(...),
             $targetInstitutionUser,
-            [...$payload, ...$expectedStateOverride]
+            $expectedChanges = [...$payload, ...$expectedStateOverride]
         );
+
+        $this->amqpPublisher->shouldHaveReceived('publish')->withArgs(
+            function (mixed $actualMessage, string $exchange, string $routingKey, array $headers) use ($institutionUserBeforeRequest, $expectedChanges, $institutionUserIdentityBeforeRequest, $actingInstitutionUser) {
+                $this->assertIsArray($headers);
+                $this->assertIsString(data_get($headers, 'jwt'));
+
+                $this->assertArrayHasSubsetIgnoringOrder([
+                    'trace_id' => static::TRACE_ID,
+                    'event_type' => AuditLogEventType::ModifyObject->value,
+                    'failure_type' => null,
+                    'context_institution_id' => $actingInstitutionUser->institution_id,
+                    'context_department_id' => null,
+                    'acting_institution_user_id' => $actingInstitutionUser->id,
+                    'acting_user_pic' => $actingInstitutionUser->user->personal_identification_code,
+                    'acting_user_forename' => $actingInstitutionUser->user->forename,
+                    'acting_user_surname' => $actingInstitutionUser->user->surname,
+                    'event_parameters' => [
+                        'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+                        'object_identity_subset' => $institutionUserIdentityBeforeRequest,
+                    ],
+                ], $actualMessage);
+
+                $this->assertEquals(Date::getTestNow()->toISOString(), data_get($actualMessage, 'happened_at'));
+                $this->assertArrayHasSubsetIgnoringOrder(data_get($actualMessage, 'event_parameters.pre_modification_subset'), $institutionUserBeforeRequest);
+                $this->assertArrayHasSubsetIgnoringOrder(data_get($actualMessage, 'event_parameters.post_modification_subset'), $expectedChanges);
+
+                return true;
+            });
     }
 
     /**
@@ -607,6 +642,19 @@ class InstitutionUserControllerUpdateTest extends TestCase
             $targetInstitutionUser,
             Response::HTTP_UNPROCESSABLE_ENTITY
         );
+
+        $this->assertAuditLogMessageWasPublished(
+            AuditLogEventType::ModifyObject,
+            $actingInstitutionUser,
+            AuditLogEventFailureType::UNPROCESSABLE_ENTITY,
+            static::TRACE_ID,
+            [
+                'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+                'object_identity_subset' => $targetInstitutionUser->getIdentitySubset(),
+                'input' => static::convertTrimWhiteSpaceToNullRecursively($invalidPayload),
+            ],
+            Date::getTestNow()
+        );
     }
 
     /** @return array<array{
@@ -680,6 +728,8 @@ class InstitutionUserControllerUpdateTest extends TestCase
         Closure $transformStateAndGenerateInvalidPayload,
         int $expectedResponseCode
     ): void {
+        Model::setEventDispatcher($this->modelEventDispatcher);
+
         [
             'actingInstitutionUser' => $actingInstitutionUser,
             'targetInstitutionUser' => $targetInstitutionUser,
@@ -771,6 +821,21 @@ class InstitutionUserControllerUpdateTest extends TestCase
             $targetInstitutionUser,
             $expectedResponseStatus
         );
+
+        if ($expectedResponseStatus === Response::HTTP_FORBIDDEN) {
+            $this->assertAuditLogMessageWasPublished(
+                AuditLogEventType::ModifyObject,
+                $actingInstitutionUser,
+                AuditLogEventFailureType::FORBIDDEN,
+                static::TRACE_ID,
+                [
+                    'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+                    'object_identity_subset' => $targetInstitutionUser->getIdentitySubset(),
+                    'input' => static::convertTrimWhiteSpaceToNullRecursively($payload),
+                ],
+                Date::getTestNow()
+            );
+        }
     }
 
     /** @dataProvider \Tests\Feature\DataProviders::provideInvalidHeaderCreators
@@ -806,7 +871,7 @@ class InstitutionUserControllerUpdateTest extends TestCase
         return $this->sendRequestWithCustomHeaders(
             $targetId,
             $requestPayload,
-            ['Authorization' => 'Bearer '.$jwt]
+            ['Authorization' => 'Bearer '.$jwt, 'X-Request-Id' => static::TRACE_ID]
         );
     }
 
@@ -928,5 +993,9 @@ class InstitutionUserControllerUpdateTest extends TestCase
             'sunday_worktime_start' => null,
             'sunday_worktime_end' => null,
         ];
+    }
+
+    private function map()
+    {
     }
 }

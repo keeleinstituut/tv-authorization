@@ -7,6 +7,7 @@ use App\Models\InstitutionUser;
 use Closure;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Throwable;
 
@@ -79,5 +80,18 @@ abstract class TestCase extends BaseTestCase
             Arr::sortRecursive($expected),
             Arr::sortRecursive($actual)
         );
+    }
+
+    public static function convertTrimWhiteSpaceToNullRecursively(array $array): array
+    {
+        return collect($array)
+            ->map(function (mixed $value) {
+                return match (gettype($value)) {
+                    'string' => Str::of($value)->trim()->toString() ?: null,
+                    'array' => static::convertTrimWhiteSpaceToNullRecursively($value),
+                    default => $value
+                };
+            })
+            ->all();
     }
 }

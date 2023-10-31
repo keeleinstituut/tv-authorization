@@ -8,7 +8,11 @@ use App\Models\Institution;
 use App\Models\InstitutionUser;
 use App\Models\Privilege;
 use App\Models\Role;
+use AuditLogClient\Enums\AuditLogEventFailureType;
+use AuditLogClient\Enums\AuditLogEventObjectType;
+use AuditLogClient\Enums\AuditLogEventType;
 use Closure;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -181,11 +185,32 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
             'actingInstitutionUser' => $actingInstitutionUser,
         ] = $this->createInstitutionAndPrivilegedActingUser($modifyInstitution);
 
+        $institutionBeforeRequest = $institution->toArray();
+
         $this->assertModelInExpectedStateAfterActionAndCheckResponseData(
             fn () => $this->sendUpdateRequestWithExpectedHeaders($institution->id, $payload, $actingInstitutionUser),
             RepresentationHelpers::createInstitutionFlatRepresentation(...),
             $institution,
             [...$payload, ...$expectedStateOverride]
+        );
+
+        $this->assertSuccessfulAuditLogMessageWasPublished(
+            AuditLogEventType::ModifyObject,
+            $actingInstitutionUser,
+            static::TRACE_ID,
+            [
+                'object_type' => AuditLogEventObjectType::Institution->value,
+                'object_identity_subset' => Arr::only($institutionBeforeRequest, ['id', 'name']),
+                'pre_modification_subset' => collect($institutionBeforeRequest)
+                    ->only(collect($payload)->merge($expectedStateOverride)->keys())
+                    ->diffAssoc(collect($payload)->merge($expectedStateOverride))
+                    ->all(),
+                'post_modification_subset' => collect($payload)
+                    ->merge($expectedStateOverride)
+                    ->diffAssoc($institutionBeforeRequest)
+                    ->all(),
+            ],
+            Date::getTestNow()
         );
     }
 
@@ -224,15 +249,31 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
             'actingInstitutionUser' => $actingInstitutionUser,
         ] = $this->createInstitutionAndPrivilegedActingUser(modifyActingInstitutionUser: $modifyActingInstitutionUser);
 
+        $payload = static::createExampleValidPayload();
         $this->assertInstitutionUnchangedAfterAction(
             fn () => $this->sendUpdateRequestWithExpectedHeaders(
                 $institution->id,
-                static::createExampleValidPayload(),
+                $payload,
                 $actingInstitutionUser
             ),
             $institution,
             $expectedResponseStatus
         );
+
+        if ($expectedResponseStatus === Response::HTTP_FORBIDDEN) {
+            $this->assertAuditLogMessageWasPublished(
+                AuditLogEventType::ModifyObject,
+                $actingInstitutionUser,
+                AuditLogEventFailureType::FORBIDDEN,
+                static::TRACE_ID,
+                [
+                    'object_type' => AuditLogEventObjectType::Institution->value,
+                    'object_identity_subset' => $institution->getIdentitySubset(),
+                    'input' => $payload,
+                ],
+                Date::getTestNow()
+            );
+        }
     }
 
     /**
@@ -425,6 +466,19 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
             $institution,
             Response::HTTP_UNPROCESSABLE_ENTITY
         );
+
+        $this->assertAuditLogMessageWasPublished(
+            AuditLogEventType::ModifyObject,
+            $actingInstitutionUser,
+            AuditLogEventFailureType::UNPROCESSABLE_ENTITY,
+            static::TRACE_ID,
+            [
+                'object_type' => AuditLogEventObjectType::Institution->value,
+                'object_identity_subset' => $institution->getIdentitySubset(),
+                'input' => static::convertTrimWhiteSpaceToNullRecursively($invalidChange),
+            ],
+            Date::getTestNow()
+        );
     }
 
     /** @dataProvider \Tests\Feature\DataProviders::provideInvalidHeaderCreators
@@ -465,7 +519,7 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
     private function sendUpdateRequestWithCustomHeaders(mixed $institutionId, array $payload, array $headers): TestResponse
     {
         return $this
-            ->withHeaders($headers)
+            ->withHeaders(['X-Request-Id' => static::TRACE_ID, ...$headers])
             ->putJson(
                 action(
                     [InstitutionController::class, 'update'],

@@ -7,9 +7,9 @@ use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
-use Tests\TestCase;
+use Tests\MockedAmqpPublisherTestCase;
 
-abstract class InstitutionControllerTestCase extends TestCase
+abstract class InstitutionControllerTestCase extends MockedAmqpPublisherTestCase
 {
     use RefreshDatabase, ModelAssertions;
 
