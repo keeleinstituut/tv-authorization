@@ -20,14 +20,15 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\Assertions;
+use Tests\AuditLogTestCase;
 use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
-use Tests\MockedAmqpPublisherTestCase;
 use Throwable;
 
-class InstitutionUserControllerArchiveTest extends MockedAmqpPublisherTestCase
+class InstitutionUserControllerArchiveTest extends AuditLogTestCase
 {
     use RefreshDatabase, InstitutionUserHelpers, ModelAssertions;
 
@@ -107,6 +108,8 @@ class InstitutionUserControllerArchiveTest extends MockedAmqpPublisherTestCase
             ]],
         ];
 
+        $rolesBeforeRequest = data_get($targetInstitutionUser->getAuditLogRepresentation(), 'roles');
+
         $this->assertModelsInExpectedStateAfterActionAndCheckResponseData(
             fn () => $this->sendArchiveRequestWithExpectedPayloadAndHeaders($targetInstitutionUser, $actingInstitutionUser),
             RepresentationHelpers::createInstitutionUserNestedRepresentation(...),
@@ -118,18 +121,7 @@ class InstitutionUserControllerArchiveTest extends MockedAmqpPublisherTestCase
         $this->assertNull(InstitutionUser::find($targetInstitutionUser->id));
         $this->assertInstitutionUserRolePivotsAreMissing($targetInstitutionUserRolePivots);
 
-        $this->assertSuccessfulAuditLogMessageWasPublished(
-            AuditLogEventType::ModifyObject,
-            $actingInstitutionUser,
-            static::TRACE_ID,
-            [
-                'object_type' => AuditLogEventObjectType::InstitutionUser->value,
-                'object_identity_subset' => $targetInstitutionUser->getIdentitySubset(),
-                'pre_modification_subset' => ['archived_at' => null],
-                'post_modification_subset' => ['archived_at' => Date::getTestNow()->toISOString()],
-            ],
-            Date::getTestNow()
-        );
+        $this->assertMessageRepresentsInstitutionUserArchivedAtModification($this->retrieveLatestAuditLogMessageBody(), $targetInstitutionUser, $rolesBeforeRequest, $actingInstitutionUser);
     }
 
     /** @return array<array{Closure(InstitutionUser): void, int}> */
@@ -440,5 +432,38 @@ class InstitutionUserControllerArchiveTest extends MockedAmqpPublisherTestCase
             'untargetedInstitutionUser' => $untargetedInstitutionUser->refresh(),
             'targetInstitutionUserRolePivots' => $targetInstitutionUser->institutionUserRoles,
         ];
+    }
+
+    private function assertMessageRepresentsInstitutionUserArchivedAtModification(array $actualMessageBody, InstitutionUser $targetUser, array $rolesBeforeRequest, InstitutionUser $actingUser): void
+    {
+        $expectedMessageBodySubset = [
+            'event_type' => AuditLogEventType::ModifyObject->value,
+            'happened_at' => Date::getTestNow()->toISOString(),
+            'trace_id' => static::TRACE_ID,
+            'failure_type' => null,
+            'context_institution_id' => $actingUser->institution_id,
+            'context_department_id' => $actingUser->department_id,
+            'acting_institution_user_id' => $actingUser->id,
+            'acting_user_pic' => $actingUser->user->personal_identification_code,
+            'acting_user_forename' => $actingUser->user->forename,
+            'acting_user_surname' => $actingUser->user->surname,
+        ];
+
+        Assertions::assertArraysEqualIgnoringOrder(
+            $expectedMessageBodySubset,
+            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
+        );
+
+        $eventParameters = data_get($actualMessageBody, 'event_parameters');
+        $this->assertIsArray($eventParameters);
+
+        $expectedEventParameters = [
+            'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+            'object_identity_subset' => $targetUser->getIdentitySubset(),
+            'pre_modification_subset' => ['archived_at' => null, ...(empty($rolesBeforeRequest) ? [] : ['roles' => $rolesBeforeRequest])],
+            'post_modification_subset' => ['archived_at' => Date::getTestNow()->toISOString(), ...(empty($rolesBeforeRequest) ? [] : ['roles' => []])],
+        ];
+
+        Assertions::assertArraysEqualIgnoringOrder($expectedEventParameters, $eventParameters);
     }
 }

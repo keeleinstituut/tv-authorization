@@ -6,7 +6,6 @@ use App\Models\Institution;
 use App\Models\InstitutionUser;
 use Closure;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Throwable;
@@ -61,25 +60,12 @@ abstract class TestCase extends BaseTestCase
 
     public function assertArrayHasSubsetIgnoringOrder(?array $expectedSubset, ?array $actual): void
     {
-        $this->assertNotNull($expectedSubset);
-        $this->assertNotNull($actual);
-
-        $sortedDottedExpectedSubset = Arr::dot(Arr::sortRecursive($expectedSubset));
-        $sortedDottedActualWholeArray = Arr::dot(Arr::sortRecursive($actual));
-        $sortedDottedActualSubset = Arr::only($sortedDottedActualWholeArray, array_keys($sortedDottedExpectedSubset));
-
-        $this->assertArraysEqualIgnoringOrder($sortedDottedExpectedSubset, $sortedDottedActualSubset);
+        Assertions::assertArrayHasSubsetIgnoringOrder($expectedSubset, $actual);
     }
 
     public function assertArraysEqualIgnoringOrder(?array $expected, ?array $actual): void
     {
-        $this->assertNotNull($expected);
-        $this->assertNotNull($actual);
-
-        $this->assertEquals(
-            Arr::sortRecursive($expected),
-            Arr::sortRecursive($actual)
-        );
+        Assertions::assertArraysEqualIgnoringOrder($expected, $actual);
     }
 
     public static function convertTrimWhiteSpaceToNullRecursively(array $array): array

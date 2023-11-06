@@ -12,21 +12,22 @@ use AuditLogClient\Enums\AuditLogEventFailureType;
 use AuditLogClient\Enums\AuditLogEventObjectType;
 use AuditLogClient\Enums\AuditLogEventType;
 use Closure;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\Assertions;
+use Tests\AuditLogTestCase;
 use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
-use Tests\MockedAmqpPublisherTestCase;
 use Throwable;
 
-class InstitutionUserControllerUpdateTest extends MockedAmqpPublisherTestCase
+class InstitutionUserControllerUpdateTest extends AuditLogTestCase
 {
     use RefreshDatabase, InstitutionUserHelpers, ModelAssertions;
 
@@ -253,8 +254,7 @@ class InstitutionUserControllerUpdateTest extends MockedAmqpPublisherTestCase
             modifyStateUsingTargetUser: $modifyStateUsingTargetUser
         );
 
-        $institutionUserIdentityBeforeRequest = $targetInstitutionUser->getIdentitySubset();
-        $institutionUserBeforeRequest = $targetInstitutionUser->refresh()->toArray();
+        $institutionUserBeforeRequest = $targetInstitutionUser->getAuditLogRepresentation();
 
         $this->assertModelInExpectedStateAfterActionAndCheckResponseData(
             fn () => $this->sendRequestWithExpectedHeaders($targetInstitutionUser->id, $payload, $actingInstitutionUser),
@@ -263,33 +263,15 @@ class InstitutionUserControllerUpdateTest extends MockedAmqpPublisherTestCase
             $expectedChanges = [...$payload, ...$expectedStateOverride]
         );
 
-        $this->amqpPublisher->shouldHaveReceived('publish')->withArgs(
-            function (mixed $actualMessage, string $exchange, string $routingKey, array $headers) use ($institutionUserBeforeRequest, $expectedChanges, $institutionUserIdentityBeforeRequest, $actingInstitutionUser) {
-                $this->assertIsArray($headers);
-                $this->assertIsString(data_get($headers, 'jwt'));
-
-                $this->assertArrayHasSubsetIgnoringOrder([
-                    'trace_id' => static::TRACE_ID,
-                    'event_type' => AuditLogEventType::ModifyObject->value,
-                    'failure_type' => null,
-                    'context_institution_id' => $actingInstitutionUser->institution_id,
-                    'context_department_id' => null,
-                    'acting_institution_user_id' => $actingInstitutionUser->id,
-                    'acting_user_pic' => $actingInstitutionUser->user->personal_identification_code,
-                    'acting_user_forename' => $actingInstitutionUser->user->forename,
-                    'acting_user_surname' => $actingInstitutionUser->user->surname,
-                    'event_parameters' => [
-                        'object_type' => AuditLogEventObjectType::InstitutionUser->value,
-                        'object_identity_subset' => $institutionUserIdentityBeforeRequest,
-                    ],
-                ], $actualMessage);
-
-                $this->assertEquals(Date::getTestNow()->toISOString(), data_get($actualMessage, 'happened_at'));
-                $this->assertArrayHasSubsetIgnoringOrder(data_get($actualMessage, 'event_parameters.pre_modification_subset'), $institutionUserBeforeRequest);
-                $this->assertArrayHasSubsetIgnoringOrder(data_get($actualMessage, 'event_parameters.post_modification_subset'), $expectedChanges);
-
-                return true;
-            });
+        $this->assertMessageRepresentsInstitutionUserModification(
+            $this->retrieveLatestAuditLogMessageBody(),
+            $institutionUserBeforeRequest,
+            $actingInstitutionUser,
+            function (array $actualEventParameters) use ($expectedChanges, $institutionUserBeforeRequest) {
+                $this->assertArrayHasSubsetIgnoringOrder(data_get($actualEventParameters, 'pre_modification_subset'), $institutionUserBeforeRequest);
+                $this->assertArrayHasSubsetIgnoringOrder(data_get($actualEventParameters, 'post_modification_subset'), $expectedChanges);
+            }
+        );
     }
 
     /**
@@ -643,17 +625,37 @@ class InstitutionUserControllerUpdateTest extends MockedAmqpPublisherTestCase
             Response::HTTP_UNPROCESSABLE_ENTITY
         );
 
-        $this->assertAuditLogMessageWasPublished(
-            AuditLogEventType::ModifyObject,
-            $actingInstitutionUser,
-            AuditLogEventFailureType::UNPROCESSABLE_ENTITY,
-            static::TRACE_ID,
-            [
-                'object_type' => AuditLogEventObjectType::InstitutionUser->value,
-                'object_identity_subset' => $targetInstitutionUser->getIdentitySubset(),
-                'input' => static::convertTrimWhiteSpaceToNullRecursively($invalidPayload),
-            ],
-            Date::getTestNow()
+        $actualMessageBody = $this->retrieveLatestAuditLogMessageBody();
+
+        $expectedMessageBodySubset = [
+            'event_type' => AuditLogEventType::ModifyObject->value,
+            'happened_at' => Date::getTestNow()->toISOString(),
+            'trace_id' => static::TRACE_ID,
+            'failure_type' => AuditLogEventFailureType::UNPROCESSABLE_ENTITY->value,
+            'context_institution_id' => $actingInstitutionUser->institution_id,
+            'context_department_id' => $actingInstitutionUser->department_id,
+            'acting_institution_user_id' => $actingInstitutionUser->id,
+            'acting_user_pic' => $actingInstitutionUser->user->personal_identification_code,
+            'acting_user_forename' => $actingInstitutionUser->user->forename,
+            'acting_user_surname' => $actingInstitutionUser->user->surname,
+        ];
+
+        Assertions::assertArraysEqualIgnoringOrder(
+            $expectedMessageBodySubset,
+            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
+        );
+
+        $eventParameters = data_get($actualMessageBody, 'event_parameters');
+        $this->assertIsArray($eventParameters);
+
+        $expectedEventParameters = [
+            'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+            'object_identity_subset' => $targetInstitutionUser->getIdentitySubset(),
+            'input' => static::convertTrimWhiteSpaceToNullRecursively($invalidPayload),
+        ];
+        Assertions::assertArraysEqualIgnoringOrder(
+            $expectedEventParameters,
+            $eventParameters
         );
     }
 
@@ -728,8 +730,6 @@ class InstitutionUserControllerUpdateTest extends MockedAmqpPublisherTestCase
         Closure $transformStateAndGenerateInvalidPayload,
         int $expectedResponseCode
     ): void {
-        Model::setEventDispatcher($this->modelEventDispatcher);
-
         [
             'actingInstitutionUser' => $actingInstitutionUser,
             'targetInstitutionUser' => $targetInstitutionUser,
@@ -823,17 +823,37 @@ class InstitutionUserControllerUpdateTest extends MockedAmqpPublisherTestCase
         );
 
         if ($expectedResponseStatus === Response::HTTP_FORBIDDEN) {
-            $this->assertAuditLogMessageWasPublished(
-                AuditLogEventType::ModifyObject,
-                $actingInstitutionUser,
-                AuditLogEventFailureType::FORBIDDEN,
-                static::TRACE_ID,
-                [
-                    'object_type' => AuditLogEventObjectType::InstitutionUser->value,
-                    'object_identity_subset' => $targetInstitutionUser->getIdentitySubset(),
-                    'input' => static::convertTrimWhiteSpaceToNullRecursively($payload),
-                ],
-                Date::getTestNow()
+            $actualMessageBody = $this->retrieveLatestAuditLogMessageBody();
+
+            $expectedMessageBodySubset = [
+                'event_type' => AuditLogEventType::ModifyObject->value,
+                'happened_at' => Date::getTestNow()->toISOString(),
+                'trace_id' => static::TRACE_ID,
+                'failure_type' => AuditLogEventFailureType::FORBIDDEN->value,
+                'context_institution_id' => $actingInstitutionUser->institution_id,
+                'context_department_id' => $actingInstitutionUser->department_id,
+                'acting_institution_user_id' => $actingInstitutionUser->id,
+                'acting_user_pic' => $actingInstitutionUser->user->personal_identification_code,
+                'acting_user_forename' => $actingInstitutionUser->user->forename,
+                'acting_user_surname' => $actingInstitutionUser->user->surname,
+            ];
+
+            Assertions::assertArraysEqualIgnoringOrder(
+                $expectedMessageBodySubset,
+                collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
+            );
+
+            $eventParameters = data_get($actualMessageBody, 'event_parameters');
+            $this->assertIsArray($eventParameters);
+
+            $expectedEventParameters = [
+                'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+                'object_identity_subset' => $targetInstitutionUser->getIdentitySubset(),
+                'input' => $payload,
+            ];
+            Assertions::assertArraysEqualIgnoringOrder(
+                $expectedEventParameters,
+                $eventParameters
             );
         }
     }
@@ -995,7 +1015,45 @@ class InstitutionUserControllerUpdateTest extends MockedAmqpPublisherTestCase
         ];
     }
 
-    private function map()
+    /**
+     * @param  InstitutionUser  $institutionUserBeforeRequest
+     * @param  Closure(array): void  $assertOnEventParameters
+     */
+    private function assertMessageRepresentsInstitutionUserModification(array $actualMessageBody, array $institutionUserBeforeRequest, InstitutionUser $actingUser, Closure $assertOnEventParameters): void
     {
+        $expectedMessageBodySubset = [
+            'event_type' => AuditLogEventType::ModifyObject->value,
+            'happened_at' => Date::getTestNow()->toISOString(),
+            'trace_id' => static::TRACE_ID,
+            'failure_type' => null,
+            'context_institution_id' => $actingUser->institution_id,
+            'context_department_id' => $actingUser->department_id,
+            'acting_institution_user_id' => $actingUser->id,
+            'acting_user_pic' => $actingUser->user->personal_identification_code,
+            'acting_user_forename' => $actingUser->user->forename,
+            'acting_user_surname' => $actingUser->user->surname,
+        ];
+
+        Assertions::assertArrayHasSubsetIgnoringOrder(
+            $expectedMessageBodySubset,
+            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
+        );
+
+        $eventParameters = data_get($actualMessageBody, 'event_parameters');
+        $this->assertIsArray($eventParameters);
+
+        $expectedEventParametersSubset = [
+            'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+            'object_identity_subset' => [
+                ...Arr::only($institutionUserBeforeRequest, 'id'),
+                'user' => Arr::only($institutionUserBeforeRequest['user'], ['id', 'forename', 'surname', 'personal_identification_code']),
+            ],
+        ];
+        Assertions::assertArraysEqualIgnoringOrder(
+            $expectedEventParametersSubset,
+            collect($eventParameters)->intersectByKeys($expectedEventParametersSubset)->all(),
+        );
+
+        $assertOnEventParameters($eventParameters);
     }
 }

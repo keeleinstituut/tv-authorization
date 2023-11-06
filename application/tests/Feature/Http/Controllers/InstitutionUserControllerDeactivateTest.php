@@ -25,14 +25,15 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\Assertions;
+use Tests\AuditLogTestCase;
 use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
-use Tests\MockedAmqpPublisherTestCase;
 use Throwable;
 
-class InstitutionUserControllerDeactivateTest extends MockedAmqpPublisherTestCase
+class InstitutionUserControllerDeactivateTest extends AuditLogTestCase
 {
     use RefreshDatabase,
         InstitutionUserHelpers,
@@ -114,17 +115,12 @@ class InstitutionUserControllerDeactivateTest extends MockedAmqpPublisherTestCas
         $this->assertInstitutionUserIsIncludedAndActive($targetInstitutionUser->id);
         $this->assertInstitutionUserRolePivotsExist($targetInstitutionUserRolePivots);
 
-        $this->assertSuccessfulAuditLogMessageWasPublished(
-            AuditLogEventType::ModifyObject,
+        $this->assertMessageRepresentsInstitutionUserDeactivationDateModification(
+            $this->retrieveLatestAuditLogMessageBody(),
+            $targetInstitutionUser,
             $actingInstitutionUser,
-            static::TRACE_ID,
-            [
-                'object_type' => AuditLogEventObjectType::InstitutionUser->value,
-                'object_identity_subset' => $targetInstitutionUser->getIdentitySubset(),
-                'pre_modification_subset' => ['deactivation_date' => $existingDeactivationDate],
-                'post_modification_subset' => ['deactivation_date' => $requestDeactivationDate],
-            ],
-            Date::getTestNow()
+            $existingDeactivationDate,
+            $requestDeactivationDate
         );
     }
 
@@ -640,5 +636,38 @@ class InstitutionUserControllerDeactivateTest extends MockedAmqpPublisherTestCas
     private function convertToDateString(DateTimeInterface $dateTime): string
     {
         return $dateTime->format('Y-m-d');
+    }
+
+    private function assertMessageRepresentsInstitutionUserDeactivationDateModification(array $actualMessageBody, InstitutionUser $institutionUser, InstitutionUser $actingUser, ?string $expectedOldDeactivationDate, ?string $expectedNewDeactivationDate): void
+    {
+        $expectedMessageBodySubset = [
+            'event_type' => AuditLogEventType::ModifyObject->value,
+            'happened_at' => Date::getTestNow()->toISOString(),
+            'trace_id' => static::TRACE_ID,
+            'failure_type' => null,
+            'context_institution_id' => $actingUser->institution_id,
+            'context_department_id' => $actingUser->department_id,
+            'acting_institution_user_id' => $actingUser->id,
+            'acting_user_pic' => $actingUser->user->personal_identification_code,
+            'acting_user_forename' => $actingUser->user->forename,
+            'acting_user_surname' => $actingUser->user->surname,
+        ];
+
+        Assertions::assertArraysEqualIgnoringOrder(
+            $expectedMessageBodySubset,
+            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
+        );
+
+        $eventParameters = data_get($actualMessageBody, 'event_parameters');
+        $this->assertIsArray($eventParameters);
+
+        $expectedEventParameters = [
+            'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+            'object_identity_subset' => $institutionUser->getIdentitySubset(),
+            'pre_modification_subset' => ['deactivation_date' => $expectedOldDeactivationDate],
+            'post_modification_subset' => ['deactivation_date' => $expectedNewDeactivationDate],
+        ];
+
+        Assertions::assertArraysEqualIgnoringOrder($expectedEventParameters, $eventParameters);
     }
 }

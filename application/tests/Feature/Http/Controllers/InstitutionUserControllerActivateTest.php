@@ -25,14 +25,15 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\Assertions;
+use Tests\AuditLogTestCase;
 use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
-use Tests\MockedAmqpPublisherTestCase;
 use Throwable;
 
-class InstitutionUserControllerActivateTest extends MockedAmqpPublisherTestCase
+class InstitutionUserControllerActivateTest extends AuditLogTestCase
 {
     use RefreshDatabase, InstitutionUserHelpers, ModelAssertions;
 
@@ -74,7 +75,7 @@ class InstitutionUserControllerActivateTest extends MockedAmqpPublisherTestCase
             }
         );
 
-        $originalDeactivationDate = $targetInstitutionUser->deactivation_date;
+        $targetInstitutionUserBeforeRequest = $targetInstitutionUser->getAuditLogRepresentation();
 
         $modelsWithExpectedChanges = [
             [$untargetedInstitutionUser, []],
@@ -108,17 +109,11 @@ class InstitutionUserControllerActivateTest extends MockedAmqpPublisherTestCase
             // TODO: Test user is notified (e.g. email is in queue)
         }
 
-        $this->assertSuccessfulAuditLogMessageWasPublished(
-            AuditLogEventType::ModifyObject,
+        $this->assertMessageRepresentsInstitutionUserDeactivationDateModification(
+            $this->retrieveLatestAuditLogMessageBody(),
+            $targetInstitutionUserBeforeRequest,
             $actingInstitutionUser,
-            static::TRACE_ID,
-            [
-                'object_type' => AuditLogEventObjectType::InstitutionUser->value,
-                'object_identity_subset' => $targetInstitutionUser->getIdentitySubset(),
-                'pre_modification_subset' => ['deactivation_date' => $originalDeactivationDate, 'roles' => []],
-                'post_modification_subset' => ['deactivation_date' => null, 'roles' => $roles->toArray()],
-            ],
-            Date::getTestNow()
+            data_get($targetInstitutionUser->getAuditLogRepresentation(), 'roles')
         );
     }
 
@@ -546,5 +541,49 @@ class InstitutionUserControllerActivateTest extends MockedAmqpPublisherTestCase
             'untargetedInstitutionUser' => $untargetedInstitutionUser->refresh(),
             'roles' => $roles->map(fn (Role $role) => $role->refresh()),
         ];
+    }
+
+    private function assertMessageRepresentsInstitutionUserDeactivationDateModification(array $actualMessageBody, array $targetUserBeforeRequest, InstitutionUser $actingUser, array $expectedNewRoles): void
+    {
+        $expectedMessageBodySubset = [
+            'event_type' => AuditLogEventType::ModifyObject->value,
+            'happened_at' => Date::getTestNow()->toISOString(),
+            'trace_id' => static::TRACE_ID,
+            'failure_type' => null,
+            'context_institution_id' => $actingUser->institution_id,
+            'context_department_id' => $actingUser->department_id,
+            'acting_institution_user_id' => $actingUser->id,
+            'acting_user_pic' => $actingUser->user->personal_identification_code,
+            'acting_user_forename' => $actingUser->user->forename,
+            'acting_user_surname' => $actingUser->user->surname,
+        ];
+
+        Assertions::assertArraysEqualIgnoringOrder(
+            $expectedMessageBodySubset,
+            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
+        );
+
+        $eventParameters = data_get($actualMessageBody, 'event_parameters');
+        $this->assertIsArray($eventParameters);
+
+        $expectedEventParameters = [
+            'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+            'object_identity_subset' => [
+                'id' => $targetUserBeforeRequest['id'],
+                'user' => [
+                    'id' => $targetUserBeforeRequest['user']['id'],
+                    'forename' => $targetUserBeforeRequest['user']['forename'],
+                    'surname' => $targetUserBeforeRequest['user']['surname'],
+                    'personal_identification_code' => $targetUserBeforeRequest['user']['personal_identification_code'],
+                ],
+            ],
+            'pre_modification_subset' => Arr::only($targetUserBeforeRequest, ['deactivation_date', 'roles']),
+            'post_modification_subset' => [
+                'deactivation_date' => null,
+                'roles' => $expectedNewRoles,
+            ],
+        ];
+
+        Assertions::assertArraysEqualIgnoringOrder($expectedEventParameters, $eventParameters);
     }
 }
