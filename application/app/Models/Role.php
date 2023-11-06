@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use AuditLogClient\Enums\AuditLogEventObjectType;
+use AuditLogClient\Models\AuditLoggable;
 use Database\Factories\RoleFactory;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -52,7 +54,7 @@ use Illuminate\Support\Carbon;
  *
  * @mixin Eloquent
  */
-class Role extends Model
+class Role extends Model implements AuditLoggable
 {
     use HasFactory, SoftDeletes, HasUuids;
 
@@ -90,5 +92,15 @@ class Role extends Model
     public function getIdentitySubset(): array
     {
         return $this->only(['id', 'name']);
+    }
+
+    public function getAuditLogRepresentation(): array
+    {
+        return $this->withoutRelations()->refresh()->load('privileges')->toArray();
+    }
+
+    public function getAuditLogObjectType(): AuditLogEventObjectType
+    {
+        return AuditLogEventObjectType::Role;
     }
 }

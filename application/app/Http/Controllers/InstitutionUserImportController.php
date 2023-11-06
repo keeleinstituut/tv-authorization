@@ -16,8 +16,6 @@ use App\Policies\DepartmentPolicy;
 use App\Policies\InstitutionUserPolicy;
 use App\Policies\RolePolicy;
 use App\Rules\CsvContentValidator;
-use AuditLogClient\Enums\AuditLogEventObjectType;
-use AuditLogClient\Services\AuditLogMessageBuilder;
 use DB;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -177,12 +175,7 @@ class InstitutionUserImportController extends Controller
                         $institutionUser->saveOrFail();
                     }
 
-                    $this->auditLogPublisher->publish(
-                        AuditLogMessageBuilder::makeUsingJWT()->toCreateObjectEvent(
-                            AuditLogEventObjectType::InstitutionUser,
-                            $institutionUser->withoutRelations()->load(['user', 'roles', 'roles.privileges'])->toArray()
-                        )
-                    );
+                    $this->auditLogPublisher->publishCreateObject($institutionUser);
                 }
             } catch (UnexpectedValueException) {
                 return response()->json([

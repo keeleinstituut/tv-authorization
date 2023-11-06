@@ -13,8 +13,6 @@ use App\Http\Resources\API\RoleResource;
 use App\Models\Privilege;
 use App\Models\Role;
 use App\Policies\RolePolicy;
-use AuditLogClient\Enums\AuditLogEventObjectType;
-use AuditLogClient\Services\AuditLogMessageBuilder;
 use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
@@ -70,7 +68,7 @@ class RoleController extends Controller
             $role->fill($params);
             $this->authorize('create', $role);
 
-            $role->save();
+            $role->saveOrFail();
 
             $privilegeKeys = $params['privileges'];
             $privileges = Privilege::whereIn('key', $privilegeKeys)->get();
@@ -80,12 +78,7 @@ class RoleController extends Controller
             $role->refresh();
             $role->load('privileges');
 
-            $this->auditLogPublisher->publish(
-                AuditLogMessageBuilder::makeUsingJWT()->toCreateObjectEvent(
-                    AuditLogEventObjectType::Role,
-                    $role->withoutRelations()->load('privileges')->toArray()
-                )
-            );
+            $this->auditLogPublisher->publishCreateObject($role);
 
             return new RoleResource($role);
         });
@@ -133,31 +126,24 @@ class RoleController extends Controller
 
         $this->authorize('update', $role);
 
-        $roleBeforeChanges = $role->load('privileges')->toArray();
-        $roleIdentitySubsetBeforeChanges = $role->withoutRelations()->getIdentitySubset();
         $params = $request->validated();
 
-        return DB::transaction(function () use ($roleIdentitySubsetBeforeChanges, $roleBeforeChanges, $params, $role) {
+        return DB::transaction(function () use ($params, $role) {
+            $this->auditLogPublisher->publishModifyObjectAfterAction(
+                $role,
+                function () use ($params, $role) {
+                    $role->fill($params);
+                    $role->saveOrFail();
 
-            $role->fill($params);
-            $role->save();
+                    $privilegeKeys = $params['privileges'];
+                    $privileges = Privilege::whereIn('key', $privilegeKeys)->get();
+                    $privilegeIds = $privileges->pluck('id');
 
-            $privilegeKeys = $params['privileges'];
-            $privileges = Privilege::whereIn('key', $privilegeKeys)->get();
-            $privilegeIds = $privileges->pluck('id');
+                    $role->privileges()->sync($privilegeIds);
 
-            $role->privileges()->sync($privilegeIds);
-
-            $role->refresh();
-            $roleAfterChanges = $role->withoutRelations()->load('privileges')->toArray();
-
-            $this->auditLogPublisher->publish(
-                AuditLogMessageBuilder::makeUsingJWT()->toModifyObjectEventComputingDiff(
-                    AuditLogEventObjectType::Role,
-                    $roleIdentitySubsetBeforeChanges,
-                    $roleBeforeChanges,
-                    $roleAfterChanges
-                )
+                    $role->refresh();
+                    $role->load('privileges');
+                }
             );
 
             return new RoleResource($role);
@@ -184,14 +170,9 @@ class RoleController extends Controller
         $this->authorize('delete', $role);
 
         return DB::transaction(function () use ($role) {
-            $role->delete();
+            $role->deleteOrFail();
 
-            $this->auditLogPublisher->publish(
-                AuditLogMessageBuilder::makeUsingJWT()->toRemoveObjectEvent(
-                    AuditLogEventObjectType::Role,
-                    $role->getIdentitySubset()
-                )
-            );
+            $this->auditLogPublisher->publishRemoveObject($role);
 
             return new RoleResource($role);
         });

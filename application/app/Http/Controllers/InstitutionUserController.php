@@ -20,7 +20,6 @@ use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Policies\InstitutionUserPolicy;
 use App\Util\DateUtil;
 use Arr;
-use AuditLogClient\Enums\AuditLogEventObjectType;
 use AuditLogClient\Services\AuditLogMessageBuilder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
@@ -75,30 +74,22 @@ class InstitutionUserController extends Controller
         return DB::transaction(function () use ($request) {
             /** @var $institutionUser InstitutionUser */
             $institutionUser = $this->getBaseQuery()->findOrFail($request->getInstitutionUserId());
-            $institutionUserBeforeChanges = $institutionUser->withoutRelations()->load(['user', 'roles', 'roles.privileges'])->toArray();
-            $institutionUserIdentitySubsetBeforeChanges = $institutionUser->getIdentitySubset();
 
-            if ($request->hasAnyNonCalendarInput()) {
-                $this->authorize('update', $institutionUser);
-                $this->updateNonCalendarAttributes($institutionUser, $request->getValidatedNonCalendarInput());
-            }
+            $this->auditLogPublisher->publishModifyObjectAfterAction(
+                $institutionUser,
+                function () use ($institutionUser, $request) {
+                    if ($request->hasAnyNonCalendarInput()) {
+                        $this->authorize('update', $institutionUser);
+                        $this->updateNonCalendarAttributes($institutionUser, $request->getValidatedNonCalendarInput());
+                    }
 
-            if ($request->hasAnyWorktimeInput()) {
-                $this->authorize('updateWorktime', $institutionUser);
-                $institutionUser->fill($request->getValidatedWorktimeInput());
-            }
+                    if ($request->hasAnyWorktimeInput()) {
+                        $this->authorize('updateWorktime', $institutionUser);
+                        $institutionUser->fill($request->getValidatedWorktimeInput());
+                    }
 
-            $institutionUser->saveOrFail();
-
-            $institutionUserAfterChanges = $institutionUser->withoutRelations()->load(['user', 'roles', 'roles.privileges'])->toArray();
-
-            $this->auditLogPublisher->publish(
-                AuditLogMessageBuilder::makeUsingJWT()->toModifyObjectEventComputingDiff(
-                    AuditLogEventObjectType::InstitutionUser,
-                    $institutionUserIdentitySubsetBeforeChanges,
-                    $institutionUserBeforeChanges,
-                    $institutionUserAfterChanges
-                )
+                    $institutionUser->saveOrFail();
+                }
             );
 
             return new InstitutionUserResource($institutionUser->refresh());
@@ -121,26 +112,17 @@ class InstitutionUserController extends Controller
             /** @var $institutionUser InstitutionUser */
             $institutionUser = $this->getBaseQuery()->findOrFail(Auth::user()->institutionUserId);
 
-            $institutionUserBeforeChanges = $institutionUser->withoutRelations()->load('user')->toArray();
-            $institutionUserIdentitySubsetBeforeChanges = $institutionUser->getIdentitySubset();
+            $this->auditLogPublisher->publishModifyObjectAfterAction(
+                $institutionUser,
+                function () use ($request, $institutionUser) {
+                    $institutionUser->fill($request->safe(['email', 'phone']));
 
-            $institutionUser->fill($request->safe(['email', 'phone']));
+                    if ($request->has('user')) {
+                        $institutionUser->user->update($request->validated('user'));
+                    }
 
-            if ($request->has('user')) {
-                $institutionUser->user->update($request->validated('user'));
-            }
-
-            $institutionUser->saveOrFail();
-
-            $institutionUserAfterChanges = $institutionUser->withoutRelations()->load('user')->toArray();
-
-            $this->auditLogPublisher->publish(
-                AuditLogMessageBuilder::makeUsingJWT()->toModifyObjectEventComputingDiff(
-                    AuditLogEventObjectType::InstitutionUser,
-                    $institutionUserIdentitySubsetBeforeChanges,
-                    $institutionUserBeforeChanges,
-                    $institutionUserAfterChanges
-                )
+                    $institutionUser->saveOrFail();
+                }
             );
 
             return new InstitutionUserResource($institutionUser->refresh());
@@ -321,25 +303,16 @@ class InstitutionUserController extends Controller
 
             $this->authorize('deactivate', $institutionUser);
 
-            $institutionUserBeforeChanges = $institutionUser->withoutRelations()->load(['roles', 'roles.privileges'])->toArray();
-            $institutionUserIdentitySubsetBeforeChanges = $institutionUser->getIdentitySubset();
+            $this->auditLogPublisher->publishModifyObjectAfterAction(
+                $institutionUser,
+                function () use ($request, $institutionUser) {
+                    $institutionUser->deactivation_date = $request->validated('deactivation_date');
+                    $institutionUser->saveOrFail();
 
-            $institutionUser->deactivation_date = $request->validated('deactivation_date');
-            $institutionUser->saveOrFail();
-
-            if ($request->getValidatedDeactivationDateAtEstonianMidnight()?->isSameDay(Date::today(DateUtil::ESTONIAN_TIMEZONE))) {
-                $institutionUser->institutionUserRoles()->each(fn (InstitutionUserRole $pivot) => $pivot->deleteOrFail());
-            }
-
-            $institutionUserAfterChanges = $institutionUser->withoutRelations()->load(['roles', 'roles.privileges'])->toArray();
-
-            $this->auditLogPublisher->publish(
-                AuditLogMessageBuilder::makeUsingJWT()->toModifyObjectEventComputingDiff(
-                    AuditLogEventObjectType::InstitutionUser,
-                    $institutionUserIdentitySubsetBeforeChanges,
-                    $institutionUserBeforeChanges,
-                    $institutionUserAfterChanges
-                )
+                    if ($request->getValidatedDeactivationDateAtEstonianMidnight()?->isSameDay(Date::today(DateUtil::ESTONIAN_TIMEZONE))) {
+                        $institutionUser->institutionUserRoles()->each(fn (InstitutionUserRole $pivot) => $pivot->deleteOrFail());
+                    }
+                }
             );
 
             return new InstitutionUserResource($institutionUser->refresh());
@@ -363,24 +336,15 @@ class InstitutionUserController extends Controller
 
             $this->authorize('activate', $institutionUser);
 
-            $institutionUserBeforeChanges = $institutionUser->withoutRelations()->load(['roles', 'roles.privileges'])->toArray();
-            $institutionUserIdentitySubsetBeforeChanges = $institutionUser->getIdentitySubset();
-
-            $institutionUser->deactivation_date = null;
-            $institutionUser->saveOrFail();
-            $institutionUser->roles()->sync(
-                Role::findMany($request->validated('roles'))
-            );
-
-            $institutionUserAfterChanges = $institutionUser->withoutRelations()->load(['roles', 'roles.privileges'])->toArray();
-
-            $this->auditLogPublisher->publish(
-                AuditLogMessageBuilder::makeUsingJWT()->toModifyObjectEventComputingDiff(
-                    AuditLogEventObjectType::InstitutionUser,
-                    $institutionUserIdentitySubsetBeforeChanges,
-                    $institutionUserBeforeChanges,
-                    $institutionUserAfterChanges
-                )
+            $this->auditLogPublisher->publishModifyObjectAfterAction(
+                $institutionUser,
+                function () use ($request, $institutionUser) {
+                    $institutionUser->deactivation_date = null;
+                    $institutionUser->saveOrFail();
+                    $institutionUser->roles()->sync(
+                        Role::findMany($request->validated('roles'))
+                    );
+                }
             );
 
             /** @noinspection PhpStatementHasEmptyBodyInspection */
@@ -409,22 +373,13 @@ class InstitutionUserController extends Controller
 
             $this->authorize('archive', $institutionUser);
 
-            $institutionUserBeforeChanges = $institutionUser->withoutRelations()->load(['roles', 'roles.privileges'])->toArray();
-            $institutionUserIdentitySubsetBeforeChanges = $institutionUser->getIdentitySubset();
-
-            $institutionUser->archived_at = Date::now();
-            $institutionUser->institutionUserRoles()->each(fn (InstitutionUserRole $pivot) => $pivot->deleteOrFail());
-            $institutionUser->saveOrFail();
-
-            $institutionUserAfterChanges = $institutionUser->withoutRelations()->load(['roles', 'roles.privileges'])->toArray();
-
-            $this->auditLogPublisher->publish(
-                AuditLogMessageBuilder::makeUsingJWT()->toModifyObjectEventComputingDiff(
-                    AuditLogEventObjectType::InstitutionUser,
-                    $institutionUserIdentitySubsetBeforeChanges,
-                    $institutionUserBeforeChanges,
-                    $institutionUserAfterChanges
-                )
+            $this->auditLogPublisher->publishModifyObjectAfterAction(
+                $institutionUser,
+                function () use ($institutionUser) {
+                    $institutionUser->archived_at = Date::now();
+                    $institutionUser->institutionUserRoles()->each(fn (InstitutionUserRole $pivot) => $pivot->deleteOrFail());
+                    $institutionUser->saveOrFail();
+                }
             );
 
             return new InstitutionUserResource($institutionUser->refresh());

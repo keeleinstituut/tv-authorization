@@ -7,6 +7,8 @@ use App\Models\Scopes\ExcludeArchivedInstitutionUsersScope;
 use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Models\Scopes\ExcludeIfRelatedUserSoftDeletedScope;
 use App\Util\DateUtil;
+use AuditLogClient\Enums\AuditLogEventObjectType;
+use AuditLogClient\Models\AuditLoggable;
 use Carbon\CarbonImmutable;
 use Database\Factories\InstitutionUserFactory;
 use DateTimeInterface;
@@ -81,7 +83,7 @@ use Illuminate\Support\Facades\Date;
  *
  * @mixin Eloquent
  */
-class InstitutionUser extends Model
+class InstitutionUser extends Model implements AuditLoggable
 {
     use HasFactory, SoftDeletes, HasUuids;
 
@@ -251,5 +253,15 @@ class InstitutionUser extends Model
                 'surname' => $this->user->surname,
             ],
         ];
+    }
+
+    public function getAuditLogRepresentation(): array
+    {
+        return $this->withoutRelations()->refresh()->load(['user', 'roles', 'roles.privileges'])->toArray();
+    }
+
+    public function getAuditLogObjectType(): AuditLogEventObjectType
+    {
+        return AuditLogEventObjectType::InstitutionUser;
     }
 }
