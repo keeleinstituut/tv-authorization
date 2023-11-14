@@ -3,27 +3,26 @@
 namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\PrivilegeKey;
-use App\Models\Department;
 use App\Models\Institution;
 use App\Models\InstitutionUser;
-use App\Models\Role;
-use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
-use App\Models\User;
+use AuditLogClient\Enums\AuditLogEventFailureType;
+use AuditLogClient\Enums\AuditLogEventObjectType;
+use AuditLogClient\Enums\AuditLogEventType;
+use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
-use Symfony\Component\HttpFoundation\Response;
+use Tests\Assertions;
+use Tests\AuditLogTestCase;
 use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
-use Tests\TestCase;
 use Throwable;
 
-class InstitutionUserControllerUpdateCurrentTest extends TestCase
+class InstitutionUserControllerUpdateCurrentTest extends AuditLogTestCase
 {
     use RefreshDatabase, InstitutionUserHelpers, ModelAssertions;
 
@@ -42,15 +41,18 @@ class InstitutionUserControllerUpdateCurrentTest extends TestCase
         $createdInstitution = Institution::factory()->create();
         $actingInstitutionUser = $this->createUserInGivenInstitutionWithGivenPrivilege($createdInstitution, PrivilegeKey::ViewUser);
 
+        $institutionUserBeforeRequest = $actingInstitutionUser->getAuditLogRepresentation();
+        $institutionUserIdentityBeforeRequest = $actingInstitutionUser->getIdentitySubset();
+
         // WHEN request sent to endpoint
         $response = $this->sendPutRequestWithTokenFor(
-            [
+            $payload = [
                 'user' => [
                     'forename' => $expectedForename = 'Forename',
-                    'surname' => $expectedSurname = 'Surname'
+                    'surname' => $expectedSurname = 'Surname',
                 ],
                 'phone' => $expectedPhoneNumber = '+372 5678901',
-                'email' => $expectedEmail = 'new@email.com'
+                'email' => $expectedEmail = 'new@email.com',
             ],
             $actingInstitutionUser
         );
@@ -73,6 +75,25 @@ class InstitutionUserControllerUpdateCurrentTest extends TestCase
 
         // And request response should correspond to the actual state
         $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
+
+        $this->assertMessageRepresentsInstitutionUserModification(
+            $this->retrieveLatestAuditLogMessageBody(),
+            $actingInstitutionUser,
+            $institutionUserBeforeRequest,
+            function (array $actualEventParameters) use ($institutionUserBeforeRequest, $payload, $institutionUserIdentityBeforeRequest) {
+                $expectedEventParameters = [
+                    'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+                    'object_identity_subset' => $institutionUserIdentityBeforeRequest,
+                    'pre_modification_subset' => [
+                        ...Arr::only($institutionUserBeforeRequest, ['phone', 'email']),
+                        'user' => Arr::only($institutionUserBeforeRequest['user'], ['forename', 'surname']),
+                    ],
+                    'post_modification_subset' => $payload,
+                ];
+
+                $this->assertArraysEqualIgnoringOrder($expectedEventParameters, $actualEventParameters);
+            }
+        );
     }
 
     /**
@@ -89,7 +110,7 @@ class InstitutionUserControllerUpdateCurrentTest extends TestCase
         $expectedPhone = $actingUser->phone;
         // WHEN invalid payload is sent to endpoint
         $response = $this->sendPutRequestWithTokenFor(
-            [
+            $payload = [
                 'email' => 'someother@email.com',
                 'phone' => '+372 45678901',
                 ...$invalidPayload,
@@ -103,6 +124,39 @@ class InstitutionUserControllerUpdateCurrentTest extends TestCase
 
         // And response should indicate validation errors
         $response->assertUnprocessable();
+
+        $actualMessageBody = $this->retrieveLatestAuditLogMessageBody();
+
+        $expectedMessageBodySubset = [
+            'event_type' => AuditLogEventType::ModifyObject->value,
+            'happened_at' => Date::getTestNow()->toISOString(),
+            'trace_id' => static::TRACE_ID,
+            'failure_type' => AuditLogEventFailureType::UNPROCESSABLE_ENTITY->value,
+            'context_institution_id' => $actingUser->institution_id,
+            'context_department_id' => $actingUser->department_id,
+            'acting_institution_user_id' => $actingUser->id,
+            'acting_user_pic' => $actingUser->user->personal_identification_code,
+            'acting_user_forename' => $actingUser->user->forename,
+            'acting_user_surname' => $actingUser->user->surname,
+        ];
+
+        Assertions::assertArraysEqualIgnoringOrder(
+            $expectedMessageBodySubset,
+            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
+        );
+
+        $eventParameters = data_get($actualMessageBody, 'event_parameters');
+        $this->assertIsArray($eventParameters);
+
+        $expectedEventParameters = [
+            'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+            'object_identity_subset' => $actingUser->getIdentitySubset(),
+            'input' => static::convertTrimWhiteSpaceToNullRecursively($payload),
+        ];
+        Assertions::assertArraysEqualIgnoringOrder(
+            $expectedEventParameters,
+            $eventParameters
+        );
     }
 
     /**
@@ -115,7 +169,7 @@ class InstitutionUserControllerUpdateCurrentTest extends TestCase
         $response = $this
             ->withHeaders(['Accept' => 'application/json'])
             ->putJson(
-                "/api/institution-users",
+                '/api/institution-users',
                 ['email' => 'someother@email.com']
             );
 
@@ -126,8 +180,8 @@ class InstitutionUserControllerUpdateCurrentTest extends TestCase
     private function sendPutRequestWithTokenFor(
         array $requestPayload,
         InstitutionUser $actingUser,
-        array $tolkevaravClaimsOverride = []): TestResponse
-    {
+        array $tolkevaravClaimsOverride = []
+    ): TestResponse {
         return $this->sendPutRequestWithCustomToken(
             $requestPayload,
             AuthHelpers::generateAccessTokenForInstitutionUser($actingUser, $tolkevaravClaimsOverride)
@@ -136,11 +190,14 @@ class InstitutionUserControllerUpdateCurrentTest extends TestCase
 
     private function sendPutRequestWithCustomToken(
         array $requestPayload,
-        string $accessToken): TestResponse
-    {
+        string $accessToken
+    ): TestResponse {
         return $this
-            ->withHeaders(['Authorization' => "Bearer $accessToken"])
-            ->putJson("/api/institution-users", $requestPayload);
+            ->withHeaders([
+                'Authorization' => "Bearer $accessToken",
+                'X-Request-Id' => static::TRACE_ID,
+            ])
+            ->putJson('/api/institution-users', $requestPayload);
     }
 
     /**
@@ -236,5 +293,43 @@ class InstitutionUserControllerUpdateCurrentTest extends TestCase
             ->mapWithKeys(fn ($phone) => [$phone => $phone]) // for test reports - otherwise only param index is reported
             ->map(fn ($phone) => [$phone])
             ->toArray();
+    }
+
+    /**
+     * @param  Closure(array): void  $assertOnEventParameters
+     */
+    private function assertMessageRepresentsInstitutionUserModification(array $actualMessageBody, InstitutionUser $institutionUser, array $actingUserBeforeModification, Closure $assertOnEventParameters): void
+    {
+        $expectedMessageBodySubset = [
+            'event_type' => AuditLogEventType::ModifyObject->value,
+            'happened_at' => Date::getTestNow()->toISOString(),
+            'trace_id' => static::TRACE_ID,
+            'failure_type' => null,
+            'context_institution_id' => $actingUserBeforeModification['institution_id'],
+            'context_department_id' => data_get($actingUserBeforeModification, 'department_id'),
+            'acting_institution_user_id' => $actingUserBeforeModification['id'],
+            'acting_user_pic' => $actingUserBeforeModification['user']['personal_identification_code'],
+            'acting_user_forename' => $actingUserBeforeModification['user']['forename'],
+            'acting_user_surname' => $actingUserBeforeModification['user']['surname'],
+        ];
+
+        Assertions::assertArrayHasSubsetIgnoringOrder(
+            $expectedMessageBodySubset,
+            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
+        );
+
+        $eventParameters = data_get($actualMessageBody, 'event_parameters');
+        $this->assertIsArray($eventParameters);
+
+        $expectedEventParametersSubset = [
+            'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+            'object_identity_subset' => $institutionUser->getIdentitySubset(),
+        ];
+        Assertions::assertArraysEqualIgnoringOrder(
+            $expectedEventParametersSubset,
+            collect($eventParameters)->intersectByKeys($expectedEventParametersSubset)->all(),
+        );
+
+        $assertOnEventParameters($eventParameters);
     }
 }

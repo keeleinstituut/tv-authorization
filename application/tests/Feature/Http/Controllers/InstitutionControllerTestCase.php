@@ -5,11 +5,11 @@ namespace Tests\Feature\Http\Controllers;
 use App\Models\Institution;
 use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\AuditLogTestCase;
 use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
-use Tests\TestCase;
 
-abstract class InstitutionControllerTestCase extends TestCase
+abstract class InstitutionControllerTestCase extends AuditLogTestCase
 {
     use RefreshDatabase, ModelAssertions;
 

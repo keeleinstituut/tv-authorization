@@ -7,6 +7,7 @@ use App\Models\InstitutionUserRole;
 use App\Models\PrivilegeRole;
 use App\Models\User;
 use Firebase\JWT\JWT;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 readonly class AuthHelpers
@@ -113,5 +114,26 @@ readonly class AuthHelpers
         return "-----BEGIN PRIVATE KEY-----\n".
             wordwrap($key, 64, "\n", true).
             "\n-----END PRIVATE KEY-----";
+    }
+
+    public static function fakeServiceAccountJWTResponse(): void
+    {
+        Http::fake([
+            rtrim(config('keycloak.base_url'), '/').'/*' => Http::response([
+                'access_token' => AuthHelpers::generateServiceAccountJwt(),
+                'expires_in' => 300,
+            ]),
+        ]);
+    }
+
+    public static function generateServiceAccountJwt(string $role = null, int $expiresIn = null): string
+    {
+        return JWT::encode([
+            'iss' => config('keycloak.base_url').'/realms/'.config('keycloak.realm'),
+            'exp' => time() + ($expiresIn ?: 300),
+            'realm_access' => [
+                'roles' => [$role ?: config('keycloak.service_account_sync_role')],
+            ],
+        ], static::getPrivateKey(), 'RS256');
     }
 }

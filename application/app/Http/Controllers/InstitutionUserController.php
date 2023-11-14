@@ -19,16 +19,19 @@ use App\Models\Scopes\ExcludeArchivedInstitutionUsersScope;
 use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Policies\InstitutionUserPolicy;
 use App\Util\DateUtil;
-use Illuminate\Support\Facades\Auth;
 use Arr;
+use AuditLogClient\Services\AuditLogMessageBuilder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use League\Csv\ByteSequence;
 use League\Csv\CannotInsertRecord;
 use League\Csv\Exception;
+use League\Csv\InvalidArgument;
 use League\Csv\Writer;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
@@ -72,18 +75,22 @@ class InstitutionUserController extends Controller
             /** @var $institutionUser InstitutionUser */
             $institutionUser = $this->getBaseQuery()->findOrFail($request->getInstitutionUserId());
 
-            if ($request->hasAnyNonCalendarInput()) {
-                $this->authorize('update', $institutionUser);
-                $this->updateNonCalendarAttributes($institutionUser, $request->getValidatedNonCalendarInput());
-            }
+            $this->auditLogPublisher->publishModifyObjectAfterAction(
+                $institutionUser,
+                function () use ($institutionUser, $request) {
+                    if ($request->hasAnyNonCalendarInput()) {
+                        $this->authorize('update', $institutionUser);
+                        $this->updateNonCalendarAttributes($institutionUser, $request->getValidatedNonCalendarInput());
+                    }
 
-            if ($request->hasAnyWorktimeInput()) {
-                $this->authorize('updateWorktime', $institutionUser);
-                $institutionUser->fill($request->getValidatedWorktimeInput());
-            }
+                    if ($request->hasAnyWorktimeInput()) {
+                        $this->authorize('updateWorktime', $institutionUser);
+                        $institutionUser->fill($request->getValidatedWorktimeInput());
+                    }
 
-            $institutionUser->saveOrFail();
-            // TODO: audit log
+                    $institutionUser->saveOrFail();
+                }
+            );
 
             return new InstitutionUserResource($institutionUser->refresh());
         });
@@ -105,21 +112,30 @@ class InstitutionUserController extends Controller
             /** @var $institutionUser InstitutionUser */
             $institutionUser = $this->getBaseQuery()->findOrFail(Auth::user()->institutionUserId);
 
-            $institutionUser->fill($request->safe(['email', 'phone']));
+            $this->auditLogPublisher->publishModifyObjectAfterAction(
+                $institutionUser,
+                function () use ($request, $institutionUser) {
+                    $institutionUser->fill($request->safe(['email', 'phone']));
 
-            if ($request->has('user')) {
-                $institutionUser->user->update($request->validated('user'));
-            }
+                    if ($request->has('user')) {
+                        $institutionUser->user->update($request->validated('user'));
+                    }
 
-            $institutionUser->saveOrFail();
-            // TODO: audit log
+                    $institutionUser->saveOrFail();
+                }
+            );
 
             return new InstitutionUserResource($institutionUser->refresh());
         });
     }
 
     /**
-     * @throws AuthorizationException|CannotInsertRecord|Exception
+     * @throws AuthorizationException
+     * @throws CannotInsertRecord
+     * @throws Exception
+     * @throws Throwable
+     * @throws ValidationException
+     * @throws InvalidArgument
      */
     #[OA\Get(
         path: '/institution-users/export-csv',
@@ -158,7 +174,7 @@ class InstitutionUserController extends Controller
                 ])
         );
 
-        // TODO: audit log
+        $this->auditLogPublisher->publish(AuditLogMessageBuilder::makeUsingJWT()->toExportInstitutionUsers());
 
         return response()->streamDownload(
             $csvDocument->output(...),
@@ -287,14 +303,17 @@ class InstitutionUserController extends Controller
 
             $this->authorize('deactivate', $institutionUser);
 
-            $institutionUser->deactivation_date = $request->validated('deactivation_date');
-            $institutionUser->saveOrFail();
+            $this->auditLogPublisher->publishModifyObjectAfterAction(
+                $institutionUser,
+                function () use ($request, $institutionUser) {
+                    $institutionUser->deactivation_date = $request->validated('deactivation_date');
+                    $institutionUser->saveOrFail();
 
-            if ($request->getValidatedDeactivationDateAtEstonianMidnight()?->isSameDay(Date::today(DateUtil::ESTONIAN_TIMEZONE))) {
-                $institutionUser->institutionUserRoles()->each(fn (InstitutionUserRole $pivot) => $pivot->deleteOrFail());
-            }
-
-            // TODO: audit log
+                    if ($request->getValidatedDeactivationDateAtEstonianMidnight()?->isSameDay(Date::today(DateUtil::ESTONIAN_TIMEZONE))) {
+                        $institutionUser->institutionUserRoles()->each(fn (InstitutionUserRole $pivot) => $pivot->deleteOrFail());
+                    }
+                }
+            );
 
             return new InstitutionUserResource($institutionUser->refresh());
         });
@@ -317,13 +336,16 @@ class InstitutionUserController extends Controller
 
             $this->authorize('activate', $institutionUser);
 
-            $institutionUser->deactivation_date = null;
-            $institutionUser->saveOrFail();
-            $institutionUser->roles()->sync(
-                Role::findMany($request->validated('roles'))
+            $this->auditLogPublisher->publishModifyObjectAfterAction(
+                $institutionUser,
+                function () use ($request, $institutionUser) {
+                    $institutionUser->deactivation_date = null;
+                    $institutionUser->saveOrFail();
+                    $institutionUser->roles()->sync(
+                        Role::findMany($request->validated('roles'))
+                    );
+                }
             );
-
-            // TODO: audit log
 
             /** @noinspection PhpStatementHasEmptyBodyInspection */
             if (filter_var($request->validated('notify_user'), FILTER_VALIDATE_BOOLEAN)) {
@@ -351,11 +373,14 @@ class InstitutionUserController extends Controller
 
             $this->authorize('archive', $institutionUser);
 
-            $institutionUser->archived_at = Date::now();
-            $institutionUser->institutionUserRoles()->each(fn (InstitutionUserRole $pivot) => $pivot->deleteOrFail());
-            $institutionUser->saveOrFail();
-
-            // TODO: audit log
+            $this->auditLogPublisher->publishModifyObjectAfterAction(
+                $institutionUser,
+                function () use ($institutionUser) {
+                    $institutionUser->archived_at = Date::now();
+                    $institutionUser->institutionUserRoles()->each(fn (InstitutionUserRole $pivot) => $pivot->deleteOrFail());
+                    $institutionUser->saveOrFail();
+                }
+            );
 
             return new InstitutionUserResource($institutionUser->refresh());
         });

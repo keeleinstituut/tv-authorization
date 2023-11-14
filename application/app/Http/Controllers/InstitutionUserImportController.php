@@ -175,7 +175,7 @@ class InstitutionUserImportController extends Controller
                         $institutionUser->saveOrFail();
                     }
 
-                    // TODO: add audit logs
+                    $this->auditLogPublisher->publishCreateObject($institutionUser);
                 }
             } catch (UnexpectedValueException) {
                 return response()->json([

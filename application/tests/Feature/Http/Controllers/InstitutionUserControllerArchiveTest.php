@@ -11,20 +11,24 @@ use App\Models\InstitutionUserRole;
 use App\Models\Privilege;
 use App\Models\Role;
 use App\Util\DateUtil;
+use AuditLogClient\Enums\AuditLogEventObjectType;
+use AuditLogClient\Enums\AuditLogEventType;
 use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\Assertions;
+use Tests\AuditLogTestCase;
 use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
-use Tests\TestCase;
 use Throwable;
 
-class InstitutionUserControllerArchiveTest extends TestCase
+class InstitutionUserControllerArchiveTest extends AuditLogTestCase
 {
     use RefreshDatabase, InstitutionUserHelpers, ModelAssertions;
 
@@ -104,6 +108,8 @@ class InstitutionUserControllerArchiveTest extends TestCase
             ]],
         ];
 
+        $rolesBeforeRequest = data_get($targetInstitutionUser->getAuditLogRepresentation(), 'roles');
+
         $this->assertModelsInExpectedStateAfterActionAndCheckResponseData(
             fn () => $this->sendArchiveRequestWithExpectedPayloadAndHeaders($targetInstitutionUser, $actingInstitutionUser),
             RepresentationHelpers::createInstitutionUserNestedRepresentation(...),
@@ -114,6 +120,8 @@ class InstitutionUserControllerArchiveTest extends TestCase
         $this->assertInstitutionUserArchivedAtInDatabaseIs(Carbon::now()->toJSON(), $targetInstitutionUser->id);
         $this->assertNull(InstitutionUser::find($targetInstitutionUser->id));
         $this->assertInstitutionUserRolePivotsAreMissing($targetInstitutionUserRolePivots);
+
+        $this->assertMessageRepresentsInstitutionUserArchivedAtModification($this->retrieveLatestAuditLogMessageBody(), $targetInstitutionUser, $rolesBeforeRequest, $actingInstitutionUser);
     }
 
     /** @return array<array{Closure(InstitutionUser): void, int}> */
@@ -373,7 +381,7 @@ class InstitutionUserControllerArchiveTest extends TestCase
     private function sendArchiveRequestWithCustomPayloadAndHeaders(array $payload, array $headers): TestResponse
     {
         return $this
-            ->withHeaders($headers)
+            ->withHeaders(['X-Request-Id' => static::TRACE_ID, ...$headers])
             ->postJson(
                 action([InstitutionUserController::class, 'archive']),
                 $payload
@@ -424,5 +432,38 @@ class InstitutionUserControllerArchiveTest extends TestCase
             'untargetedInstitutionUser' => $untargetedInstitutionUser->refresh(),
             'targetInstitutionUserRolePivots' => $targetInstitutionUser->institutionUserRoles,
         ];
+    }
+
+    private function assertMessageRepresentsInstitutionUserArchivedAtModification(array $actualMessageBody, InstitutionUser $targetUser, array $rolesBeforeRequest, InstitutionUser $actingUser): void
+    {
+        $expectedMessageBodySubset = [
+            'event_type' => AuditLogEventType::ModifyObject->value,
+            'happened_at' => Date::getTestNow()->toISOString(),
+            'trace_id' => static::TRACE_ID,
+            'failure_type' => null,
+            'context_institution_id' => $actingUser->institution_id,
+            'context_department_id' => $actingUser->department_id,
+            'acting_institution_user_id' => $actingUser->id,
+            'acting_user_pic' => $actingUser->user->personal_identification_code,
+            'acting_user_forename' => $actingUser->user->forename,
+            'acting_user_surname' => $actingUser->user->surname,
+        ];
+
+        Assertions::assertArraysEqualIgnoringOrder(
+            $expectedMessageBodySubset,
+            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
+        );
+
+        $eventParameters = data_get($actualMessageBody, 'event_parameters');
+        $this->assertIsArray($eventParameters);
+
+        $expectedEventParameters = [
+            'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+            'object_identity_subset' => $targetUser->getIdentitySubset(),
+            'pre_modification_subset' => ['archived_at' => null, ...(empty($rolesBeforeRequest) ? [] : ['roles' => $rolesBeforeRequest])],
+            'post_modification_subset' => ['archived_at' => Date::getTestNow()->toISOString(), ...(empty($rolesBeforeRequest) ? [] : ['roles' => []])],
+        ];
+
+        Assertions::assertArraysEqualIgnoringOrder($expectedEventParameters, $eventParameters);
     }
 }

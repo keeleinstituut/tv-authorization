@@ -10,15 +10,25 @@ use App\Models\InstitutionUser;
 use App\Models\Privilege;
 use App\Models\Role;
 use App\Models\User;
+use AuditLogClient\Enums\AuditLogEventFailureType;
+use AuditLogClient\Enums\AuditLogEventType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
 use League\Csv\Reader;
+use Tests\Assertions;
+use Tests\AuditLogTestCase;
 use Tests\AuthHelpers;
-use Tests\TestCase;
 
-class InstitutionUserControllerExportTest extends TestCase
+class InstitutionUserControllerExportTest extends AuditLogTestCase
 {
     use RefreshDatabase;
+
+    public function setUp(): void
+    {
+        parent::setUp();
+        Date::setTestNow(Date::now());
+    }
 
     public function test_exporting_institution_with_multiple_users(): void
     {
@@ -65,6 +75,8 @@ class InstitutionUserControllerExportTest extends TestCase
             $expectedResponseData->jsonSerialize(),
             $actualResponseCsvDocument->jsonSerialize()
         );
+
+        $this->assertMessageRepresentsInstitutionUserExport($this->retrieveLatestAuditLogMessageBody(), $firstInstitutionUser);
     }
 
     public function test_exporting_institution_with_single_user(): void
@@ -220,6 +232,28 @@ class InstitutionUserControllerExportTest extends TestCase
 
         // THEN response should indicate action is forbidden
         $response->assertForbidden();
+
+        $actualMessageBody = $this->retrieveLatestAuditLogMessageBody();
+        $expectedMessageBodySubset = [
+            'event_type' => AuditLogEventType::ExportInstitutionUsers->value,
+            'happened_at' => Date::getTestNow()->toISOString(),
+            'trace_id' => static::TRACE_ID,
+            'failure_type' => AuditLogEventFailureType::FORBIDDEN->value,
+            'context_institution_id' => $currentInstitutionUser->institution_id,
+            'context_department_id' => $currentInstitutionUser->department_id,
+            'acting_institution_user_id' => $currentInstitutionUser->id,
+            'acting_user_pic' => $currentInstitutionUser->user->personal_identification_code,
+            'acting_user_forename' => $currentInstitutionUser->user->forename,
+            'acting_user_surname' => $currentInstitutionUser->user->surname,
+        ];
+
+        Assertions::assertArraysEqualIgnoringOrder(
+            $expectedMessageBodySubset,
+            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
+        );
+
+        $this->assertArrayHasKey('event_parameters', $actualMessageBody);
+        $this->assertNull($actualMessageBody['event_parameters']);
     }
 
     public function test_exporting_users_without_access_token(): void
@@ -253,7 +287,10 @@ class InstitutionUserControllerExportTest extends TestCase
         $token = AuthHelpers::generateAccessTokenForInstitutionUser($institutionUser, $tolkevaravClaimsOverride);
 
         return $this
-            ->withHeaders(['Authorization' => "Bearer $token"])
+            ->withHeaders([
+                'Authorization' => "Bearer $token",
+                'X-Request-Id' => static::TRACE_ID,
+            ])
             ->getJson('/api/institution-users/export-csv');
     }
 
@@ -262,5 +299,29 @@ class InstitutionUserControllerExportTest extends TestCase
         return Reader::createFromString($response->streamedContent())
             ->setDelimiter(';')
             ->setHeaderOffset(0);
+    }
+
+    private function assertMessageRepresentsInstitutionUserExport(array $actualMessageBody, InstitutionUser $actingUser): void
+    {
+        $expectedMessageBodySubset = [
+            'event_type' => AuditLogEventType::ExportInstitutionUsers->value,
+            'happened_at' => Date::getTestNow()->toISOString(),
+            'trace_id' => static::TRACE_ID,
+            'failure_type' => null,
+            'context_institution_id' => $actingUser->institution_id,
+            'context_department_id' => $actingUser->department_id,
+            'acting_institution_user_id' => $actingUser->id,
+            'acting_user_pic' => $actingUser->user->personal_identification_code,
+            'acting_user_forename' => $actingUser->user->forename,
+            'acting_user_surname' => $actingUser->user->surname,
+        ];
+
+        Assertions::assertArraysEqualIgnoringOrder(
+            $expectedMessageBodySubset,
+            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
+        );
+
+        $this->assertArrayHasKey('event_parameters', $actualMessageBody);
+        $this->assertNull($actualMessageBody['event_parameters']);
     }
 }

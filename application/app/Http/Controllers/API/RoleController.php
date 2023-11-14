@@ -68,7 +68,7 @@ class RoleController extends Controller
             $role->fill($params);
             $this->authorize('create', $role);
 
-            $role->save();
+            $role->saveOrFail();
 
             $privilegeKeys = $params['privileges'];
             $privileges = Privilege::whereIn('key', $privilegeKeys)->get();
@@ -78,7 +78,8 @@ class RoleController extends Controller
             $role->refresh();
             $role->load('privileges');
 
-            // TODO: add auditlog creation
+            $this->auditLogPublisher->publishCreateObject($role);
+
             return new RoleResource($role);
         });
     }
@@ -128,19 +129,23 @@ class RoleController extends Controller
         $params = $request->validated();
 
         return DB::transaction(function () use ($params, $role) {
-            $role->fill($params);
-            $role->save();
+            $this->auditLogPublisher->publishModifyObjectAfterAction(
+                $role,
+                function () use ($params, $role) {
+                    $role->fill($params);
+                    $role->saveOrFail();
 
-            $privilegeKeys = $params['privileges'];
-            $privileges = Privilege::whereIn('key', $privilegeKeys)->get();
-            $privilegeIds = $privileges->pluck('id');
+                    $privilegeKeys = $params['privileges'];
+                    $privileges = Privilege::whereIn('key', $privilegeKeys)->get();
+                    $privilegeIds = $privileges->pluck('id');
 
-            $role->privileges()->sync($privilegeIds);
+                    $role->privileges()->sync($privilegeIds);
 
-            $role->refresh();
-            $role->load('privileges');
+                    $role->refresh();
+                    $role->load('privileges');
+                }
+            );
 
-            // TODO: add auditlog creation
             return new RoleResource($role);
         });
     }
@@ -165,9 +170,10 @@ class RoleController extends Controller
         $this->authorize('delete', $role);
 
         return DB::transaction(function () use ($role) {
-            $role->delete();
+            $role->deleteOrFail();
 
-            // TODO: add auditlog creation
+            $this->auditLogPublisher->publishRemoveObject($role);
+
             return new RoleResource($role);
         });
     }

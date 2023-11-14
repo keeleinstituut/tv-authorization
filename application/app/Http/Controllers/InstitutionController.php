@@ -66,7 +66,12 @@ class InstitutionController extends Controller
 
         $this->authorize('update', $institution);
 
-        $institution->fill($request->validated())->saveOrFail();
+        $this->auditLogPublisher->publishModifyObjectAfterAction(
+            $institution,
+            function () use ($request, $institution) {
+                $institution->fill($request->validated())->saveOrFail();
+            }
+        );
 
         return new InstitutionResource($institution->refresh());
     }

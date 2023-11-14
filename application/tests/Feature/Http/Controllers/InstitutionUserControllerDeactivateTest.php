@@ -12,6 +12,8 @@ use App\Models\InstitutionUserRole;
 use App\Models\Privilege;
 use App\Models\Role;
 use App\Util\DateUtil;
+use AuditLogClient\Enums\AuditLogEventObjectType;
+use AuditLogClient\Enums\AuditLogEventType;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Closure;
@@ -23,14 +25,15 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\Assertions;
+use Tests\AuditLogTestCase;
 use Tests\AuthHelpers;
 use Tests\Feature\InstitutionUserHelpers;
 use Tests\Feature\ModelAssertions;
 use Tests\Feature\RepresentationHelpers;
-use Tests\TestCase;
 use Throwable;
 
-class InstitutionUserControllerDeactivateTest extends TestCase
+class InstitutionUserControllerDeactivateTest extends AuditLogTestCase
 {
     use RefreshDatabase,
         InstitutionUserHelpers,
@@ -111,6 +114,14 @@ class InstitutionUserControllerDeactivateTest extends TestCase
         $this->assertInstitutionUserDeactivationDateInDatabaseIs($requestDeactivationDate, $targetInstitutionUser->id);
         $this->assertInstitutionUserIsIncludedAndActive($targetInstitutionUser->id);
         $this->assertInstitutionUserRolePivotsExist($targetInstitutionUserRolePivots);
+
+        $this->assertMessageRepresentsInstitutionUserDeactivationDateModification(
+            $this->retrieveLatestAuditLogMessageBody(),
+            $targetInstitutionUser,
+            $actingInstitutionUser,
+            $existingDeactivationDate,
+            $requestDeactivationDate
+        );
     }
 
     /** @return array<array{CarbonInterface, string, ?string}> */
@@ -541,7 +552,7 @@ class InstitutionUserControllerDeactivateTest extends TestCase
     private function sendDeactivateRequestWithCustomPayloadAndHeaders(array $payload, array $headers): TestResponse
     {
         return $this
-            ->withHeaders($headers)
+            ->withHeaders(['X-Request-Id' => static::TRACE_ID, ...$headers])
             ->postJson(
                 action([InstitutionUserController::class, 'deactivate']),
                 $payload
@@ -625,5 +636,38 @@ class InstitutionUserControllerDeactivateTest extends TestCase
     private function convertToDateString(DateTimeInterface $dateTime): string
     {
         return $dateTime->format('Y-m-d');
+    }
+
+    private function assertMessageRepresentsInstitutionUserDeactivationDateModification(array $actualMessageBody, InstitutionUser $institutionUser, InstitutionUser $actingUser, ?string $expectedOldDeactivationDate, ?string $expectedNewDeactivationDate): void
+    {
+        $expectedMessageBodySubset = [
+            'event_type' => AuditLogEventType::ModifyObject->value,
+            'happened_at' => Date::getTestNow()->toISOString(),
+            'trace_id' => static::TRACE_ID,
+            'failure_type' => null,
+            'context_institution_id' => $actingUser->institution_id,
+            'context_department_id' => $actingUser->department_id,
+            'acting_institution_user_id' => $actingUser->id,
+            'acting_user_pic' => $actingUser->user->personal_identification_code,
+            'acting_user_forename' => $actingUser->user->forename,
+            'acting_user_surname' => $actingUser->user->surname,
+        ];
+
+        Assertions::assertArraysEqualIgnoringOrder(
+            $expectedMessageBodySubset,
+            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
+        );
+
+        $eventParameters = data_get($actualMessageBody, 'event_parameters');
+        $this->assertIsArray($eventParameters);
+
+        $expectedEventParameters = [
+            'object_type' => AuditLogEventObjectType::InstitutionUser->value,
+            'object_identity_subset' => $institutionUser->getIdentitySubset(),
+            'pre_modification_subset' => ['deactivation_date' => $expectedOldDeactivationDate],
+            'post_modification_subset' => ['deactivation_date' => $expectedNewDeactivationDate],
+        ];
+
+        Assertions::assertArraysEqualIgnoringOrder($expectedEventParameters, $eventParameters);
     }
 }
