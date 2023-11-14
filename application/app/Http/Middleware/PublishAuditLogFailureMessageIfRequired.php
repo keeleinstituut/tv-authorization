@@ -49,7 +49,7 @@ class PublishAuditLogFailureMessageIfRequired
             default => null
         };
 
-        if (filled($failureType) && filled($eventTypeAndParameters)) {
+        if (filled($failureType) && filled($eventTypeAndParameters) && Auth::check()) {
             [$eventType, $eventParameters] = $eventTypeAndParameters;
             $auditLogMessage = AuditLogMessageBuilder::makeUsingJWT($failureType)->toMessageEvent($eventType, $eventParameters);
             $this->publisher->publish($auditLogMessage);
