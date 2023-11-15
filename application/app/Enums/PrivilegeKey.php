@@ -45,4 +45,6 @@ enum PrivilegeKey: string
     case EditTranslationMemory = 'EDIT_TM';
     case DeleteTranslationMemory = 'DELETE_TM';
     case ViewTranslationMemory = 'VIEW_TM';
+    case ViewAuditLog = 'VIEW_AUDIT_LOG';
+    case ExportAuditLog = 'EXPORT_AUDIT_LOG';
 }
