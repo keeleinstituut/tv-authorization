@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::withoutMiddleware('auth:api')->get('/jwt-claims', [JwtClaimsController::class, 'show']);
+Route::withoutMiddleware(['auth:api', 'throttle:api'])->get('/jwt-claims', [JwtClaimsController::class, 'show']);
 
 Route::get('/privileges', [PrivilegeController::class, 'index']);
 
