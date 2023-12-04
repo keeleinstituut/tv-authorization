@@ -4,6 +4,7 @@ namespace App\Rules;
 
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
+use TypeError;
 
 class PersonalIdCodeRule implements ValidationRule
 {
@@ -13,6 +14,7 @@ class PersonalIdCodeRule implements ValidationRule
     {
         if (! preg_match(self::PERSONAL_CODE_REGEX, $value)) {
             $fail('The :attribute is not valid personal ID code.');
+            return;
         }
 
         if (! $this->isChecksumValid($value)) {
@@ -27,25 +29,29 @@ class PersonalIdCodeRule implements ValidationRule
         }
 
         $shouldBe = 0;
-        // first level scale
-        for ($i = 1; $i < 11; $i++) {
-            $shouldBe += ($i % 10 + intval($i / 10)) * substr($code, $i - 1, 1);
-        }
-
-        $shouldBe = $shouldBe % 11;
-        // teise astme skaala kui $shouldBe on võrdne 10ga
-        if ($shouldBe == 10) {
-            $shouldBe = 0;
-            for ($i = 3; $i < 13; $i++) {
-                $shouldBe += ($i % 10 + intval($i / 10)) * substr($code, $i - 3, 1);
+        try {
+            // first level scale
+            for ($i = 1; $i < 11; $i++) {
+                $shouldBe += ($i % 10 + intval($i / 10)) * substr($code, $i - 1, 1);
             }
+
             $shouldBe = $shouldBe % 11;
-            // kui jääk on 10 siis muuda $shouldBe 0'ks
+            // teise astme skaala kui $shouldBe on võrdne 10ga
             if ($shouldBe == 10) {
                 $shouldBe = 0;
+                for ($i = 3; $i < 13; $i++) {
+                    $shouldBe += ($i % 10 + intval($i / 10)) * substr($code, $i - 3, 1);
+                }
+                $shouldBe = $shouldBe % 11;
+                // kui jääk on 10 siis muuda $shouldBe 0'ks
+                if ($shouldBe == 10) {
+                    $shouldBe = 0;
+                }
             }
-        }
 
-        return $code[10] == $shouldBe;
+            return $code[10] == $shouldBe;
+        } catch (TypeError) {
+            return false;
+        }
     }
 }

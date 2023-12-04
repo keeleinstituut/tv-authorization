@@ -8,7 +8,8 @@ use Illuminate\Support\Str;
 
 class UserFullNameRule implements ValidationRule
 {
-    private const REGEX = '/^[\p{L}\-\']+\s[\p{L}\-\']+$/u';
+    /** @var string  3 first names + last name are allowed in Estonia */
+    private const REGEX = '/^[\p{L}\-\']+(\s[\p{L}\-\']+)?(\s[\p{L}\-\']+)?\s[\p{L}\-\']+$/u';
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {

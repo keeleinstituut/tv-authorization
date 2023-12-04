@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\UserFullNameParser;
 use App\Http\OpenApiHelpers as OAH;
 use App\Http\Requests\ImportUsersCsvRequest;
 use App\Http\Requests\ImportUsersCsvRowValidationRequest;
@@ -150,12 +151,12 @@ class InstitutionUserImportController extends Controller
                         continue;
                     }
 
-                    $nameParts = explode(' ', $attributes['name']);
+                    [$forename, $surname] = UserFullNameParser::parse(trim($attributes['name']));
                     $user = User::withTrashed()->firstOrCreate([
                         'personal_identification_code' => $attributes['personal_identification_code'],
                     ], [
-                        'forename' => $nameParts[0],
-                        'surname' => $nameParts[1],
+                        'forename' => $forename,
+                        'surname' => $surname,
                     ]);
 
                     $institutionUser = InstitutionUser::make([
