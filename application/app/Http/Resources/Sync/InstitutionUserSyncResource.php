@@ -26,6 +26,7 @@ class InstitutionUserSyncResource extends JsonResource
             'department' => new DepartmentSyncResource($this->department),
             'roles' => RoleSyncResource::collection($this->roles),
             'deleted_at' => $this->deleted_at?->toISOString(),
+            'status' => $this->getStatus(),
         ];
     }
 }

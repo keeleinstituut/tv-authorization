@@ -4,9 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\Sync\InstitutionUserSyncResource;
 use App\Models\InstitutionUser;
-use App\Models\Scopes\ExcludeArchivedInstitutionUsersScope;
-use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
-use App\Models\Scopes\ExcludeIfRelatedUserSoftDeletedScope;
+use AuditLogClient\Services\AuditLogPublisher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -16,8 +14,9 @@ class InstitutionUserSyncController extends Controller
 {
     const PER_PAGE = 1000;
 
-    public function __construct()
+    public function __construct(readonly protected AuditLogPublisher $auditLogPublisher)
     {
+        parent::__construct($this->auditLogPublisher);
         $this->middleware(EnsureJwtBelongsToServiceAccountWithSyncRole::class);
     }
 
@@ -37,9 +36,6 @@ class InstitutionUserSyncController extends Controller
 
     private function getBaseQuery(): Builder
     {
-        return InstitutionUser::withTrashed()
-            ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
-            ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
-            ->withoutGlobalScope(ExcludeIfRelatedUserSoftDeletedScope::class);
+        return InstitutionUser::withTrashed();
     }
 }
