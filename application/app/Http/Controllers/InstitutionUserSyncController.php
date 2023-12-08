@@ -14,9 +14,9 @@ class InstitutionUserSyncController extends Controller
 {
     const PER_PAGE = 1000;
 
-    public function __construct(readonly protected AuditLogPublisher $auditLogPublisher)
+    public function __construct(AuditLogPublisher $auditLogPublisher)
     {
-        parent::__construct($this->auditLogPublisher);
+        parent::__construct($auditLogPublisher);
         $this->middleware(EnsureJwtBelongsToServiceAccountWithSyncRole::class);
     }
 

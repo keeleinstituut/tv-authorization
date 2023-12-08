@@ -35,7 +35,10 @@ class Controller extends BaseController
 {
     use AuthorizesRequests, ValidatesRequests;
 
-    public function __construct(readonly protected AuditLogPublisher $auditLogPublisher)
+    protected readonly AuditLogPublisher $auditLogPublisher;
+
+    public function __construct(AuditLogPublisher $auditLogPublisher)
     {
+        $this->auditLogPublisher = $auditLogPublisher;
     }
 }
