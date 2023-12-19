@@ -2,7 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Models\InstitutionUser;
 use App\Models\InstitutionUserRole;
+use App\Models\Scopes\ExcludeArchivedInstitutionUsersScope;
+use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Util\DateUtil;
 use Exception;
 use Illuminate\Console\Command;
@@ -25,17 +28,26 @@ class DetachRolesFromDeactivatedUsers extends Command implements Isolatable
     {
         DB::transaction(function () {
             InstitutionUserRole::query()
+                ->with(['role'])
                 ->whereIn(
                     'institution_user_id',
                     DB::table('institution_users')
                         ->select('id')
                         ->whereDate('deactivation_date', '<=', Date::now(DateUtil::ESTONIAN_TIMEZONE)->format('Y-m-d'))
                 )->each(function (InstitutionUserRole $institutionUserRole) {
-                    if ($institutionUserRole->role->is_root && !$this->institutionHasAnotherUserWithRootRole($institutionUserRole)) {
-                        $institutionUser = $institutionUserRole->institutionUser;
-                        $institutionUser->deactivation_date = null;
-                        $institutionUser->save();
-                        return true;
+                    if ($institutionUserRole->role?->is_root) {
+                        /** @var InstitutionUser $institutionUser */
+                        $institutionUser = $institutionUserRole->institutionUser()
+                            ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
+                            ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
+                            ->first();
+
+                        if (filled($institutionUser) && !$this->institutionHasAnotherActiveUserWithRootRole($institutionUser)) {
+                            $institutionUser->deactivation_date = null;
+                            $institutionUser->archived_at = null;
+                            $institutionUser->save();
+                            return true;
+                        }
                     }
 
                     try {
@@ -50,9 +62,8 @@ class DetachRolesFromDeactivatedUsers extends Command implements Isolatable
         });
     }
 
-    private function institutionHasAnotherUserWithRootRole(InstitutionUserRole $institutionUserRole): bool
+    private function institutionHasAnotherActiveUserWithRootRole(InstitutionUser $institutionUser): bool
     {
-        $institutionUser = $institutionUserRole->institutionUser;
         return InstitutionUserRole::query()
             ->whereRelation('role', function (Builder $query) use ($institutionUser) {
                 $query->where('is_root', true)
