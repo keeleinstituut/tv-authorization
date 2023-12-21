@@ -5,10 +5,17 @@ namespace App\Observers;
 use App\Events\Publishers\InstitutionUserEventsPublisher;
 use App\Exceptions\OnlyUserUnderRootRoleException;
 use App\Models\InstitutionUser;
+use NotificationClient\DataTransferObjects\EmailNotificationMessage;
+use NotificationClient\Enums\NotificationType;
+use NotificationClient\Services\NotificationPublisher;
+use Throwable;
 
-class InstitutionUserObserver
+readonly class InstitutionUserObserver
 {
-    public function __construct(private readonly InstitutionUserEventsPublisher $publisher)
+    public function __construct(
+        private InstitutionUserEventsPublisher $syncPublisher,
+        private NotificationPublisher          $notificationPublisher
+    )
     {
     }
 
@@ -31,7 +38,21 @@ class InstitutionUserObserver
      */
     public function saved(InstitutionUser $institutionUser): void
     {
-        $this->publisher->publishSyncEvent($institutionUser->id);
+        $this->syncPublisher->publishSyncEvent($institutionUser->id);
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function created(InstitutionUser $institutionUser): void
+    {
+        $this->notificationPublisher->publishEmailNotification(
+            EmailNotificationMessage::make([
+                'notification_type' => NotificationType::InstitutionUserCreated,
+                'receiver_email' => $institutionUser->email,
+                'receiver_name' => $institutionUser->user->full_name
+            ])
+        );
     }
 
     /**
@@ -51,7 +72,7 @@ class InstitutionUserObserver
      */
     public function deleted(InstitutionUser $institutionUser): void
     {
-        $this->publisher->publishSyncEvent($institutionUser->id);
+        $this->syncPublisher->publishSyncEvent($institutionUser->id);
     }
 
     /**
@@ -66,6 +87,6 @@ class InstitutionUserObserver
      */
     public function forceDeleted(InstitutionUser $institutionUser): void
     {
-        $this->publisher->publishDeleteEvent($institutionUser->id);
+        $this->syncPublisher->publishDeleteEvent($institutionUser->id);
     }
 }

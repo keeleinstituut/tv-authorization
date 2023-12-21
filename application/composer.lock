@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fe55e11d4118fee551dfbeef92977bee",
+    "content-hash": "7c70088d7882efe77a2bc4b1beea764b",
     "packages": [
         {
             "name": "brick/math",
@@ -1273,16 +1273,16 @@
         },
         {
             "name": "keeleinstituut/tv-common-laravel-amqp",
-            "version": "0.0.49",
+            "version": "0.0.55",
             "source": {
                 "type": "git",
                 "url": "https://github.com/keeleinstituut/tv-common-laravel-amqp.git",
-                "reference": "edc86542579804b460c1f7188d9fd17778612e57"
+                "reference": "c48ca4487f3c40449b4fd5b39fffcc8ab6c8e6e1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/keeleinstituut/tv-common-laravel-amqp/zipball/edc86542579804b460c1f7188d9fd17778612e57",
-                "reference": "edc86542579804b460c1f7188d9fd17778612e57",
+                "url": "https://api.github.com/repos/keeleinstituut/tv-common-laravel-amqp/zipball/c48ca4487f3c40449b4fd5b39fffcc8ab6c8e6e1",
+                "reference": "c48ca4487f3c40449b4fd5b39fffcc8ab6c8e6e1",
                 "shasum": ""
             },
             "require": {
@@ -1310,11 +1310,16 @@
                 "psr-4": {
                     "SyncTools\\": "src/SyncTools",
                     "AuditLogClient\\": "src/AuditLogClient",
+                    "NotificationClient\\": "src/NotificationClient",
                     "SyncTools\\Database\\Helpers\\": "database/helpers/"
                 }
             },
             "autoload-dev": {
                 "psr-4": {
+                    "SyncTools\\": "src/SyncTools",
+                    "AuditLogClient\\": "src/AuditLogClient",
+                    "NotificationClient\\": "src/NotificationClient",
+                    "SyncTools\\Database\\Helpers\\": "database/helpers/",
                     "SyncTools\\Tests\\": "tests/"
                 }
             },
@@ -1330,10 +1335,10 @@
                 "rabbitmq"
             ],
             "support": {
-                "source": "https://github.com/keeleinstituut/tv-common-laravel-amqp/tree/0.0.49",
+                "source": "https://github.com/keeleinstituut/tv-common-laravel-amqp/tree/0.0.55",
                 "issues": "https://github.com/keeleinstituut/tv-common-laravel-amqp/issues"
             },
-            "time": "2023-11-14T12:45:19+00:00"
+            "time": "2023-12-18T10:13:50+00:00"
         },
         {
             "name": "keeleinstituut/tv-common-laravel-security",

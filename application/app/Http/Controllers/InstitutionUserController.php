@@ -21,6 +21,7 @@ use App\Policies\InstitutionUserPolicy;
 use App\Util\DateUtil;
 use Arr;
 use AuditLogClient\Services\AuditLogMessageBuilder;
+use AuditLogClient\Services\AuditLogPublisher;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -33,6 +34,9 @@ use League\Csv\CannotInsertRecord;
 use League\Csv\Exception;
 use League\Csv\InvalidArgument;
 use League\Csv\Writer;
+use NotificationClient\DataTransferObjects\EmailNotificationMessage;
+use NotificationClient\Enums\NotificationType;
+use NotificationClient\Services\NotificationPublisher;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -40,6 +44,11 @@ use Throwable;
 
 class InstitutionUserController extends Controller
 {
+    public function __construct(AuditLogPublisher $auditLogPublisher, private readonly NotificationPublisher $notificationPublisher)
+    {
+        parent::__construct($auditLogPublisher);
+    }
+
     /**
      * @throws AuthorizationException
      */
@@ -347,9 +356,14 @@ class InstitutionUserController extends Controller
                 }
             );
 
-            /** @noinspection PhpStatementHasEmptyBodyInspection */
             if (filter_var($request->validated('notify_user'), FILTER_VALIDATE_BOOLEAN)) {
-                // TODO: queue email to user
+                $this->notificationPublisher->publishEmailNotification(
+                    EmailNotificationMessage::make([
+                        'notification_type' => NotificationType::InstitutionUserActivated,
+                        'receiver_email' => $institutionUser->email,
+                        'receiver_name' => $institutionUser->user->full_name
+                    ])
+                );
             }
 
             return new InstitutionUserResource($institutionUser->refresh());
