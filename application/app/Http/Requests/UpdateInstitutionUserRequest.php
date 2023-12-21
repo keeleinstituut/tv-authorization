@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\InstitutionUserStatus;
 use App\Helpers\WorktimeValidationUtil;
+use App\Http\Requests\Helpers\MaxLengthValue;
 use App\Models\Department;
 use App\Models\InstitutionUser;
 use App\Models\Role;
@@ -119,8 +120,8 @@ class UpdateInstitutionUserRequest extends FormRequest
     {
         return [
             'user' => ['array', 'min:1'],
-            'user.forename' => 'filled',
-            'user.surname' => 'filled',
+            'user.forename' => ['filled', 'max:' . MaxLengthValue::USERNAME_PART],
+            'user.surname' => ['filled', 'max:' . MaxLengthValue::USERNAME_PART],
             'email' => 'email',
             'phone' => new PhoneNumberRule,
             'roles' => [
