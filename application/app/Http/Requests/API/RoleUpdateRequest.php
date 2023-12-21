@@ -3,6 +3,7 @@
 namespace App\Http\Requests\API;
 
 use App\Enums\PrivilegeKey;
+use App\Http\Requests\Helpers\MaxLengthValue;
 use App\Models\Institution;
 use App\Models\Privilege;
 use App\Models\Role;
@@ -46,7 +47,7 @@ class RoleUpdateRequest extends FormRequest
             ],
             'privileges' => 'array|min:1',
             'privileges.*' => Rule::exists(app(Privilege::class)->getTable(), 'key'),
-            'name' => 'string',
+            'name' => ['string', 'max:' . MaxLengthValue::NAME]
         ];
     }
 

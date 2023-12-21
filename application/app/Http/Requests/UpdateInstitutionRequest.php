@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Helpers\WorktimeValidationUtil;
+use App\Http\Requests\Helpers\MaxLengthValue;
 use App\Rules\PhoneNumberRule;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -80,6 +81,7 @@ class UpdateInstitutionRequest extends FormRequest
             'name' => [
                 'string',
                 'filled',
+                'max:' . MaxLengthValue::NAME
             ],
             'short_name' => [
                 'string',
