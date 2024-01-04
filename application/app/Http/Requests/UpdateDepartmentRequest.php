@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Helpers\MaxLengthValue;
 use App\Rules\DepartmentNameNotTakenInInstitutionRule;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -31,6 +32,7 @@ class UpdateDepartmentRequest extends FormRequest
                 'required',
                 'filled',
                 new DepartmentNameNotTakenInInstitutionRule,
+                'max:' . MaxLengthValue::NAME
             ],
         ];
     }

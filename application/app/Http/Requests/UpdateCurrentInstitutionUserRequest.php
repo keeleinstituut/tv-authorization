@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Helpers\MaxLengthValue;
 use App\Models\InstitutionUser;
 use App\Rules\PhoneNumberRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -44,8 +45,8 @@ class UpdateCurrentInstitutionUserRequest extends FormRequest
     {
         return [
             'user' => ['array', 'min:1'],
-            'user.forename' => 'filled',
-            'user.surname' => 'filled',
+            'user.forename' => ['filled', 'max:' . MaxLengthValue::USERNAME_PART],
+            'user.surname' => ['filled', 'max:' . MaxLengthValue::USERNAME_PART],
             'email' => 'email',
             'phone' => new PhoneNumberRule,
         ];

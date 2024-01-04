@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property string $forename
  * @property string $surname
+ * @property string $full_name
  * @property string $personal_identification_code
  * @property-read Collection<int, InstitutionUser> $institutionUsers
  * @property-read int|null $institution_users_count
@@ -52,5 +53,10 @@ class User extends Authenticatable
     public function institutionUsers(): HasMany
     {
         return $this->hasMany(InstitutionUser::class);
+    }
+
+    public function getFullNameAttribute(): string
+    {
+        return implode(' ', [$this->forename, $this->surname]);
     }
 }
