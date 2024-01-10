@@ -126,6 +126,7 @@ class UpdateInstitutionUserRequest extends FormRequest
             'phone' => new PhoneNumberRule,
             'roles' => [
                 'array',
+                'min:1',
                 $this->validateTargetInstitutionUserIsActive(...),
             ],
             'roles.*' => [
