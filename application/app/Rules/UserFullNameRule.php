@@ -16,11 +16,11 @@ class UserFullNameRule implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (! Str::match(self::REGEX, $value)) {
-            $fail('The :attribute is not valid user name.');
+            $fail('The user name is invalid.');
         }
 
         if (Str::length($value) > self::MAX_LENGTH) {
-            $fail('The :attribute is too long. Max available length is ' . self::MAX_LENGTH);
+            $fail('The user name is too long. Max available length is ' . self::MAX_LENGTH);
         }
     }
 }

@@ -5,7 +5,9 @@ namespace App\Http\Requests;
 use App\Http\Requests\Helpers\MaxLengthValue;
 use App\Models\InstitutionUser;
 use App\Rules\PhoneNumberRule;
+use App\Rules\UserFullNameRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 use OpenApi\Attributes as OA;
 
 /**
@@ -49,6 +51,28 @@ class UpdateCurrentInstitutionUserRequest extends FormRequest
             'user.surname' => ['filled', 'max:' . MaxLengthValue::USERNAME_PART],
             'email' => 'email',
             'phone' => new PhoneNumberRule,
+        ];
+    }
+
+    public function after(): array
+    {
+        return [
+            function (Validator $validator) {
+                if ($validator->errors()->isNotEmpty()) {
+                    return;
+                }
+
+                $userFullName = join(' ', [
+                    $this->validated('user.forename'),
+                    $this->validated('user.surname'),
+                ]);
+
+                (new UserFullNameRule())->validate(
+                    'user.forename',
+                    $userFullName,
+                    fn (string $message) => $validator->errors()->add('user.forename', $message)
+                );
+            }
         ];
     }
 }
