@@ -47,6 +47,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Role> $roles
  * @property-read int|null $roles_count
  * @property-read Collection<int, Department> $departments
+ * @property-read Collection<int, InstitutionVacation> $vacations
  * @property-read int|null $departments_count
  *
  * @method static InstitutionFactory factory($count = null, $state = [])
@@ -123,6 +124,11 @@ class Institution extends Model implements AuditLoggable
     public function departments(): HasMany
     {
         return $this->hasMany(Department::class);
+    }
+
+    public function vacations(): HasMany
+    {
+        return $this->hasMany(InstitutionVacation::class);
     }
 
     public static function queryByUserPersonalIdentificationCode(string $personalIdentificationCode): Builder

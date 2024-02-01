@@ -25,14 +25,17 @@ class InstitutionSyncResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return $this->only(
-            'id',
-            'name',
-            'short_name',
-            'phone',
-            'email',
-            'logo_url',
-            'deleted_at'
-        );
+        return [
+            ...$this->only(
+                'id',
+                'name',
+                'short_name',
+                'phone',
+                'email',
+                'logo_url',
+                'deleted_at'
+            ),
+            'vacations' => $this->whenLoaded('vacations')
+        ];
     }
 }

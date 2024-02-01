@@ -18,14 +18,15 @@ class InstitutionSyncController extends Controller
     public function index(): AnonymousResourceCollection
     {
         return InstitutionSyncResource::collection(
-            Institution::withTrashed()->get()
+            Institution::withTrashed()->with('vacations')->get()
         );
     }
 
     public function show(Request $request): InstitutionSyncResource
     {
         return new InstitutionSyncResource(
-            Institution::withTrashed()->whereId($request->route('id'))->firstOrFail()
+            Institution::withTrashed()->with('vacations')->whereId($request->route('id'))
+                ->firstOrFail()
         );
     }
 }

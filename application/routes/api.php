@@ -8,6 +8,7 @@ use App\Http\Controllers\InstitutionSyncController;
 use App\Http\Controllers\InstitutionUserController;
 use App\Http\Controllers\InstitutionUserImportController;
 use App\Http\Controllers\InstitutionUserSyncController;
+use App\Http\Controllers\InstitutionVacationController;
 use App\Http\Controllers\JwtClaimsController;
 use Illuminate\Support\Facades\Route;
 
@@ -77,6 +78,17 @@ Route::prefix('/departments')
         Route::get('/{department_id}', 'show');
         Route::put('/{department_id}', 'update');
         Route::delete('/{department_id}', 'destroy');
+    });
+
+Route::prefix('/institution-vacations')
+    ->controller(InstitutionVacationController::class)
+    ->whereUuid('institution_vacation_id')
+    ->group(function (): void {
+        Route::get('/', 'index');
+        Route::post('/', 'store');
+        Route::get('/{institution_vacation_id}', 'show');
+        Route::put('/{institution_vacation_id}', 'update');
+        Route::delete('/{institution_vacation_id}', 'destroy');
     });
 
 Route::withoutMiddleware(['auth:api', 'throttle:api'])->group(function () {
