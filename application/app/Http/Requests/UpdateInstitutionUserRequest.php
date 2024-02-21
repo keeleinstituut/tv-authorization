@@ -11,8 +11,10 @@ use App\Models\Role;
 use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Rules\ModelBelongsToInstitutionRule;
 use App\Rules\PhoneNumberRule;
+use App\Rules\UserFullNameRule;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -150,7 +152,7 @@ class UpdateInstitutionUserRequest extends FormRequest
     {
         return new ModelBelongsToInstitutionRule(
             Role::class,
-            fn () => $this->obtainInstitutionUser()->institution_id
+            fn() => $this->obtainInstitutionUser()->institution_id
         );
     }
 
@@ -158,7 +160,7 @@ class UpdateInstitutionUserRequest extends FormRequest
     {
         return new ModelBelongsToInstitutionRule(
             Department::class,
-            fn () => $this->obtainInstitutionUser()->institution_id
+            fn() => $this->obtainInstitutionUser()->institution_id
         );
     }
 
@@ -209,6 +211,22 @@ class UpdateInstitutionUserRequest extends FormRequest
         return [
             WorktimeValidationUtil::validateAllWorktimeFieldsArePresentOrAllMissing(...),
             WorktimeValidationUtil::validateEachWorktimeStartIsBeforeEndOrBothUndefined(...),
+            function (Validator $validator) {
+                if ($validator->errors()->isNotEmpty()) {
+                    return;
+                }
+
+                $userFullName = join(' ', [
+                    $this->validated('user.forename'),
+                    $this->validated('user.surname'),
+                ]);
+
+                (new UserFullNameRule())->validate(
+                    'user.forename',
+                    $userFullName,
+                    fn (string $message) => $validator->errors()->add('user.forename', $message)
+                );
+            }
         ];
     }
 }
