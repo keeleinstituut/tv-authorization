@@ -14,9 +14,8 @@ readonly class InstitutionUserObserver
 {
     public function __construct(
         private InstitutionUserEventsPublisher $syncPublisher,
-        private NotificationPublisher          $notificationPublisher
-    )
-    {
+        private NotificationPublisher $notificationPublisher
+    ) {
     }
 
     /**
@@ -50,7 +49,7 @@ readonly class InstitutionUserObserver
             EmailNotificationMessage::make([
                 'notification_type' => NotificationType::InstitutionUserCreated,
                 'receiver_email' => $institutionUser->email,
-                'receiver_name' => $institutionUser->user->full_name
+                'receiver_name' => $institutionUser->user->full_name,
             ])
         );
     }

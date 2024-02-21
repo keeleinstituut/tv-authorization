@@ -142,6 +142,7 @@ class InstitutionUserResource extends JsonResource
             'institution' => new InstitutionResource($this->institution),
             'department' => new DepartmentResource($this->department),
             'roles' => RoleResource::collection($this->roles),
+            'vacations' => new InstitutionUserVacationsResource($this),
         ];
     }
 }

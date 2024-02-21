@@ -45,7 +45,7 @@ use Illuminate\Support\Carbon;
  */
 class Department extends Model
 {
-    use HasFactory, SoftDeletes, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = ['name'];
 

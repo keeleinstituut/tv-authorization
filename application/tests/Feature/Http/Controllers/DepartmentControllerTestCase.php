@@ -17,7 +17,7 @@ use Throwable;
 
 abstract class DepartmentControllerTestCase extends TestCase
 {
-    use RefreshDatabase, ModelAssertions;
+    use ModelAssertions, RefreshDatabase;
 
     /**
      * @param  Closure(InstitutionUser):void|null  $modifyActingInstitutionUser
@@ -30,7 +30,7 @@ abstract class DepartmentControllerTestCase extends TestCase
      *
      * @throws Throwable
      */
-    public static function createDepartmentsAndActingUserInSameInstitution(?Closure $modifyActingInstitutionUser = null,
+    public static function createDepartmentsAndActingUserInSameInstitution(Closure $modifyActingInstitutionUser = null,
         ?Closure ...$departmentModifiers): array
     {
         $institution = Institution::factory()->create();

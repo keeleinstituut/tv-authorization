@@ -25,7 +25,8 @@ class InstitutionSyncController extends Controller
     public function show(Request $request): InstitutionSyncResource
     {
         return new InstitutionSyncResource(
-            Institution::withTrashed()->whereId($request->route('id'))->firstOrFail()
+            Institution::withTrashed()->whereId($request->route('id'))
+                ->firstOrFail()
         );
     }
 }

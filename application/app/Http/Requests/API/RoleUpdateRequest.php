@@ -47,7 +47,7 @@ class RoleUpdateRequest extends FormRequest
             ],
             'privileges' => 'array|min:1',
             'privileges.*' => Rule::exists(app(Privilege::class)->getTable(), 'key'),
-            'name' => ['string', 'max:' . MaxLengthValue::NAME]
+            'name' => ['string', 'max:'.MaxLengthValue::NAME],
         ];
     }
 

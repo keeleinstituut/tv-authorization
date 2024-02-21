@@ -28,7 +28,7 @@ use Throwable;
 
 class InstitutionUserImportControllerImportTest extends AuditLogTestCase
 {
-    use RefreshDatabase, EntityHelpers;
+    use EntityHelpers, RefreshDatabase;
 
     public function setUp(): void
     {

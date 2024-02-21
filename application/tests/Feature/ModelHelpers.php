@@ -66,7 +66,7 @@ trait ModelHelpers
         User $user,
         string $email,
         string $phone = '+372 66666666',
-        ?Department $department = null,
+        Department $department = null,
         Role ...$roles): InstitutionUser
     {
         $createdInstitutionUser = InstitutionUser::factory()

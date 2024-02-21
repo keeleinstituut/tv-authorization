@@ -12,7 +12,7 @@ use Tests\TestCase;
 
 class InstitutionUserImportControllerValidateCsvRowTest extends TestCase
 {
-    use RefreshDatabase, EntityHelpers;
+    use EntityHelpers, RefreshDatabase;
 
     public function test_valid_row_returned_200(): void
     {

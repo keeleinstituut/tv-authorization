@@ -32,7 +32,7 @@ class StoreDepartmentRequest extends FormRequest
                 'required',
                 'filled',
                 new DepartmentNameNotTakenInInstitutionRule,
-                'max:' . MaxLengthValue::NAME
+                'max:'.MaxLengthValue::NAME,
             ],
         ];
     }

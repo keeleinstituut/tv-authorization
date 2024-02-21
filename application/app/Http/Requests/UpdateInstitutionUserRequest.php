@@ -122,8 +122,8 @@ class UpdateInstitutionUserRequest extends FormRequest
     {
         return [
             'user' => ['array', 'min:1'],
-            'user.forename' => ['filled', 'max:' . MaxLengthValue::USERNAME_PART],
-            'user.surname' => ['filled', 'max:' . MaxLengthValue::USERNAME_PART],
+            'user.forename' => ['filled', 'max:'.MaxLengthValue::USERNAME_PART],
+            'user.surname' => ['filled', 'max:'.MaxLengthValue::USERNAME_PART],
             'email' => 'email',
             'phone' => new PhoneNumberRule,
             'roles' => [

@@ -23,7 +23,7 @@ use Tests\Feature\InstitutionUserHelpers;
 
 class RoleControllerTest extends AuditLogTestCase
 {
-    use RefreshDatabase, InstitutionUserHelpers;
+    use InstitutionUserHelpers, RefreshDatabase;
 
     private $testNow;
 

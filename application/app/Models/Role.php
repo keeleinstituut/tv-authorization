@@ -56,7 +56,7 @@ use Illuminate\Support\Carbon;
  */
 class Role extends Model implements AuditLoggable
 {
-    use HasFactory, SoftDeletes, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'name',

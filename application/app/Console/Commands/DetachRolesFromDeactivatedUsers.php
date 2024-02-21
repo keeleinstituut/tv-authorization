@@ -42,10 +42,11 @@ class DetachRolesFromDeactivatedUsers extends Command implements Isolatable
                             ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
                             ->first();
 
-                        if (filled($institutionUser) && !$this->institutionHasAnotherActiveUserWithRootRole($institutionUser)) {
+                        if (filled($institutionUser) && ! $this->institutionHasAnotherActiveUserWithRootRole($institutionUser)) {
                             $institutionUser->deactivation_date = null;
                             $institutionUser->archived_at = null;
                             $institutionUser->save();
+
                             return true;
                         }
                     }

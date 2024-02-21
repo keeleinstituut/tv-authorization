@@ -355,9 +355,9 @@ class DepartmentControllerUpdateTest extends DepartmentControllerTestCase
      *
      * @throws Throwable
      */
-    public function setUpFixture(?Closure $modifyTargetDepartment = null,
-        ?Closure $modifyAnyState = null,
-        ?Closure $modifyActingInstitutionUser = null): array
+    public function setUpFixture(Closure $modifyTargetDepartment = null,
+        Closure $modifyAnyState = null,
+        Closure $modifyActingInstitutionUser = null): array
     {
         [
             'actingInstitutionUser' => $actingInstitutionUser,

@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 
 class UserFullNameRule implements ValidationRule
 {
-    /** @var string  3 first names + last name are allowed in Estonia */
+    /** @var string 3 first names + last name are allowed in Estonia */
     private const REGEX = '/^[\p{L}\-\']+(\s[\p{L}\-\']+)?(\s[\p{L}\-\']+)?\s[\p{L}\-\']+$/u';
 
     const MAX_LENGTH = 255;
@@ -20,7 +20,7 @@ class UserFullNameRule implements ValidationRule
         }
 
         if (Str::length($value) > self::MAX_LENGTH) {
-            $fail('The user name is too long. Max available length is ' . self::MAX_LENGTH);
+            $fail('The :attribute is too long. Max available length is '.self::MAX_LENGTH);
         }
     }
 }

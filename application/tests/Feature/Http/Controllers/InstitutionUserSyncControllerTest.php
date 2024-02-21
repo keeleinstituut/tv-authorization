@@ -20,7 +20,7 @@ use Tests\TestCase;
 
 class InstitutionUserSyncControllerTest extends TestCase
 {
-    use RefreshDatabase, EntityHelpers;
+    use EntityHelpers, RefreshDatabase;
 
     public function test_list_of_institution_users_returned(): void
     {
@@ -100,7 +100,7 @@ class InstitutionUserSyncControllerTest extends TestCase
         ];
     }
 
-    private function queryInstitutionUsersForSync(?string $token = null): TestResponse
+    private function queryInstitutionUsersForSync(string $token = null): TestResponse
     {
         if (filled($token)) {
             $this->withHeaders([
@@ -111,7 +111,7 @@ class InstitutionUserSyncControllerTest extends TestCase
         return $this->getJson(action([InstitutionUserSyncController::class, 'index']));
     }
 
-    private function queryInstitutionUserForSync(string $id, ?string $token = null): TestResponse
+    private function queryInstitutionUserForSync(string $id, string $token = null): TestResponse
     {
         if (filled($token)) {
             $this->withHeaders([
@@ -122,7 +122,7 @@ class InstitutionUserSyncControllerTest extends TestCase
         return $this->getJson(action([InstitutionUserSyncController::class, 'show'], ['id' => $id]));
     }
 
-    public function generateServiceAccountAccessToken(?string $role = null): string
+    public function generateServiceAccountAccessToken(string $role = null): string
     {
         $azp = explode(',', config('keycloak.service_accounts_accepted_authorized_parties'))[0];
 

@@ -361,7 +361,7 @@ class InstitutionUserController extends Controller
                     EmailNotificationMessage::make([
                         'notification_type' => NotificationType::InstitutionUserActivated,
                         'receiver_email' => $institutionUser->email,
-                        'receiver_name' => $institutionUser->user->full_name
+                        'receiver_name' => $institutionUser->user->full_name,
                     ])
                 );
             }
@@ -406,7 +406,15 @@ class InstitutionUserController extends Controller
             ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
             ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
             ->withGlobalScope('policy', InstitutionUserPolicy::scope())
-            ->whereHas('user');
+            ->with([
+                'user',
+                'institution',
+                'department',
+                'roles',
+                'activeInstitutionVacations',
+                'activeInstitutionUserVacations',
+                'activeInstitutionVacationExclusions',
+            ])->whereHas('user');
     }
 
     /**

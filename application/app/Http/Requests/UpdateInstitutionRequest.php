@@ -81,7 +81,7 @@ class UpdateInstitutionRequest extends FormRequest
             'name' => [
                 'string',
                 'filled',
-                'max:' . MaxLengthValue::NAME
+                'max:'.MaxLengthValue::NAME,
             ],
             'short_name' => [
                 'string',

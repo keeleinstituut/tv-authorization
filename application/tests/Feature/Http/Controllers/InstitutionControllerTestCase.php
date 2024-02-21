@@ -11,7 +11,7 @@ use Tests\Feature\RepresentationHelpers;
 
 abstract class InstitutionControllerTestCase extends AuditLogTestCase
 {
-    use RefreshDatabase, ModelAssertions;
+    use ModelAssertions, RefreshDatabase;
 
     public function assertInstitutionUnchangedAfterAction(Closure $action,
         Institution $institution,

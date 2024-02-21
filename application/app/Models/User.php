@@ -46,7 +46,7 @@ use Illuminate\Support\Carbon;
  */
 class User extends Authenticatable
 {
-    use HasFactory, SoftDeletes, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = ['forename', 'surname', 'personal_identification_code'];
 

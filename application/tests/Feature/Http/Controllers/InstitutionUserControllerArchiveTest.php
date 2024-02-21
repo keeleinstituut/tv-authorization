@@ -30,7 +30,7 @@ use Throwable;
 
 class InstitutionUserControllerArchiveTest extends AuditLogTestCase
 {
-    use RefreshDatabase, InstitutionUserHelpers, ModelAssertions;
+    use InstitutionUserHelpers, ModelAssertions, RefreshDatabase;
 
     public function setUp(): void
     {
@@ -404,8 +404,8 @@ class InstitutionUserControllerArchiveTest extends AuditLogTestCase
      *
      * @throws Throwable
      */
-    public function createStandardSuccessCaseInstitutionUsersAndRoles(?Closure $modifyTargetUser = null,
-        ?Closure $modifyActingUser = null): array
+    public function createStandardSuccessCaseInstitutionUsersAndRoles(Closure $modifyTargetUser = null,
+        Closure $modifyActingUser = null): array
     {
         [
             $targetInstitutionUser,
