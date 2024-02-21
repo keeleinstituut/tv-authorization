@@ -2,19 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\InstitutionVacationStoreRequest;
-use App\Http\Requests\InstitutionVacationUpdateRequest;
+use App\Http\Requests\InstitutionVacationSyncRequest;
 use App\Http\Resources\InstitutionVacationResource;
-use App\Models\Institution;
 use App\Models\InstitutionVacation;
 use App\Policies\InstitutionVacationPolicy;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\Request;
 use App\Http\OpenApiHelpers as OAH;
+use OpenApi\Attributes as OA;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use OpenApi\Attributes as OA;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
@@ -44,101 +41,58 @@ class InstitutionVacationController extends Controller
      * @throws AuthorizationException|Throwable
      */
     #[OA\Post(
-        path: '/institution-vacations',
-        summary: 'Create a new vacation',
-        requestBody: new OAH\RequestBody(InstitutionVacationStoreRequest::class),
+        path: '/institution-vacations/sync',
+        summary: 'Bulk create, delete and/or update institution vacations.' .
+        'If ID left unspecified, the vacation will be created. ' .
+        'If a previously existing vacation is not in request input, it will be deleted.',
+        requestBody: new OAH\RequestBody(InstitutionVacationSyncRequest::class),
         tags: ['Vacations'],
         responses: [new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
     )]
-    #[OAH\ResourceResponse(dataRef: InstitutionVacationResource::class, description: 'Created vacation', response: Response::HTTP_CREATED)]
-    public function store(InstitutionVacationStoreRequest $request): InstitutionVacationResource
+    #[OAH\ResourceResponse(dataRef: InstitutionVacationResource::class, description: 'Affected vacations', response: Response::HTTP_OK)]
+    public function sync(InstitutionVacationSyncRequest $request): AnonymousResourceCollection
     {
-        $this->authorize('create', InstitutionVacation::class);
+        $this->authorize('sync', InstitutionVacation::class);
 
-        return DB::transaction(function () use ($request): InstitutionVacationResource {
-            $currentInstitution = Institution::findOrFail(Auth::user()->institutionId);
+        return DB::transaction(function () use ($request): AnonymousResourceCollection {
+            $vacationIds = collect($request->validated('vacations'))->map(function (array $vacationData) {
+                $institutionId = Auth::user()->institutionId;
+                // Update existing
+                if (filled($id = data_get($vacationData, 'id'))) {
+                    /** @var InstitutionVacation $vacation */
+                    $vacation = $this->getBaseQuery()->where('institution_id', $institutionId)
+                        ->findOrFail($id);
 
-            $vacation = (new InstitutionVacation)->fill($request->validated());
-            $vacation->institution()->associate($currentInstitution);
-            $vacation->saveOrFail();
+                    $vacation->fill([
+                        'start_date' => data_get($vacationData, 'start_date'),
+                        'end_date' => data_get($vacationData, 'end_date'),
+                    ])->saveOrFail();
 
-            return InstitutionVacationResource::make($vacation->refresh());
-        });
-    }
+                    return $vacation->id;
+                }
 
-    /**
-     * @throws AuthorizationException
-     */
-    #[OA\Get(
-        path: '/institution-vacations/{institution_vacation_id}',
-        summary: 'Get information about institution vacation with the given UUID',
-        tags: ['Vacations'],
-        parameters: [new OAH\UuidPath('institution_vacation_id')],
-        responses: [new OAH\NotFound, new OAH\Forbidden, new OAH\Unauthorized]
-    )]
-    #[OAH\ResourceResponse(dataRef: InstitutionVacationResource::class, description: 'Institution vacation with given UUID')]
-    public function show(Request $request): InstitutionVacationResource
-    {
-        $vacation = $this->getBaseQuery()->findOrFail(
-            $request->route('institution_vacation_id')
-        );
+                // Create new
+                $vacation = InstitutionVacation::make([
+                    'institution_id' => $institutionId,
+                    'start_date' => data_get($vacationData, 'start_date'),
+                    'end_date' => data_get($vacationData, 'end_date'),
+                ]);
+                $vacation->saveOrFail();
 
-        $this->authorize('view', $vacation);
+                return $vacation->id;
+            });
 
-        return new InstitutionVacationResource($vacation);
-    }
+            // Delete missing
+            $this->getBaseQuery()->whereNotIn('id', $vacationIds)
+                ->delete();
 
-    /**
-     * @throws Throwable
-     */
-    #[OA\Put(
-        path: '/institution-vacations/{institution_vacation_id}',
-        summary: 'Update the institution vacation with the given UUID',
-        requestBody: new OAH\RequestBody(InstitutionVacationUpdateRequest::class),
-        tags: ['Vacations'],
-        parameters: [new OAH\UuidPath('institution_vacation_id')],
-        responses: [new OAH\NotFound, new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
-    )]
-    #[OAH\ResourceResponse(dataRef: InstitutionVacationResource::class, description: 'Updated institution vacation')]
-    public function update(InstitutionVacationUpdateRequest $request): InstitutionVacationResource
-    {
-        return DB::transaction(function () use ($request): InstitutionVacationResource {
-            $vacation = $this->getBaseQuery()->findOrFail(
-                $request->getInstitutionVacationId()
+
+            return InstitutionVacationResource::collection(
+                $this->getBaseQuery()
+                    ->whereIn('id', $vacationIds)
+                    ->orderBy('start_date')
+                    ->get()
             );
-
-            $this->authorize('update', $vacation);
-
-            $vacation->fill($request->validated())->saveOrFail();
-
-            return new InstitutionVacationResource($vacation->refresh());
-        });
-    }
-
-    /**
-     * @throws AuthorizationException
-     * @throws Throwable
-     */
-    #[OA\Delete(
-        path: '/institution-vacations/{institution_vacation_id}',
-        summary: 'Mark the institution vacation with the given UUID as deleted',
-        tags: ['Vacations'],
-        parameters: [new OAH\UuidPath('institution_vacation_id')],
-        responses: [new OAH\NotFound, new OAH\Forbidden, new OAH\Unauthorized]
-    )]
-    #[OAH\ResourceResponse(dataRef: InstitutionVacationResource::class, description: 'The institution vacation marked as deleted')]
-    public function destroy(Request $request): InstitutionVacationResource
-    {
-        return DB::transaction(function () use ($request): InstitutionVacationResource {
-            /** @var InstitutionVacation $vacation */
-            $vacation = $this->getBaseQuery()->findOrFail(
-                $request->route('institution_vacation_id')
-            );
-
-            $this->authorize('delete', $vacation);
-            $vacation->deleteOrFail();
-
-            return new InstitutionVacationResource($vacation->refresh());
         });
     }
 
@@ -146,6 +100,7 @@ class InstitutionVacationController extends Controller
     {
         return InstitutionVacation::getModel()
             ->withGlobalScope('policy', InstitutionVacationPolicy::scope())
-            ->whereHas('institution');
+            ->whereHas('institution')
+            ->active();
     }
 }

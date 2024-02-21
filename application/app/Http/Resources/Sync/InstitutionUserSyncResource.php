@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Sync;
 
+use App\Http\Resources\InstitutionUserVacationsResource;
 use App\Models\InstitutionUser;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -27,6 +28,7 @@ class InstitutionUserSyncResource extends JsonResource
             'roles' => RoleSyncResource::collection($this->roles),
             'deleted_at' => $this->deleted_at?->toISOString(),
             'status' => $this->getStatus(),
+            'vacations' => InstitutionUserVacationsResource::make($this)
         ];
     }
 }

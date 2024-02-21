@@ -11,15 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('institution_vacations', function (Blueprint $table) {
+        Schema::create('institution_user_vacations', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('institution_id')->constrained();
+            $table->foreignUuid('institution_user_id')->constrained();
             $table->date('start_date');
             $table->date('end_date');
             $table->timestampsTz();
             $table->softDeletesTz();
 
-            $table->index(['institution_id', 'start_date', 'end_date']);
+            $table->index(['institution_user_id', 'start_date', 'end_date']);
         });
     }
 
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('institution_vacations');
+        Schema::dropIfExists('institution_user_vacations');
     }
 };

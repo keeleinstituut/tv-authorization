@@ -3,35 +3,34 @@
 namespace App\Policies;
 
 use App\Enums\PrivilegeKey;
-use App\Models\InstitutionVacation;
+use App\Models\InstitutionUser;
+use App\Models\InstitutionUserVacation;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Auth;
 use KeycloakAuthGuard\Models\JwtPayloadUser;
 
-class InstitutionVacationPolicy
+class InstitutionUserVacationPolicy
 {
     /**
      * Determine whether the user can view any models.
      */
-    public function viewAny(JwtPayloadUser $user): bool
+    public function viewAny(JwtPayloadUser $user, InstitutionUser $institutionUser): bool
     {
-        return Auth::hasPrivilege(PrivilegeKey::EditInstitutionWorktime->value);
+        return $this->isCurrentUser($institutionUser->id) || (
+                Auth::hasPrivilege(PrivilegeKey::EditUserVacation->value) &&
+                $user->institutionId === $institutionUser->institution_id
+            );
     }
 
     /**
      * Determine whether the user can view the model.
      */
-    public function sync(JwtPayloadUser $user): bool
+    public function sync(JwtPayloadUser $user, InstitutionUser $institutionUser): bool
     {
-        return Auth::hasPrivilege(PrivilegeKey::EditInstitutionWorktime->value);
-    }
-
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(JwtPayloadUser $user, InstitutionVacation $institutionVacation): bool
-    {
-        return false;
+        return $this->isCurrentUser($institutionUser->id) || (
+                Auth::hasPrivilege(PrivilegeKey::EditUserVacation->value) &&
+                $user->institutionId === $institutionUser->institution_id
+            );
     }
 
     /**
@@ -39,39 +38,45 @@ class InstitutionVacationPolicy
      */
     public function create(JwtPayloadUser $user): bool
     {
-        return false;
+        return true;
     }
 
     /**
      * Determine whether the user can update the model.
      */
-    public function update(JwtPayloadUser $user, InstitutionVacation $institutionVacation): bool
+    public function update(JwtPayloadUser $user, InstitutionUserVacation $institutionUserVacation): bool
     {
-        return false;
+        return true;
     }
 
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(JwtPayloadUser $user, InstitutionVacation $institutionVacation): bool
+    public function delete(JwtPayloadUser $user, InstitutionUserVacation $institutionUserVacation): bool
     {
-        return false;
+        return true;
     }
 
     /**
      * Determine whether the user can restore the model.
      */
-    public function restore(JwtPayloadUser $user, InstitutionVacation $institutionVacation): bool
+    public function restore(JwtPayloadUser $user, InstitutionUserVacation $institutionUserVacation): bool
     {
-        return false;
+        return true;
     }
 
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete(JwtPayloadUser $user, InstitutionVacation $institutionVacation): bool
+    public function forceDelete(JwtPayloadUser $user, InstitutionUserVacation $institutionUserVacation): bool
     {
-        return false;
+        return true;
+    }
+
+    public function isCurrentUser(string $institutionUserId): bool
+    {
+        return filled($currentUserId = Auth::user()?->institutionUserId)
+            && $currentUserId === $institutionUserId;
     }
 
     // Should serve as an query enhancement to Eloquent queries
@@ -88,9 +93,9 @@ class InstitutionVacationPolicy
     // of current query. The method name could be different, but in the sake of reusability
     // we can use this method that's provided by Laravel and used internally.
     //
-    public static function scope(): Scope\InstitutionVacationScope
+    public static function scope(): Scope\InstitutionUserVacationScope
     {
-        return new Scope\InstitutionVacationScope();
+        return new Scope\InstitutionUserVacationScope();
     }
 }
 
@@ -102,12 +107,15 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope as IScope;
 
-class InstitutionVacationScope implements IScope {
+class InstitutionUserVacationScope implements IScope
+{
     /**
-    * Apply the scope to a given Eloquent query builder.
-    */
+     * Apply the scope to a given Eloquent query builder.
+     */
     public function apply(Builder $builder, Model $model): void
     {
-        $builder->where('institution_id', Auth::user()->institutionId);
+        $builder->whereHas('institutionUser', function (Builder $institutionUserQuery) {
+            return $institutionUserQuery->where('institution_id', Auth::user()->institutionId);
+        });
     }
 }

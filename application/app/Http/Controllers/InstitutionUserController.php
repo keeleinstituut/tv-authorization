@@ -406,7 +406,15 @@ class InstitutionUserController extends Controller
             ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
             ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
             ->withGlobalScope('policy', InstitutionUserPolicy::scope())
-            ->whereHas('user');
+            ->with([
+                'user',
+                'institution',
+                'department',
+                'roles',
+                'activeInstitutionVacations',
+                'activeInstitutionUserVacations',
+                'activeInstitutionVacationExclusions'
+            ])->whereHas('user');
     }
 
     /**

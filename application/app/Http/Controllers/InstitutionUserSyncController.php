@@ -36,6 +36,14 @@ class InstitutionUserSyncController extends Controller
 
     private function getBaseQuery(): Builder
     {
-        return InstitutionUser::withTrashed();
+        return InstitutionUser::withTrashed()->with([
+            'user',
+            'institution',
+            'department',
+            'roles',
+            'activeInstitutionUserVacations',
+            'activeInstitutionVacationExclusions',
+            'activeInstitutionVacations'
+        ]);
     }
 }

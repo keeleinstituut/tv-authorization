@@ -9,6 +9,7 @@ use App\Models\Scopes\ExcludeIfRelatedUserSoftDeletedScope;
 use App\Util\DateUtil;
 use AuditLogClient\Enums\AuditLogEventObjectType;
 use AuditLogClient\Models\AuditLoggable;
+use Auth;
 use Carbon\CarbonImmutable;
 use Database\Factories\InstitutionUserFactory;
 use DateTimeInterface;
@@ -59,6 +60,12 @@ use Illuminate\Support\Facades\Date;
  * @property string|null sunday_worktime_start
  * @property string|null sunday_worktime_end
  * @property-read Collection<int, InstitutionUserRole> $institutionUserRoles
+ * @property-read Collection<int, InstitutionUserVacation> $institutionUserVacations
+ * @property-read Collection<int, InstitutionUserVacation> $activeInstitutionUserVacations
+ * @property-read Collection<int, InstitutionVacation> $activeInstitutionVacations
+ * @property-read Collection<int, InstitutionVacation> $institutionVacations
+ * @property-read Collection<int, InstitutionVacationExclusion> $institutionVacationExclusions
+ * @property-read Collection<int, InstitutionVacationExclusion> $activeInstitutionVacationExclusions
  * @property-read int|null $institution_user_roles_count
  * @property-read Collection<int, Role> $roles
  * @property-read int|null $roles_count
@@ -144,10 +151,62 @@ class InstitutionUser extends Model implements AuditLoggable
         return $this->belongsToMany(Role::class, InstitutionUserRole::class)->withTimestamps();
     }
 
+    public function institutionVacations(): HasMany
+    {
+        return $this->hasMany(
+            InstitutionVacation::class,
+            'institution_id',
+            'institution_id'
+        );
+    }
+
+    public function activeInstitutionVacations(): HasMany
+    {
+        return $this->institutionVacations()->active()
+            ->orderBy('start_date');
+    }
+
+    public function activeInstitutionUserVacations()
+    {
+        return $this->institutionUserVacations()->active()
+            ->orderBy('start_date');
+    }
+
+    public function institutionUserVacations(): HasMany
+    {
+        return $this->hasMany(InstitutionUserVacation::class);
+    }
+
+    public function institutionVacationExclusions(): HasMany
+    {
+        return $this->hasMany(InstitutionVacationExclusion::class);
+    }
+
+    public function activeInstitutionVacationExclusions(): HasMany
+    {
+        return $this->institutionVacationExclusions()
+            ->whereHas('activeInstitutionVacation');
+    }
+
+    public function getActiveInstitutionVacationsWithExclusions(): \Illuminate\Support\Collection
+    {
+        $exclusionIds = collect($this->activeInstitutionVacationExclusions)
+            ->pluck('institution_vacation_id');
+
+        if (! filled($exclusionIds)) {
+            return $this->activeInstitutionVacations;
+        }
+
+        $exclusions = $exclusionIds->combine($exclusionIds);
+        return collect($this->activeInstitutionVacations)->filter(function (InstitutionVacation $vacation) use ($exclusions) {
+            return ! $exclusions->has($vacation->id);
+        });
+    }
+
     /**
      * @noinspection PhpUnused
      *
-     * @param  array<InstitutionUserStatus|string>  $statuses
+     * @param array<InstitutionUserStatus|string> $statuses
      */
     public function scopeStatusIn(Builder $query, array $statuses): void
     {
@@ -155,7 +214,7 @@ class InstitutionUser extends Model implements AuditLoggable
             ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
             ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
             ->where(
-                fn (Builder $clause) => collect($statuses)->each($clause->orWhere->status(...))
+                fn(Builder $clause) => collect($statuses)->each($clause->orWhere->status(...))
             );
     }
 
@@ -171,7 +230,7 @@ class InstitutionUser extends Model implements AuditLoggable
             InstitutionUserStatus::Active => $query
                 ->whereNull('archived_at')
                 ->where(
-                    fn ($groupedClause) => $groupedClause
+                    fn($groupedClause) => $groupedClause
                         ->whereNull('deactivation_date')
                         ->orWhereDate('deactivation_date', '>', Date::now(DateUtil::ESTONIAN_TIMEZONE)->format('Y-m-d'))
                 ),
@@ -208,7 +267,7 @@ class InstitutionUser extends Model implements AuditLoggable
     public function isDeactivated(): bool
     {
         return filled($this->deactivation_date)
-            && ! Date::parse($this->deactivation_date, DateUtil::ESTONIAN_TIMEZONE)->isFuture();
+            && !Date::parse($this->deactivation_date, DateUtil::ESTONIAN_TIMEZONE)->isFuture();
     }
 
     /** @noinspection PhpUnused */
