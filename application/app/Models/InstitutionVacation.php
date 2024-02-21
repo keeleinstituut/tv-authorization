@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Date;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property string|null $deleted_at
+ *
  * @method static Builder|InstitutionVacation newModelQuery()
  * @method static Builder|InstitutionVacation newQuery()
  * @method static Builder|InstitutionVacation query()
@@ -34,16 +35,17 @@ use Illuminate\Support\Facades\Date;
  * @method static Builder|InstitutionVacation whereInstitutionId($value)
  * @method static Builder|InstitutionVacation whereStartDate($value)
  * @method static Builder|InstitutionVacation whereUpdatedAt($value)
+ *
  * @mixin Eloquent
  */
 class InstitutionVacation extends Model
 {
-    use HasFactory, SoftDeletes, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'institution_id',
         'start_date',
-        'end_date'
+        'end_date',
     ];
 
     public function institution(): BelongsTo

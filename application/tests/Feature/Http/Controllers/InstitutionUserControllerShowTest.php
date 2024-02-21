@@ -20,7 +20,7 @@ use Tests\TestCase;
 
 class InstitutionUserControllerShowTest extends TestCase
 {
-    use RefreshDatabase, InstitutionUserHelpers;
+    use InstitutionUserHelpers, RefreshDatabase;
 
     public function setUp(): void
     {

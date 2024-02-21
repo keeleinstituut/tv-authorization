@@ -18,7 +18,7 @@ use Throwable;
 
 class JwtClaimsTest extends TestCase
 {
-    use RefreshDatabase, EntityHelpers;
+    use EntityHelpers, RefreshDatabase;
 
     const PRIVILEGES_A = [PrivilegeKey::AddUser];
 
@@ -229,7 +229,7 @@ class JwtClaimsTest extends TestCase
         $this->queryJwtClaims('47607239590', 'not-uuid')->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
-    private function queryJwtClaims(?string $pic, ?string $institutionId = null): TestResponse
+    private function queryJwtClaims(?string $pic, string $institutionId = null): TestResponse
     {
         $accessToken = $this->generateInternalClientAccessToken();
         $parameters = $institutionId === null

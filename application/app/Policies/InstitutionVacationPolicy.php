@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Enums\PrivilegeKey;
 use App\Models\InstitutionVacation;
-use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Auth;
 use KeycloakAuthGuard\Models\JwtPayloadUser;
 
@@ -95,17 +94,19 @@ class InstitutionVacationPolicy
 }
 
 // Scope resides in the same file with Policy to enforce scope creation with policy creation.
+
 namespace App\Policies\Scope;
 
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope as IScope;
+use Illuminate\Support\Facades\Auth;
 
-class InstitutionVacationScope implements IScope {
+class InstitutionVacationScope implements IScope
+{
     /**
-    * Apply the scope to a given Eloquent query builder.
-    */
+     * Apply the scope to a given Eloquent query builder.
+     */
     public function apply(Builder $builder, Model $model): void
     {
         $builder->where('institution_id', Auth::user()->institutionId);

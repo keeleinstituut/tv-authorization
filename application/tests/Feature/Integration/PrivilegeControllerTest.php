@@ -12,7 +12,7 @@ use Tests\TestCase;
 
 class PrivilegeControllerTest extends TestCase
 {
-    use RefreshDatabase, InstitutionUserHelpers;
+    use InstitutionUserHelpers, RefreshDatabase;
 
     /**
      * A basic feature test example.

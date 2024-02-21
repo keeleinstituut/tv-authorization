@@ -9,7 +9,6 @@ use App\Models\Scopes\ExcludeIfRelatedUserSoftDeletedScope;
 use App\Util\DateUtil;
 use AuditLogClient\Enums\AuditLogEventObjectType;
 use AuditLogClient\Models\AuditLoggable;
-use Auth;
 use Carbon\CarbonImmutable;
 use Database\Factories\InstitutionUserFactory;
 use DateTimeInterface;
@@ -92,7 +91,7 @@ use Illuminate\Support\Facades\Date;
  */
 class InstitutionUser extends Model implements AuditLoggable
 {
-    use HasFactory, SoftDeletes, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'institution_id',
@@ -198,6 +197,7 @@ class InstitutionUser extends Model implements AuditLoggable
         }
 
         $exclusions = $exclusionIds->combine($exclusionIds);
+
         return collect($this->activeInstitutionVacations)->filter(function (InstitutionVacation $vacation) use ($exclusions) {
             return ! $exclusions->has($vacation->id);
         });
@@ -206,7 +206,7 @@ class InstitutionUser extends Model implements AuditLoggable
     /**
      * @noinspection PhpUnused
      *
-     * @param array<InstitutionUserStatus|string> $statuses
+     * @param  array<InstitutionUserStatus|string>  $statuses
      */
     public function scopeStatusIn(Builder $query, array $statuses): void
     {
@@ -214,7 +214,7 @@ class InstitutionUser extends Model implements AuditLoggable
             ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
             ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
             ->where(
-                fn(Builder $clause) => collect($statuses)->each($clause->orWhere->status(...))
+                fn (Builder $clause) => collect($statuses)->each($clause->orWhere->status(...))
             );
     }
 
@@ -230,7 +230,7 @@ class InstitutionUser extends Model implements AuditLoggable
             InstitutionUserStatus::Active => $query
                 ->whereNull('archived_at')
                 ->where(
-                    fn($groupedClause) => $groupedClause
+                    fn ($groupedClause) => $groupedClause
                         ->whereNull('deactivation_date')
                         ->orWhereDate('deactivation_date', '>', Date::now(DateUtil::ESTONIAN_TIMEZONE)->format('Y-m-d'))
                 ),
@@ -267,7 +267,7 @@ class InstitutionUser extends Model implements AuditLoggable
     public function isDeactivated(): bool
     {
         return filled($this->deactivation_date)
-            && !Date::parse($this->deactivation_date, DateUtil::ESTONIAN_TIMEZONE)->isFuture();
+            && ! Date::parse($this->deactivation_date, DateUtil::ESTONIAN_TIMEZONE)->isFuture();
     }
 
     /** @noinspection PhpUnused */

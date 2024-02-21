@@ -24,7 +24,7 @@ class InstitutionUserVacationsResource extends JsonResource
             ),
             'institution_vacations' => InstitutionVacationResource::collection(
                 $this->getActiveInstitutionVacationsWithExclusions()
-            )
+            ),
         ];
     }
 }

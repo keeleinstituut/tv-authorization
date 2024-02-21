@@ -43,7 +43,7 @@ class InstitutionUserSyncController extends Controller
             'roles',
             'activeInstitutionUserVacations',
             'activeInstitutionVacationExclusions',
-            'activeInstitutionVacations'
+            'activeInstitutionVacations',
         ]);
     }
 }

@@ -19,7 +19,7 @@ use Throwable;
 
 class InstitutionUserImportControllerValidateCsvTest extends TestCase
 {
-    use RefreshDatabase, EntityHelpers;
+    use EntityHelpers, RefreshDatabase;
 
     public function test_validation_with_correct_csv_file_returned_200(): void
     {

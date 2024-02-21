@@ -5,7 +5,6 @@ namespace App\Policies;
 use App\Enums\PrivilegeKey;
 use App\Models\InstitutionUser;
 use App\Models\InstitutionUserVacation;
-use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Auth;
 use KeycloakAuthGuard\Models\JwtPayloadUser;
 
@@ -17,9 +16,9 @@ class InstitutionUserVacationPolicy
     public function viewAny(JwtPayloadUser $user, InstitutionUser $institutionUser): bool
     {
         return $this->isCurrentUser($institutionUser->id) || (
-                Auth::hasPrivilege(PrivilegeKey::EditUserVacation->value) &&
-                $user->institutionId === $institutionUser->institution_id
-            );
+            Auth::hasPrivilege(PrivilegeKey::EditUserVacation->value) &&
+            $user->institutionId === $institutionUser->institution_id
+        );
     }
 
     /**
@@ -28,9 +27,9 @@ class InstitutionUserVacationPolicy
     public function sync(JwtPayloadUser $user, InstitutionUser $institutionUser): bool
     {
         return $this->isCurrentUser($institutionUser->id) || (
-                Auth::hasPrivilege(PrivilegeKey::EditUserVacation->value) &&
-                $user->institutionId === $institutionUser->institution_id
-            );
+            Auth::hasPrivilege(PrivilegeKey::EditUserVacation->value) &&
+            $user->institutionId === $institutionUser->institution_id
+        );
     }
 
     /**
@@ -100,12 +99,13 @@ class InstitutionUserVacationPolicy
 }
 
 // Scope resides in the same file with Policy to enforce scope creation with policy creation.
+
 namespace App\Policies\Scope;
 
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope as IScope;
+use Illuminate\Support\Facades\Auth;
 
 class InstitutionUserVacationScope implements IScope
 {

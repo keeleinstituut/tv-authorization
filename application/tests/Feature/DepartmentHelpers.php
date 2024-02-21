@@ -13,7 +13,7 @@ final readonly class DepartmentHelpers
      * @param  Closure(Department):void|null  ...$modifiers
      * @return Collection<Department>
      */
-    public static function createModifiableDepartmentsInSameInstitution(?Institution $institution = null, ?Closure ...$modifiers): Collection
+    public static function createModifiableDepartmentsInSameInstitution(Institution $institution = null, ?Closure ...$modifiers): Collection
     {
         $institution = $institution ?? Institution::factory()->create();
 

@@ -5,7 +5,6 @@ namespace App\Observers;
 use App\Events\Publishers\InstitutionUserEventsPublisher;
 use App\Models\InstitutionUser;
 use App\Models\InstitutionUserVacation;
-use NotificationClient\Services\NotificationPublisher;
 
 readonly class InstitutionUserVacationObserver
 {

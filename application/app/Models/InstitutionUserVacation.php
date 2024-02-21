@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Date;
  * @method static Builder|InstitutionUserVacation newModelQuery()
  * @method static Builder|InstitutionUserVacation newQuery()
  * @method static Builder|InstitutionUserVacation query()
+ *
  * @mixin Eloquent
  */
 class InstitutionUserVacation extends Model
@@ -37,7 +38,7 @@ class InstitutionUserVacation extends Model
     protected $fillable = [
         'institution_user_id',
         'start_date',
-        'end_date'
+        'end_date',
     ];
 
     public function institutionUser(): BelongsTo

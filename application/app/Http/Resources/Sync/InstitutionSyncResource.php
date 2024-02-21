@@ -35,7 +35,7 @@ class InstitutionSyncResource extends JsonResource
                 'logo_url',
                 'deleted_at'
             ),
-            'vacations' => $this->whenLoaded('vacations')
+            'vacations' => $this->whenLoaded('vacations'),
         ];
     }
 }

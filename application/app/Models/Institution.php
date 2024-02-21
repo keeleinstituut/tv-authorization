@@ -86,7 +86,7 @@ use Illuminate\Support\Carbon;
  */
 class Institution extends Model implements AuditLoggable
 {
-    use HasFactory, SoftDeletes, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'name',

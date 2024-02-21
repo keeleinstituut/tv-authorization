@@ -39,7 +39,7 @@ class InstitutionVacationExclusion extends Model
 
     protected $fillable = [
         'institution_vacation_id',
-        'institution_user_id'
+        'institution_user_id',
     ];
 
     public function institutionVacation(): BelongsTo

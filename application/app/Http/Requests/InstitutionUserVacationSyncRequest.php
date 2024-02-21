@@ -8,7 +8,6 @@ use App\Policies\InstitutionUserVacationPolicy;
 use App\Policies\InstitutionVacationPolicy;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use OpenApi\Attributes as OA;
 
@@ -56,7 +55,7 @@ class InstitutionUserVacationSyncRequest extends FormRequest
             'vacations.*.start_date' => ['required', 'date_format:Y-m-d'],
             'vacations.*.end_date' => ['required', 'date_format:Y-m-d'],
             'institution_vacation_exclusions' => ['present', 'array', 'max:10000'],
-            'institution_vacation_exclusions.*' => ['required', 'uuid']
+            'institution_vacation_exclusions.*' => ['required', 'uuid'],
         ];
     }
 
@@ -73,15 +72,18 @@ class InstitutionUserVacationSyncRequest extends FormRequest
                     if (filled($id = data_get($vacationData, 'id'))) {
                         if (! $this->vacationExists($id)) {
                             $validator->errors()->add("vacations.$idx.id", 'Vacation with such ID does not exist');
+
                             return;
                         }
                     } elseif ($this->sameVacationExists(data_get($vacationData, 'start_date'), data_get($vacationData, 'end_date'))) {
                         $validator->errors()->add("vacations.$idx.start_date", 'The same vacation already exists');
+
                         return;
                     }
 
                     if ($vacationsUniqueMap->has($this->getVacationUid($vacationData))) {
                         $validator->errors()->add("vacations.$idx.start_date", 'Trying to create two equal vacations');
+
                         return;
                     }
                     $vacationsUniqueMap->put($this->getVacationUid($vacationData), true);
@@ -101,7 +103,7 @@ class InstitutionUserVacationSyncRequest extends FormRequest
                         $validator->errors()->add('institution_vacation_exclusions', 'Invalid institution vacation exclusions passed');
                     }
                 }
-            }
+            },
         ];
     }
 
@@ -125,7 +127,7 @@ class InstitutionUserVacationSyncRequest extends FormRequest
 
     private function getVacationUid(array $vacationData): string
     {
-        return join('_', [
+        return implode('_', [
             data_get($vacationData, 'start_date'),
             data_get($vacationData, 'end_date'),
         ]);

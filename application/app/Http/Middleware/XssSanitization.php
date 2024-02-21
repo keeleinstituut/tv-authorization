@@ -2,10 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
 use Illuminate\Foundation\Http\Middleware\TransformsRequest;
-use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 
 class XssSanitization extends TransformsRequest
 {

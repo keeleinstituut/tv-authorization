@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\OpenApiHelpers as OAH;
 use App\Http\Requests\InstitutionVacationSyncRequest;
 use App\Http\Resources\InstitutionVacationResource;
 use App\Models\InstitutionVacation;
 use App\Policies\InstitutionVacationPolicy;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
-use App\Http\OpenApiHelpers as OAH;
-use OpenApi\Attributes as OA;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
@@ -42,8 +42,8 @@ class InstitutionVacationController extends Controller
      */
     #[OA\Post(
         path: '/institution-vacations/sync',
-        summary: 'Bulk create, delete and/or update institution vacations.' .
-        'If ID left unspecified, the vacation will be created. ' .
+        summary: 'Bulk create, delete and/or update institution vacations.'.
+        'If ID left unspecified, the vacation will be created. '.
         'If a previously existing vacation is not in request input, it will be deleted.',
         requestBody: new OAH\RequestBody(InstitutionVacationSyncRequest::class),
         tags: ['Vacations'],
@@ -85,7 +85,6 @@ class InstitutionVacationController extends Controller
             // Delete missing
             $this->getBaseQuery()->whereNotIn('id', $vacationIds)
                 ->delete();
-
 
             return InstitutionVacationResource::collection(
                 $this->getBaseQuery()

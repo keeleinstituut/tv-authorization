@@ -14,6 +14,7 @@ class PersonalIdCodeRule implements ValidationRule
     {
         if (! preg_match(self::PERSONAL_CODE_REGEX, $value)) {
             $fail('The :attribute is not valid personal ID code.');
+
             return;
         }
 

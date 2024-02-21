@@ -361,7 +361,7 @@ class InstitutionUserController extends Controller
                     EmailNotificationMessage::make([
                         'notification_type' => NotificationType::InstitutionUserActivated,
                         'receiver_email' => $institutionUser->email,
-                        'receiver_name' => $institutionUser->user->full_name
+                        'receiver_name' => $institutionUser->user->full_name,
                     ])
                 );
             }
@@ -413,7 +413,7 @@ class InstitutionUserController extends Controller
                 'roles',
                 'activeInstitutionVacations',
                 'activeInstitutionUserVacations',
-                'activeInstitutionVacationExclusions'
+                'activeInstitutionVacationExclusions',
             ])->whereHas('user');
     }
 

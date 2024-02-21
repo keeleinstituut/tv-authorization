@@ -28,7 +28,7 @@ class InstitutionUserSyncResource extends JsonResource
             'roles' => RoleSyncResource::collection($this->roles),
             'deleted_at' => $this->deleted_at?->toISOString(),
             'status' => $this->getStatus(),
-            'vacations' => InstitutionUserVacationsResource::make($this)
+            'vacations' => InstitutionUserVacationsResource::make($this),
         ];
     }
 }

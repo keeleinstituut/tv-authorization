@@ -59,17 +59,20 @@ class InstitutionVacationSyncRequest extends FormRequest
                 $vacationsUniqueMap = collect();
                 collect($this->validated('vacations'))->each(function (array $vacationData, int $idx) use ($validator, $vacationsUniqueMap) {
                     if (filled($id = data_get($vacationData, 'id'))) {
-                        if (!$this->vacationExists($id)) {
+                        if (! $this->vacationExists($id)) {
                             $validator->errors()->add("vacations.$idx.id", 'Vacation with such ID does not exist');
+
                             return;
                         }
                     } elseif ($this->sameVacationExists(data_get($vacationData, 'start_date'), data_get($vacationData, 'end_date'))) {
                         $validator->errors()->add("vacations.$idx.start_date", 'The same vacation already exists');
+
                         return;
                     }
 
                     if ($vacationsUniqueMap->has($this->getVacationUid($vacationData))) {
                         $validator->errors()->add("vacations.$idx.start_date", 'Trying to create two equal vacations');
+
                         return;
                     }
 
@@ -79,7 +82,7 @@ class InstitutionVacationSyncRequest extends FormRequest
                         $validator->errors()->add("vacations.$idx.start_date", 'The start date should be less or equal to the end date');
                     }
                 });
-            }
+            },
         ];
     }
 
@@ -102,7 +105,7 @@ class InstitutionVacationSyncRequest extends FormRequest
 
     private function getVacationUid(array $vacationData): string
     {
-        return join('_', [
+        return implode('_', [
             data_get($vacationData, 'start_date'),
             data_get($vacationData, 'end_date'),
         ]);

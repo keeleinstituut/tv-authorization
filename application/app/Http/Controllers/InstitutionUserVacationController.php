@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\OpenApiHelpers as OAH;
 use App\Http\Requests\InstitutionUserVacationSyncRequest;
 use App\Http\Resources\InstitutionUserVacationResource;
 use App\Http\Resources\InstitutionUserVacationsResource;
@@ -10,14 +11,11 @@ use App\Models\InstitutionUserVacation;
 use App\Models\InstitutionVacationExclusion;
 use App\Policies\InstitutionUserPolicy;
 use App\Policies\InstitutionUserVacationPolicy;
-use Illuminate\Http\Request;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
-use App\Http\OpenApiHelpers as OAH;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use OpenApi\Attributes as OA;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
@@ -39,7 +37,7 @@ class InstitutionUserVacationController extends Controller
             ->with([
                 'activeInstitutionUserVacations',
                 'activeInstitutionVacations',
-                'activeInstitutionVacationExclusions'
+                'activeInstitutionVacationExclusions',
             ])->findOrFail($request->route('institution_user_id'));
 
         $this->authorize('viewAny', [InstitutionUserVacation::class, $institutionUser]);
@@ -52,8 +50,8 @@ class InstitutionUserVacationController extends Controller
      */
     #[OA\Post(
         path: '/institution-user-vacations/sync',
-        summary: 'Bulk create, delete and/or update institution user vacations.' .
-        'If ID left unspecified, the vacation will be created. ' .
+        summary: 'Bulk create, delete and/or update institution user vacations.'.
+        'If ID left unspecified, the vacation will be created. '.
         'If a previously existing vacation is not in request input, it will be deleted.',
         requestBody: new OAH\RequestBody(InstitutionUserVacationSyncRequest::class),
         tags: ['Vacations'],
@@ -103,7 +101,7 @@ class InstitutionUserVacationController extends Controller
             collect($request->validated('institution_vacation_exclusions'))->map(function ($institutionVacationId) use ($institutionUserId) {
                 InstitutionVacationExclusion::firstOrNew([
                     'institution_vacation_id' => $institutionVacationId,
-                    'institution_user_id' => $institutionUserId
+                    'institution_user_id' => $institutionUserId,
                 ])->saveOrFail();
             });
 
@@ -111,7 +109,7 @@ class InstitutionUserVacationController extends Controller
                 $institutionUser->load([
                     'activeInstitutionUserVacations',
                     'activeInstitutionVacations',
-                    'activeInstitutionVacationExclusions'
+                    'activeInstitutionVacationExclusions',
                 ])
             );
         });

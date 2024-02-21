@@ -35,9 +35,9 @@ use Throwable;
 
 class InstitutionUserControllerDeactivateTest extends AuditLogTestCase
 {
-    use RefreshDatabase,
-        InstitutionUserHelpers,
-        ModelAssertions;
+    use InstitutionUserHelpers,
+        ModelAssertions,
+        RefreshDatabase;
 
     /** @return array<array{CarbonInterface, string, ?string}> */
     public static function provideTestNowsAndValidFutureDeactivationDates(): array
@@ -603,8 +603,8 @@ class InstitutionUserControllerDeactivateTest extends AuditLogTestCase
      *
      * @throws Throwable
      */
-    public function createStandardSuccessCaseInstitutionUsersAndRoles(?Closure $modifyTargetUser = null,
-        ?Closure $modifyActingUser = null): array
+    public function createStandardSuccessCaseInstitutionUsersAndRoles(Closure $modifyTargetUser = null,
+        Closure $modifyActingUser = null): array
     {
         [
             $targetInstitutionUser,

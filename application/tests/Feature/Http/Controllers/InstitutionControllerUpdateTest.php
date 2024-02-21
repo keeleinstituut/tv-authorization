@@ -576,8 +576,8 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
      *
      * @throws Throwable
      */
-    public function createInstitutionAndPrivilegedActingUser(?Closure $modifyInstitution = null,
-        ?Closure $modifyActingInstitutionUser = null): array
+    public function createInstitutionAndPrivilegedActingUser(Closure $modifyInstitution = null,
+        Closure $modifyActingInstitutionUser = null): array
     {
         return $this->createInstitutionAndActingUser(
             $modifyInstitution,

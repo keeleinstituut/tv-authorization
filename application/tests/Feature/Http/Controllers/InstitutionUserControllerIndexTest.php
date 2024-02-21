@@ -28,7 +28,7 @@ use Tests\TestCase;
 
 class InstitutionUserControllerIndexTest extends TestCase
 {
-    use RefreshDatabase, EntityHelpers, InstitutionUserHelpers;
+    use EntityHelpers, InstitutionUserHelpers, RefreshDatabase;
 
     public function test_list_of_institution_users_returned(): void
     {
@@ -559,7 +559,7 @@ class InstitutionUserControllerIndexTest extends TestCase
         $this->sendIndexRequestWithExpectedHeaders($queryParams, $actingUser)->assertOk();
     }
 
-    private function queryInstitutionUsers(?string $accessToken = null, ?array $queryParams = null): TestResponse
+    private function queryInstitutionUsers(string $accessToken = null, array $queryParams = null): TestResponse
     {
         if (! empty($accessToken)) {
             $this->withHeaders([
