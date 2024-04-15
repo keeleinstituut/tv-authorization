@@ -47,7 +47,7 @@ class RoleCreateRequest extends FormRequest
             ],
             'privileges' => 'required|array|min:1',
             'privileges.*' => Rule::exists(app(Privilege::class)->getTable(), 'key'),
-            'name' => ['required', 'max:' . MaxLengthValue::NAME],
+            'name' => ['required', 'max:'.MaxLengthValue::NAME],
         ];
     }
 

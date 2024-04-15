@@ -24,7 +24,7 @@ use Throwable;
 
 class InstitutionUserControllerUpdateCurrentTest extends AuditLogTestCase
 {
-    use RefreshDatabase, InstitutionUserHelpers, ModelAssertions;
+    use InstitutionUserHelpers, ModelAssertions, RefreshDatabase;
 
     public function setUp(): void
     {

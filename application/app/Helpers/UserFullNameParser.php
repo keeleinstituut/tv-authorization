@@ -11,6 +11,7 @@ class UserFullNameParser
     {
         $nameParts = collect(explode(' ', $name));
         $lastName = $nameParts->pop();
+
         return [$nameParts->implode(' '), $lastName];
     }
 }

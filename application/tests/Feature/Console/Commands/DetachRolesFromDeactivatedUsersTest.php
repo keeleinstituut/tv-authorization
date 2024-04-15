@@ -17,7 +17,7 @@ use Tests\TestCase;
 
 class DetachRolesFromDeactivatedUsersTest extends TestCase
 {
-    use RefreshDatabase, InstitutionUserHelpers;
+    use InstitutionUserHelpers, RefreshDatabase;
 
     public function test_deactivated_institution_users_have_no_roles_and_pivots_are_deleted(): void
     {

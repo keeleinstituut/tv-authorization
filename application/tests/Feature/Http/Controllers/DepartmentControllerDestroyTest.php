@@ -178,9 +178,9 @@ class DepartmentControllerDestroyTest extends DepartmentControllerTestCase
      * }
      *
      * @throws Throwable */
-    public function createDefaultSuccessCaseModels(?Closure $modifyTargetDepartment = null,
-        ?Closure $modifyUntargetedDepartment = null,
-        ?Closure $modifyActingInstitutionUser = null): array
+    public function createDefaultSuccessCaseModels(Closure $modifyTargetDepartment = null,
+        Closure $modifyUntargetedDepartment = null,
+        Closure $modifyActingInstitutionUser = null): array
     {
         [
             'actingInstitutionUser' => $actingInstitutionUser,

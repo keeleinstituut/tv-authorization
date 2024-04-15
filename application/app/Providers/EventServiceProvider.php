@@ -33,6 +33,9 @@ class EventServiceProvider extends ServiceProvider
         Models\Institution::observe(Observers\InstitutionObserver::class);
         Models\User::observe(Observers\UserObserver::class);
         Models\Department::observe(Observers\DepartmentObserver::class);
+        Models\InstitutionUserVacation::observe(Observers\InstitutionUserVacationObserver::class);
+        Models\InstitutionVacation::observe(Observers\InstitutionVacationObserver::class);
+        Models\InstitutionVacationExclusion::observe(Observers\InstitutionVacationExclusionObserver::class);
     }
 
     /**

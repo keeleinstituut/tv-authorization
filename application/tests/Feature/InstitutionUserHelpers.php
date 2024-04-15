@@ -25,9 +25,9 @@ trait InstitutionUserHelpers
      *
      * @throws Throwable
      */
-    public function createThreeInstitutionUsersInSameInstitution(?Closure $modifyFirstInstitutionUser = null,
-        ?Closure $modifySecondInstitutionUser = null,
-        ?Closure $modifyThirdInstitutionUser = null): array
+    public function createThreeInstitutionUsersInSameInstitution(Closure $modifyFirstInstitutionUser = null,
+        Closure $modifySecondInstitutionUser = null,
+        Closure $modifyThirdInstitutionUser = null): array
     {
         $institution = Institution::factory()->create();
 
@@ -112,7 +112,7 @@ trait InstitutionUserHelpers
         User $user,
         string $email,
         string $phone = '+372 66666666',
-        ?Department $department = null,
+        Department $department = null,
         Role ...$roles): InstitutionUser
     {
         $createdInstitutionUser = InstitutionUser::factory()

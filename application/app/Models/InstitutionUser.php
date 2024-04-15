@@ -59,6 +59,12 @@ use Illuminate\Support\Facades\Date;
  * @property string|null sunday_worktime_start
  * @property string|null sunday_worktime_end
  * @property-read Collection<int, InstitutionUserRole> $institutionUserRoles
+ * @property-read Collection<int, InstitutionUserVacation> $institutionUserVacations
+ * @property-read Collection<int, InstitutionUserVacation> $activeInstitutionUserVacations
+ * @property-read Collection<int, InstitutionVacation> $activeInstitutionVacations
+ * @property-read Collection<int, InstitutionVacation> $institutionVacations
+ * @property-read Collection<int, InstitutionVacationExclusion> $institutionVacationExclusions
+ * @property-read Collection<int, InstitutionVacationExclusion> $activeInstitutionVacationExclusions
  * @property-read int|null $institution_user_roles_count
  * @property-read Collection<int, Role> $roles
  * @property-read int|null $roles_count
@@ -85,7 +91,7 @@ use Illuminate\Support\Facades\Date;
  */
 class InstitutionUser extends Model implements AuditLoggable
 {
-    use HasFactory, SoftDeletes, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'institution_id',
@@ -142,6 +148,59 @@ class InstitutionUser extends Model implements AuditLoggable
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, InstitutionUserRole::class)->withTimestamps();
+    }
+
+    public function institutionVacations(): HasMany
+    {
+        return $this->hasMany(
+            InstitutionVacation::class,
+            'institution_id',
+            'institution_id'
+        );
+    }
+
+    public function activeInstitutionVacations(): HasMany
+    {
+        return $this->institutionVacations()->active()
+            ->orderBy('start_date');
+    }
+
+    public function activeInstitutionUserVacations()
+    {
+        return $this->institutionUserVacations()->active()
+            ->orderBy('start_date');
+    }
+
+    public function institutionUserVacations(): HasMany
+    {
+        return $this->hasMany(InstitutionUserVacation::class);
+    }
+
+    public function institutionVacationExclusions(): HasMany
+    {
+        return $this->hasMany(InstitutionVacationExclusion::class);
+    }
+
+    public function activeInstitutionVacationExclusions(): HasMany
+    {
+        return $this->institutionVacationExclusions()
+            ->whereHas('activeInstitutionVacation');
+    }
+
+    public function getActiveInstitutionVacationsWithExclusions(): \Illuminate\Support\Collection
+    {
+        $exclusionIds = collect($this->activeInstitutionVacationExclusions)
+            ->pluck('institution_vacation_id');
+
+        if (! filled($exclusionIds)) {
+            return $this->activeInstitutionVacations;
+        }
+
+        $exclusions = $exclusionIds->combine($exclusionIds);
+
+        return collect($this->activeInstitutionVacations)->filter(function (InstitutionVacation $vacation) use ($exclusions) {
+            return ! $exclusions->has($vacation->id);
+        });
     }
 
     /**
