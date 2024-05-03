@@ -7,6 +7,7 @@ use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvi
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
 
 class RouteServiceProvider extends ServiceProvider
 {
@@ -24,6 +25,8 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        URL::forceRootUrl(config('app.url'));
+
         $this->configureRateLimiting();
 
         $this->routes(function () {

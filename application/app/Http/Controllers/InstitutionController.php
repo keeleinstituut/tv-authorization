@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 use Illuminate\Support\Facades\Auth;
 use OpenApi\Attributes as OA;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class InstitutionController extends Controller
@@ -75,6 +76,26 @@ class InstitutionController extends Controller
 
         return new InstitutionResource($institution->refresh());
     }
+
+    /** @throws AuthorizationException */
+    #[OA\Get(
+        path: '/institutions/{institution_id}/logo',
+        parameters: [new OAH\UuidPath('institution_id')],
+        responses: [new OAH\NotFound, new OAH\Forbidden, new OAH\Unauthorized]
+    )]
+    public function logo(Request $request): ?StreamedResponse
+    {
+        $id = $request->route('institution_id');
+        $institution = $this->getBaseQuery()->findOrFail($id);
+
+        $this->authorize('view', $institution);
+
+        if ($logoMedia = $institution->getMedia('logo')->first()) {
+            return $logoMedia->toInlineResponse($request);
+        }
+        abort(404);
+    }
+
 
     public function getBaseQuery(): Builder
     {

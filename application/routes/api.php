@@ -35,6 +35,7 @@ Route::prefix('/institutions')
         Route::get('/', 'index');
         Route::get('/{institution_id}', 'show');
         Route::put('/{institution_id}', 'update');
+        Route::get('/{institution_id}/logo', 'logo')->name('institutions.logo');
     });
 
 Route::prefix('/roles')
