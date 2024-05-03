@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * App\Models\Institution
@@ -84,9 +86,12 @@ use Illuminate\Support\Carbon;
  *
  * @mixin Eloquent
  */
-class Institution extends Model implements AuditLoggable
+class Institution extends Model implements AuditLoggable, HasMedia
 {
+    public const LOGO_MEDIA_COLLECTION = 'logo';
+
     use HasFactory, HasUuids, SoftDeletes;
+    use InteractsWithMedia;
 
     protected $fillable = [
         'name',
@@ -110,6 +115,12 @@ class Institution extends Model implements AuditLoggable
         'sunday_worktime_start',
         'sunday_worktime_end',
     ];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('logo')
+            ->singleFile();
+    }
 
     public function institutionUsers(): HasMany
     {

@@ -96,31 +96,31 @@ class InstitutionResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return $this->only(
-            'id',
-            'name',
-            'short_name',
-            'phone',
-            'email',
-            'logo_url',
-            'created_at',
-            'updated_at',
-            'worktime_timezone',
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'short_name' => $this->short_name,
+            'phone' => $this->phone,
+            'email' => $this->email,
+            'logo_url' => route('institutions.logo', ['institution_id' => $this->id]),
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'worktime_timezone' => $this->worktime_timezone,
 
-            'monday_worktime_start',
-            'monday_worktime_end',
-            'tuesday_worktime_start',
-            'tuesday_worktime_end',
-            'wednesday_worktime_start',
-            'wednesday_worktime_end',
-            'thursday_worktime_start',
-            'thursday_worktime_end',
-            'friday_worktime_start',
-            'friday_worktime_end',
-            'saturday_worktime_start',
-            'saturday_worktime_end',
-            'sunday_worktime_start',
-            'sunday_worktime_end'
-        );
+            'monday_worktime_start' => $this->monday_worktime_start,
+            'monday_worktime_end' => $this->monday_worktime_end,
+            'tuesday_worktime_start' => $this->tuesday_worktime_start,
+            'tuesday_worktime_end' => $this->tuesday_worktime_end,
+            'wednesday_worktime_start' => $this->wednesday_worktime_start,
+            'wednesday_worktime_end' => $this->wednesday_worktime_end,
+            'thursday_worktime_start' => $this->thursday_worktime_start,
+            'thursday_worktime_end' => $this->thursday_worktime_end,
+            'friday_worktime_start' => $this->friday_worktime_start,
+            'friday_worktime_end' => $this->friday_worktime_end,
+            'saturday_worktime_start' => $this->saturday_worktime_start,
+            'saturday_worktime_end' => $this->saturday_worktime_end,
+            'sunday_worktime_start' => $this->sunday_worktime_start,
+            'sunday_worktime_end' => $this->sunday_worktime_end,
+        ];
     }
 }
