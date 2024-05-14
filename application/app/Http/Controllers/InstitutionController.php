@@ -45,11 +45,15 @@ class InstitutionController extends Controller
     public function show(Request $request): InstitutionResource
     {
         $id = $request->route('institution_id');
-        $institution = $this->getBaseQuery()->findOrFail($id);
+        $institution = Institution::getModel()->findOrFail($id);
 
-        $this->authorize('view', $institution);
+        try {
+            $this->authorize('view', $institution);
+            return new InstitutionResource($institution);
+        } catch (AuthorizationException $e) {
+            return (new InstitutionResource($institution))->publicRepresentation();
+        }
 
-        return new InstitutionResource($institution);
     }
 
     /** @throws AuthorizationException|Throwable */

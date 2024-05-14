@@ -67,6 +67,17 @@ use OpenApi\Attributes as OA;
 )]
 class InstitutionResource extends JsonResource
 {
+    public const PUBLIC_REPRESENTATION = 'PUBLIC';
+    public const PRIVATE_REPRESENTATION = 'PRIVATE';
+
+    private $representationType = self::PRIVATE_REPRESENTATION;
+
+    public function publicRepresentation(): static
+    {
+        $this->representationType = self::PUBLIC_REPRESENTATION;
+        return $this;
+    }
+
     /**
      * @return array{
      *     id: string,
@@ -95,6 +106,23 @@ class InstitutionResource extends JsonResource
      * }
      */
     public function toArray(Request $request): array
+    {
+        return match ($this->representationType) {
+            self::PUBLIC_REPRESENTATION => $this->toPublicArray($request),
+            self::PRIVATE_REPRESENTATION => $this->toPrivateArray($request),
+            default => [],
+        };
+    }
+
+    private function toPublicArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+        ];
+    }
+
+    private function toPrivateArray(Request $request): array
     {
         return [
             'id' => $this->id,
