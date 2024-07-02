@@ -34,7 +34,8 @@ class InstitutionUserPolicy
     /** @noinspection PhpUnusedParameterInspection */
     public function update(JwtPayloadUser $jwtPayloadUser, InstitutionUser $institutionUser): bool
     {
-        return Auth::hasPrivilege(PrivilegeKey::EditUser->value)
+        return $this->isCurrentUser($institutionUser)
+            || Auth::hasPrivilege(PrivilegeKey::EditUser->value)
             && $this->isInSameInstitutionAsCurrentUser($institutionUser);
     }
 
