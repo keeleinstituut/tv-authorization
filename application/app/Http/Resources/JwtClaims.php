@@ -70,6 +70,10 @@ class JwtClaims extends JsonResource
                     'id' => $this->institution_id,
                     'name' => $this->institution->name,
                 ],
+                'department' => [
+                    'id' => $this->department->id,
+                    'name' => $this->department->name,
+                ],
                 'privileges' => $this->institutionUserRoles
                     ->flatMap(fn (InstitutionUserRole $iuRole) => $iuRole->role?->privilegeRoles)
                     ->filter()
