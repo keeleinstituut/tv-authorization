@@ -9,6 +9,8 @@ use App\Http\Resources\InstitutionUserVacationsResource;
 use App\Models\InstitutionUser;
 use App\Models\InstitutionUserVacation;
 use App\Models\InstitutionVacationExclusion;
+use App\Models\Scopes\ExcludeArchivedInstitutionUsersScope;
+use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Policies\InstitutionUserPolicy;
 use App\Policies\InstitutionUserVacationPolicy;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -33,7 +35,7 @@ class InstitutionUserVacationController extends Controller
     #[OAH\CollectionResponse(itemsRef: InstitutionUserVacationResource::class, description: 'Vacations of the institution user')]
     public function index(Request $request): InstitutionUserVacationsResource
     {
-        $institutionUser = InstitutionUser::withGlobalScope('policy', InstitutionUserPolicy::scope())
+        $institutionUser = $this->getInstitutionUserBaseQuery()
             ->with([
                 'activeInstitutionUserVacations',
                 'activeInstitutionVacations',
@@ -60,7 +62,7 @@ class InstitutionUserVacationController extends Controller
     #[OAH\ResourceResponse(dataRef: InstitutionUserVacationResource::class, description: 'Created vacation', response: Response::HTTP_CREATED)]
     public function sync(InstitutionUserVacationSyncRequest $request): InstitutionUserVacationsResource
     {
-        $institutionUser = InstitutionUser::withGlobalScope('policy', InstitutionUserPolicy::scope())
+        $institutionUser = $this->getInstitutionUserBaseQuery()
             ->findOrFail($request->validated('institution_user_id'));
 
         $this->authorize('sync', [InstitutionUserVacation::class, $institutionUser]);
@@ -120,5 +122,13 @@ class InstitutionUserVacationController extends Controller
         return InstitutionUserVacation::query()
             ->withGlobalScope('policy', InstitutionUserVacationPolicy::scope())
             ->active();
+    }
+
+    private function getInstitutionUserBaseQuery(): Builder
+    {
+        return InstitutionUser::query()
+            ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
+            ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
+            ->withGlobalScope('policy', InstitutionUserPolicy::scope());
     }
 }
