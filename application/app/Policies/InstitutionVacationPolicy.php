@@ -14,7 +14,7 @@ class InstitutionVacationPolicy
      */
     public function viewAny(JwtPayloadUser $user): bool
     {
-        return Auth::hasPrivilege(PrivilegeKey::EditInstitutionWorktime->value);
+        return true;
     }
 
     /**
