@@ -193,11 +193,7 @@ class UpdateInstitutionUserRequest extends FormRequest
 
     public function getValidatedWorktimeInput(): array
     {
-        $worktimeAttributeKeys = WorktimeValidationUtil::getWorktimeIntervalEdgesByDay()
-            ->flatten()
-            ->push('worktime_timezone')
-            ->all();
-
+        $worktimeAttributeKeys = WorktimeValidationUtil::getWorktimeAttributes()->all();
         return $this->safe($worktimeAttributeKeys);
     }
 

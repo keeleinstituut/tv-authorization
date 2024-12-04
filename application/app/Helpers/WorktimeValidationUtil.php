@@ -58,9 +58,7 @@ class WorktimeValidationUtil
             return;
         }
 
-        $worktimeAttributes = WorktimeValidationUtil::getWorktimeIntervalEdgesByDay()
-            ->flatten()
-            ->push('worktime_timezone');
+        $worktimeAttributes = self::getWorktimeAttributes();
 
         if (! Arr::hasAny($validator->validated(), $worktimeAttributes->all())) {
             return;
@@ -84,6 +82,13 @@ class WorktimeValidationUtil
                 "{$day}_worktime_start",
                 "{$day}_worktime_end",
             ]);
+    }
+
+    public static function getWorktimeAttributes(): Collection
+    {
+        return WorktimeValidationUtil::getWorktimeIntervalEdgesByDay()
+            ->flatten()
+            ->push('worktime_timezone');
     }
 
     /**

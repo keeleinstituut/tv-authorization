@@ -67,9 +67,16 @@ class InstitutionController extends Controller
     public function update(UpdateInstitutionRequest $request): InstitutionResource
     {
         $id = $request->route('institution_id');
+        /** @var Institution $institution */
         $institution = $this->getBaseQuery()->findOrFail($id);
 
-        $this->authorize('update', $institution);
+        if ($request->hasWorktimeAttributes()) {
+            $this->authorize('updateWorktime', $institution);
+        }
+
+        if ($request->hasInstitutionMainAttributes()) {
+            $this->authorize('update', $institution);
+        }
 
         $this->auditLogPublisher->publishModifyObjectAfterAction(
             $institution,

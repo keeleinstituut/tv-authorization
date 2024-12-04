@@ -109,4 +109,18 @@ class UpdateInstitutionRequest extends FormRequest
             WorktimeValidationUtil::validateEachWorktimeStartIsBeforeEndOrBothUndefined(...),
         ];
     }
+
+    public function hasWorktimeAttributes(): bool
+    {
+        return collect($this->validated())->hasAny(
+            WorktimeValidationUtil::getWorktimeAttributes()->toArray()
+        );
+    }
+
+    public function hasInstitutionMainAttributes(): bool
+    {
+        return collect($this->validated())->hasAny([
+            'name', 'short_name', 'phone', 'email'
+        ]);
+    }
 }

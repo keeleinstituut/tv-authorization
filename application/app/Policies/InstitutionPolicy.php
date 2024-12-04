@@ -26,6 +26,15 @@ class InstitutionPolicy
             && Auth::hasPrivilege(PrivilegeKey::EditInstitution->value);
     }
 
+    /**
+     * Determine whether the user can update the model worktime attributes.
+     */
+    public function updateWorktime(JwtPayloadUser $ignored, Institution $institution): bool
+    {
+        return $this->isCurrentAuthenticatedInstitution($institution)
+            && Auth::hasPrivilege(PrivilegeKey::EditInstitutionWorktime->value);
+    }
+
     public function isCurrentAuthenticatedInstitution(Institution $institution): bool
     {
         return filled($authenticatedInstitutionId = Auth::user()?->institutionId)
