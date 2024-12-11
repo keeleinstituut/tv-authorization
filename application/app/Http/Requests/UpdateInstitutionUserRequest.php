@@ -121,7 +121,7 @@ class UpdateInstitutionUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user' => ['array', 'min:1'],
+            'user' => ['array', 'filled'],
             'user.forename' => ['filled', 'max:'.MaxLengthValue::USERNAME_PART],
             'user.surname' => ['filled', 'max:'.MaxLengthValue::USERNAME_PART],
             'email' => 'email',
@@ -209,6 +209,10 @@ class UpdateInstitutionUserRequest extends FormRequest
             WorktimeValidationUtil::validateEachWorktimeStartIsBeforeEndOrBothUndefined(...),
             function (Validator $validator) {
                 if ($validator->errors()->isNotEmpty()) {
+                    return;
+                }
+
+                if (empty($this->validated('user'))) {
                     return;
                 }
 
