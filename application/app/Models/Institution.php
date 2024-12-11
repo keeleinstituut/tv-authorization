@@ -163,7 +163,7 @@ class Institution extends Model implements AuditLoggable, HasMedia
 
     public function getAuditLogRepresentation(): array
     {
-        return $this->withoutRelations()->refresh()->toArray();
+        return $this->withoutRelations()->refresh()->load(['vacations'])->toArray();
     }
 
     public function getAuditLogObjectType(): AuditLogEventObjectType

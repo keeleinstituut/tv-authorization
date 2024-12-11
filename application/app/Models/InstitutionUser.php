@@ -316,7 +316,7 @@ class InstitutionUser extends Model implements AuditLoggable
 
     public function getAuditLogRepresentation(): array
     {
-        return $this->withoutRelations()->refresh()->load(['user', 'roles', 'roles.privileges'])->toArray();
+        return $this->withoutRelations()->refresh()->load(['user', 'roles', 'roles.privileges', 'institutionUserVacations'])->toArray();
     }
 
     public function getAuditLogObjectType(): AuditLogEventObjectType

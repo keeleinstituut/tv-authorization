@@ -62,59 +62,65 @@ class InstitutionUserVacationController extends Controller
     #[OAH\ResourceResponse(dataRef: InstitutionUserVacationResource::class, description: 'Created vacation', response: Response::HTTP_CREATED)]
     public function sync(InstitutionUserVacationSyncRequest $request): InstitutionUserVacationsResource
     {
+        /** @var InstitutionUser $institutionUser */
         $institutionUser = $this->getInstitutionUserBaseQuery()
             ->findOrFail($request->validated('institution_user_id'));
 
-        $this->authorize('sync', [InstitutionUserVacation::class, $institutionUser]);
+        return $this->auditLogPublisher->publishModifyObjectAfterAction(
+            $institutionUser,
+            function () use ($request, $institutionUser) {
+                $this->authorize('sync', [InstitutionUserVacation::class, $institutionUser]);
 
-        return DB::transaction(function () use ($request, $institutionUser): InstitutionUserVacationsResource {
-            $institutionUserId = $request->validated('institution_user_id');
-            $vacationIds = collect($request->validated('vacations'))->map(function (array $vacationData) use ($institutionUserId) {
-                // Update existing
-                if (filled($id = data_get($vacationData, 'id'))) {
-                    /** @var InstitutionUserVacation $vacation */
-                    $vacation = $this->getBaseQuery()->where('institution_user_id', $institutionUserId)
-                        ->findOrFail($id);
+                return DB::transaction(function () use ($request, $institutionUser): InstitutionUserVacationsResource {
+                    $institutionUserId = $request->validated('institution_user_id');
+                    $vacationIds = collect($request->validated('vacations'))->map(function (array $vacationData) use ($institutionUserId) {
+                        // Update existing
+                        if (filled($id = data_get($vacationData, 'id'))) {
+                            /** @var InstitutionUserVacation $vacation */
+                            $vacation = $this->getBaseQuery()->where('institution_user_id', $institutionUserId)
+                                ->findOrFail($id);
 
-                    $vacation->fill([
-                        'start_date' => data_get($vacationData, 'start_date'),
-                        'end_date' => data_get($vacationData, 'end_date'),
-                    ])->saveOrFail();
+                            $vacation->fill([
+                                'start_date' => data_get($vacationData, 'start_date'),
+                                'end_date' => data_get($vacationData, 'end_date'),
+                            ])->saveOrFail();
 
-                    return $vacation->id;
-                }
-                // Create new
-                $vacation = InstitutionUserVacation::make([
-                    'institution_user_id' => $institutionUserId,
-                    'start_date' => data_get($vacationData, 'start_date'),
-                    'end_date' => data_get($vacationData, 'end_date'),
-                ]);
-                $vacation->saveOrFail();
+                            return $vacation->id;
+                        }
+                        // Create new
+                        $vacation = InstitutionUserVacation::make([
+                            'institution_user_id' => $institutionUserId,
+                            'start_date' => data_get($vacationData, 'start_date'),
+                            'end_date' => data_get($vacationData, 'end_date'),
+                        ]);
+                        $vacation->saveOrFail();
 
-                return $vacation->id;
-            });
+                        return $vacation->id;
+                    });
 
-            // Delete missing
-            $this->getBaseQuery()->where('institution_user_id', $request->validated('institution_user_id'))
-                ->whereNotIn('id', $vacationIds)
-                ->delete();
+                    // Delete missing
+                    $this->getBaseQuery()->where('institution_user_id', $request->validated('institution_user_id'))
+                        ->whereNotIn('id', $vacationIds)
+                        ->delete();
 
-            // Save excluded institution vacations
-            collect($request->validated('institution_vacation_exclusions'))->map(function ($institutionVacationId) use ($institutionUserId) {
-                InstitutionVacationExclusion::firstOrNew([
-                    'institution_vacation_id' => $institutionVacationId,
-                    'institution_user_id' => $institutionUserId,
-                ])->saveOrFail();
-            });
+                    // Save excluded institution vacations
+                    collect($request->validated('institution_vacation_exclusions'))->map(function ($institutionVacationId) use ($institutionUserId) {
+                        InstitutionVacationExclusion::firstOrNew([
+                            'institution_vacation_id' => $institutionVacationId,
+                            'institution_user_id' => $institutionUserId,
+                        ])->saveOrFail();
+                    });
 
-            return InstitutionUserVacationsResource::make(
-                $institutionUser->load([
-                    'activeInstitutionUserVacations',
-                    'activeInstitutionVacations',
-                    'activeInstitutionVacationExclusions',
-                ])
-            );
-        });
+                    return InstitutionUserVacationsResource::make(
+                        $institutionUser->load([
+                            'activeInstitutionUserVacations',
+                            'activeInstitutionVacations',
+                            'activeInstitutionVacationExclusions',
+                        ])
+                    );
+                });
+            }
+        );
     }
 
     private function getBaseQuery(): Builder

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\OpenApiHelpers as OAH;
 use App\Http\Requests\InstitutionVacationSyncRequest;
 use App\Http\Resources\InstitutionVacationResource;
+use App\Models\Institution;
+use App\Models\InstitutionUser;
 use App\Models\InstitutionVacation;
 use App\Policies\InstitutionVacationPolicy;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -52,47 +54,56 @@ class InstitutionVacationController extends Controller
     #[OAH\ResourceResponse(dataRef: InstitutionVacationResource::class, description: 'Affected vacations', response: Response::HTTP_OK)]
     public function sync(InstitutionVacationSyncRequest $request): AnonymousResourceCollection
     {
-        $this->authorize('sync', InstitutionVacation::class);
+        $institutionId = Auth::user()->institutionId;
 
-        return DB::transaction(function () use ($request): AnonymousResourceCollection {
-            $vacationIds = collect($request->validated('vacations'))->map(function (array $vacationData) {
-                $institutionId = Auth::user()->institutionId;
-                // Update existing
-                if (filled($id = data_get($vacationData, 'id'))) {
-                    /** @var InstitutionVacation $vacation */
-                    $vacation = $this->getBaseQuery()->where('institution_id', $institutionId)
-                        ->findOrFail($id);
+        /** @var Institution $institution */
+        $institution = $this->getInstitutionBaseQuery()->findOrFail($institutionId);
 
-                    $vacation->fill([
-                        'start_date' => data_get($vacationData, 'start_date'),
-                        'end_date' => data_get($vacationData, 'end_date'),
-                    ])->saveOrFail();
+        return $this->auditLogPublisher->publishModifyObjectAfterAction(
+            $institution,
+            function () use ($request, $institution) {
+                $this->authorize('sync', InstitutionVacation::class);
 
-                    return $vacation->id;
-                }
+                return DB::transaction(function () use ($request, $institution): AnonymousResourceCollection {
+                    $vacationIds = collect($request->validated('vacations'))->map(function (array $vacationData) use ($institution) {
+                        // Update existing
+                        if (filled($id = data_get($vacationData, 'id'))) {
+                            /** @var InstitutionVacation $vacation */
+                            $vacation = $this->getBaseQuery()->where('institution_id', $institution->id)
+                                ->findOrFail($id);
 
-                // Create new
-                $vacation = InstitutionVacation::make([
-                    'institution_id' => $institutionId,
-                    'start_date' => data_get($vacationData, 'start_date'),
-                    'end_date' => data_get($vacationData, 'end_date'),
-                ]);
-                $vacation->saveOrFail();
+                            $vacation->fill([
+                                'start_date' => data_get($vacationData, 'start_date'),
+                                'end_date' => data_get($vacationData, 'end_date'),
+                            ])->saveOrFail();
 
-                return $vacation->id;
-            });
+                            return $vacation->id;
+                        }
 
-            // Delete missing
-            $this->getBaseQuery()->whereNotIn('id', $vacationIds)
-                ->delete();
+                        // Create new
+                        $vacation = InstitutionVacation::make([
+                            'institution_id' => $institution->id,
+                            'start_date' => data_get($vacationData, 'start_date'),
+                            'end_date' => data_get($vacationData, 'end_date'),
+                        ]);
+                        $vacation->saveOrFail();
 
-            return InstitutionVacationResource::collection(
-                $this->getBaseQuery()
-                    ->whereIn('id', $vacationIds)
-                    ->orderBy('start_date')
-                    ->get()
-            );
-        });
+                        return $vacation->id;
+                    });
+
+                    // Delete missing
+                    $this->getBaseQuery()->whereNotIn('id', $vacationIds)
+                        ->delete();
+
+                    return InstitutionVacationResource::collection(
+                        $this->getBaseQuery()
+                            ->whereIn('id', $vacationIds)
+                            ->orderBy('start_date')
+                            ->get()
+                    );
+                });
+            }
+        );
     }
 
     private function getBaseQuery(): Builder
@@ -101,5 +112,10 @@ class InstitutionVacationController extends Controller
             ->withGlobalScope('policy', InstitutionVacationPolicy::scope())
             ->whereHas('institution')
             ->active();
+    }
+
+    private function getInstitutionBaseQuery(): Builder
+    {
+        return Institution::query();
     }
 }
