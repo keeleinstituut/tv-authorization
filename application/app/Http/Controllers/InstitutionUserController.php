@@ -362,7 +362,7 @@ class InstitutionUserController extends Controller
                         'notification_type' => NotificationType::InstitutionUserActivated,
                         'receiver_email' => $institutionUser->email,
                         'receiver_name' => $institutionUser->user->full_name,
-                    ])
+                    ]),
                 );
             }
 

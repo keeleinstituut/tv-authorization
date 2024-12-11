@@ -50,7 +50,8 @@ readonly class InstitutionUserObserver
                 'notification_type' => NotificationType::InstitutionUserCreated,
                 'receiver_email' => $institutionUser->email,
                 'receiver_name' => $institutionUser->user->full_name,
-            ])
+            ]),
+            institutionId: $institutionUser->institution_id,
         );
     }
 
