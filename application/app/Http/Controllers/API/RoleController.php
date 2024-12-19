@@ -13,6 +13,8 @@ use App\Http\Resources\API\RoleResource;
 use App\Models\Privilege;
 use App\Models\Role;
 use App\Policies\RolePolicy;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,11 +33,15 @@ class RoleController extends Controller
         responses: [new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
     )]
     #[OAH\CollectionResponse(itemsRef: RoleResource::class, description: 'Roles belonging to the specified institution')]
-    public function index(RoleListRequest $request)
+    public function index(RoleListRequest $request): AnonymousResourceCollection
     {
         $params = collect($request->validated());
 
-        $this->authorize('viewAny', Role::class);
+        try {
+            $this->authorize('viewAny', Role::class);
+        } catch (AuthorizationException) {
+            return RoleResource::collection([]);
+        }
 
         $query = $this->getBaseQuery()
             ->with('privileges');
