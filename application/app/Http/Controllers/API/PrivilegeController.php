@@ -8,6 +8,8 @@ use App\Http\Requests\API\PrivilegeListRequest;
 use App\Http\Resources\API\PrivilegeResource;
 use App\Models\Privilege;
 use App\Policies\PrivilegePolicy;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use OpenApi\Attributes as OA;
 
 class PrivilegeController extends Controller
@@ -20,9 +22,13 @@ class PrivilegeController extends Controller
         responses: [new OAH\Forbidden, new OAH\Unauthorized]
     )]
     #[OAH\CollectionResponse(itemsRef: PrivilegeResource::class, description: 'All privileges used in Tõlkevärav')]
-    public function index(PrivilegeListRequest $request)
+    public function index(PrivilegeListRequest $request): AnonymousResourceCollection
     {
-        $this->authorize('viewAny', Privilege::class);
+        try {
+            $this->authorize('viewAny', Privilege::class);
+        } catch (AuthorizationException) {
+            return PrivilegeResource::collection([]);
+        }
 
         $data = $this->getBaseQuery()->get();
 
