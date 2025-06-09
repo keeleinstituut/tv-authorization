@@ -49,4 +49,5 @@ enum PrivilegeKey: string
     case ViewAuditLog = 'VIEW_AUDIT_LOG';
     case ExportAuditLog = 'EXPORT_AUDIT_LOG';
     case ExportInstitutionGeneralReport = 'EXPORT_INSTITUTION_GENERAL_REPORT';
+    case EditAuditLogSettings = 'EDIT_AUDIT_LOG_SETTINGS';
 }
