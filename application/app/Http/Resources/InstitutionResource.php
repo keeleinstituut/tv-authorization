@@ -130,7 +130,7 @@ class InstitutionResource extends JsonResource
             'short_name' => $this->short_name,
             'phone' => $this->phone,
             'email' => $this->email,
-            'logo_url' => route('institutions.logo', ['institution_id' => $this->id]),
+            'logo_url' => route('authorization.institutions.logo', ['institution_id' => $this->id]),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'worktime_timezone' => $this->worktime_timezone,
