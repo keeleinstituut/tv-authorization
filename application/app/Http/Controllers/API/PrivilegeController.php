@@ -30,7 +30,9 @@ class PrivilegeController extends Controller
             return PrivilegeResource::collection([]);
         }
 
-        $data = $this->getBaseQuery()->get();
+        $data = $this->getBaseQuery()
+            ->orderBy('key')
+            ->get();
 
         return PrivilegeResource::collection($data);
     }

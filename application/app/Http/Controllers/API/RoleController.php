@@ -50,7 +50,9 @@ class RoleController extends Controller
             $query = $query->where('institution_id', $institutionId);
         }
 
-        $data = $query->get();
+        $data = $query
+            ->orderBy('created_at')
+            ->get();
 
         return RoleResource::collection($data);
     }
