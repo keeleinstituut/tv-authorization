@@ -248,7 +248,6 @@ class InstitutionUserImportController extends Controller
         return InstitutionUser::withTrashed()->whereRelation('user',
             fn (Builder $query) => $query->withTrashed()->where('personal_identification_code', $pin)
         )->withGlobalScope('policy', InstitutionUserPolicy::scope())
-            ->withoutGlobalScope(ExcludeArchivedInstitutionUsersScope::class)
             ->withoutGlobalScope(ExcludeDeactivatedInstitutionUsersScope::class)
             ->withoutGlobalScope(ExcludeIfRelatedUserSoftDeletedScope::class)
             ->exists();
