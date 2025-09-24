@@ -77,6 +77,7 @@ Route::prefix('/departments')
     ->group(function (): void {
         Route::get('/', 'index')->name('authorization.departments.index');
         Route::post('/', 'store')->name('authorization.departments.store');
+        Route::put('/bulk', 'bulkUpdate')->name('authorization.departments.bulkUpdate');
         Route::get('/{department_id}', 'show')->name('authorization.departments.show');
         Route::put('/{department_id}', 'update')->name('authorization.departments.update');
         Route::delete('/{department_id}', 'destroy')->name('authorization.departments.destroy');

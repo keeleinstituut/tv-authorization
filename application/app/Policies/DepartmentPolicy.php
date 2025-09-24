@@ -47,6 +47,13 @@ class DepartmentPolicy
         throw new BadMethodCallException();
     }
 
+    public function bulkUpdate(JwtPayloadUser $user): bool
+    {
+        return Auth::hasPrivilege(PrivilegeKey::AddDepartment->value) &&
+                Auth::hasPrivilege(PrivilegeKey::EditDepartment->value) &&
+                Auth::hasPrivilege(PrivilegeKey::DeleteDepartment->value);
+    }
+
     /** @noinspection PhpUnused */
     public function isInSameInstitutionAsCurrentUser(Department $department): bool
     {

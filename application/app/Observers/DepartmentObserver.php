@@ -32,6 +32,7 @@ readonly class DepartmentObserver
      */
     public function deleted(Department $department): void
     {
+        $department->institutionUsers()->update(['department_id' => null]);
         $this->publishAffectedInstitutionUsers($department);
     }
 
