@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\OpenApiHelpers as OAH;
 use App\Http\Requests\StoreDepartmentRequest;
 use App\Http\Requests\UpdateDepartmentRequest;
+use App\Http\Requests\API\DepartmentBulkUpdateRequest;
 use App\Http\Resources\DepartmentResource;
 use App\Models\Department;
 use App\Models\Institution;
@@ -29,33 +30,8 @@ class DepartmentController extends Controller
     #[OAH\CollectionResponse(itemsRef: DepartmentResource::class, description: 'Departments of institution (institution inferred from JWT)')]
     public function index(): ResourceCollection
     {
-        return DepartmentResource::collection($this->getBaseQuery()->get());
-    }
-
-    /**
-     * @throws AuthorizationException
-     * @throws Throwable
-     */
-    #[OA\Post(
-        path: '/departments',
-        summary: 'Create a new department',
-        requestBody: new OAH\RequestBody(StoreDepartmentRequest::class),
-        responses: [new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
-    )]
-    #[OAH\ResourceResponse(dataRef: DepartmentResource::class, description: 'Created department', response: Response::HTTP_CREATED)]
-    public function store(StoreDepartmentRequest $request): DepartmentResource
-    {
-        $this->authorize('create', Department::class);
-
-        return DB::transaction(function () use ($request): DepartmentResource {
-            $currentInstitution = Institution::findOrFail(Auth::user()->institutionId);
-
-            $newDepartment = new Department($request->validated());
-            $newDepartment->institution()->associate($currentInstitution);
-            $newDepartment->saveOrFail();
-
-            return new DepartmentResource($newDepartment->refresh());
-        });
+        $data = $this->getBaseQuery()->orderBy('name')->get();
+        return DepartmentResource::collection($data);
     }
 
     /**
@@ -78,57 +54,48 @@ class DepartmentController extends Controller
         return new DepartmentResource($department);
     }
 
-    /**
-     * @throws AuthorizationException
-     * @throws Throwable
-     */
-    #[OA\Put(
-        path: '/departments/{department_id}',
-        summary: 'Update the department with the given UUID',
-        requestBody: new OAH\RequestBody(UpdateDepartmentRequest::class),
-        parameters: [new OAH\UuidPath('department_id')],
-        responses: [new OAH\NotFound, new OAH\Forbidden, new OAH\Unauthorized, new OAH\Invalid]
-    )]
-    #[OAH\ResourceResponse(dataRef: DepartmentResource::class, description: 'Updated department')]
-    public function update(UpdateDepartmentRequest $request): DepartmentResource
+    public function bulkUpdate(DepartmentBulkUpdateRequest $request)
     {
-        return DB::transaction(function () use ($request): DepartmentResource {
-            $id = $request->route('department_id');
-            $department = $this->getBaseQuery()->findOrFail($id);
+        $params = collect($request->validated());
 
-            $this->authorize('update', $department);
+        $this->authorize('bulkUpdate', Department::class);
 
-            $department->fill($request->validated())->saveOrFail();
+        $data = collect($params->get('data'));
 
-            return new DepartmentResource($department->refresh());
-        });
-    }
+        return DB::transaction(function () use ($data) {
+            $currentDepartments = $this->getBaseQuery()->get();
 
-    /**
-     * @throws AuthorizationException
-     * @throws Throwable
-     */
-    #[OA\Delete(
-        path: '/departments/{department_id}',
-        summary: 'Mark the department with the given UUID as deleted',
-        parameters: [new OAH\UuidPath('department_id')],
-        responses: [new OAH\NotFound, new OAH\Forbidden, new OAH\Unauthorized]
-    )]
-    #[OAH\ResourceResponse(dataRef: DepartmentResource::class, description: 'The department marked as deleted')]
-    public function destroy(Request $request): DepartmentResource
-    {
-        return DB::transaction(function () use ($request): DepartmentResource {
-            $id = $request->route('department_id');
+            $remainingDepartments = $data->map(function ($element) use ($currentDepartments) {
+                if ($id = data_get($element, 'id')) {
+                    $existingDepartment = $currentDepartments->firstWhere('id', $id);
+                    $existingDepartment->name = $element['name'];
+                    return $existingDepartment;
+                } else {
+                    $newDepartment = new Department();
+                    $newDepartment->name = $element['name'];
+                    $newDepartment->institution_id = Auth::user()->institutionId;
+                    return $newDepartment;
+                }
+            });
 
-            /** @var Department $department */
-            $department = $this->getBaseQuery()->findOrFail($id);
+            // Save departments
+            $remainingDepartments->each(function ($department) {
+                $department->save();
+            });
 
-            $this->authorize('delete', $department);
+            // Delete existing departments that are not in $departments array.
+            $currentDepartments
+                ->filter(function ($department) use ($remainingDepartments) {
+                    return !$remainingDepartments->firstWhere('id', $department->id);
+                })
+                ->each(function ($department) {
+                    $department->delete();
+                });
 
-            $department->institutionUsers()->update(['department_id' => null]);
-            $department->deleteOrFail();
 
-            return new DepartmentResource($department->refresh());
+            $departments = $this->getBaseQuery()->orderBy('name')->get();
+
+            return DepartmentResource::collection($departments);
         });
     }
 

@@ -53,7 +53,7 @@ class JwtClaimsController extends Controller
                 $request->validated('institution_id')
             )->first();
 
-            abort_if(empty($institutionUser), 403);
+            abort_if(empty($institutionUser), 404);
 
             return new JwtClaims($institutionUser);
         }
