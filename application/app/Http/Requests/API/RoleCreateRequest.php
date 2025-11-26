@@ -65,6 +65,10 @@ class RoleCreateRequest extends FormRequest
                                 ->whereNull('deleted_at');
                         }),
                 ],
+            ],
+            [
+                // TODO: temporary quick fix
+                'name.unique' => 'See nimi on juba kasutusel',
             ]);
 
             $afterValidator->validate();
