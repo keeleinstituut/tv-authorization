@@ -50,7 +50,9 @@ class DepartmentBulkUpdateRequest extends FormRequest
                             $attributeName = "data.$index.name";
                             $validator->errors()->add(
                                 $attributeName,
-                                __('validation.unique', ['attribute' => $attributeName])
+                                // __('validation.unique', ['attribute' => $attributeName])
+                                // TODO: temporary quick fix
+                                'See nimi on juba kasutusel'
                             );
                         } else {
                             $newNames->push($name);
