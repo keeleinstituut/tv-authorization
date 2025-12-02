@@ -28,7 +28,8 @@ RUN rm -rf ${WEB_ROOT} && \
 RUN composer install
 
 RUN apk add nginx \
-                supervisor
+                supervisor \
+                curl
 
 RUN sed -i 's/^\(\[supervisord\]\)$/\1\nnodaemon=true/' /etc/supervisord.conf && \
     sed -i 's/pm.max_children = 5/pm.max_children = 50/g' /usr/local/etc/php-fpm.d/www.conf && \
@@ -122,6 +123,9 @@ set -e
 echo "Optimize for loading in runtime variables"
 php artisan optimize
 
+chown -R www-data:www-data ./bootstrap/cache
+chown -R www-data:www-data ./storage
+
 echo "Running migrations"
 php artisan migrate --force
 
@@ -134,6 +138,78 @@ php artisan l5-swagger:generate
 echo "Start application processes using supervisord..."
 exec "\$@"
 EOF
+
+
+# Health check scripts
+RUN <<EOF cat > /healthz-startup.sh
+#!/bin/sh
+set -e
+
+if ! pgrep -x supervisord > /dev/null; then
+    exit 1
+fi
+
+REQUIRED_PROCESSES="php-fpm nginx"
+for process in \$REQUIRED_PROCESSES; do
+    if ! supervisorctl status "\$process" 2>/dev/null | grep -q RUNNING; then
+        exit 1
+    fi
+done
+
+# Check that entrypoint commands are NOT running
+if pgrep -f "php artisan migrate" > /dev/null; then
+    exit 1
+fi
+
+if pgrep -f "php artisan amqp:setup" > /dev/null; then
+    exit 1
+fi
+
+exit 0
+EOF
+
+RUN <<EOF cat > /healthz-ready.sh
+#!/bin/sh
+set -e
+
+if ! pgrep -x supervisord > /dev/null; then
+    exit 1
+fi
+
+REQUIRED_PROCESSES="php-fpm nginx laravel-worker laravel-scheduler"
+for process in \$REQUIRED_PROCESSES; do
+    if ! supervisorctl status "\$process" 2>/dev/null | grep -q RUNNING; then
+        exit 1
+    fi
+done
+
+if ! curl -f -s --max-time 2 http://localhost/healthz > /dev/null 2>&1; then
+    exit 1
+fi
+
+exit 0
+EOF
+
+RUN <<EOF cat > /healthz-live.sh
+#!/bin/sh
+set -e
+
+if ! pgrep -x supervisord > /dev/null; then
+    exit 1
+fi
+
+REQUIRED_PROCESSES="php-fpm nginx laravel-worker laravel-scheduler"
+for process in \$REQUIRED_PROCESSES; do
+    status=\$(supervisorctl status "\$process" 2>/dev/null | awk '{print \$2}')
+    if [ "\$status" = "FATAL" ]; then
+        exit 1
+    fi
+done
+
+exit 0
+EOF
+
+RUN chmod +x /healthz-startup.sh /healthz-ready.sh /healthz-live.sh
 
 RUN chmod +x ${ENTRYPOINT}
 
