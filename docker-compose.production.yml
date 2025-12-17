@@ -5,8 +5,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    depends_on:
-      - redis
     ports:
       - 8000:80
     environment:
@@ -24,6 +22,10 @@ services:
       - DB_DATABASE=app
       - DB_USERNAME=user
       - DB_PASSWORD=pass
+      - AMQP_HOST=rabbitmq
+      - AMQP_PORT=5672
+      - AMQP_USER=guest
+      - AMQP_PASSWORD=guest
       - BROADCAST_DRIVER=log
       - CACHE_DRIVER=file
       - FILESYSTEM_DISK=local
@@ -32,3 +34,5 @@ services:
       - SESSION_LIFETIME=120
       - MEMCACHED_HOST=127.0.0.1
       - L5_SWAGGER_GENERATE_ALWAYS=true
+      - AUDIT_LOG_EVENTS_EXCHANGE=tv-audit-log.events
+      - EMAIL_NOTIFICATION_EXCHANGE=tv-notification.email
