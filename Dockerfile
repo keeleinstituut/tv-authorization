@@ -26,7 +26,7 @@ RUN su www-data -s /bin/sh -c "composer install --no-dev --optimize-autoloader -
 
 RUN apk add --no-cache nginx supervisor curl
 
-RUN sed -i 's/^\(\[supervisord\]\)$/\1\nnodaemon=true/' /etc/supervisord.conf && \
+RUN sed -i 's/^\(\[supervisord\]\)$/\1\nnodaemon=true\nuser=root/' /etc/supervisord.conf && \
     sed -i 's/pm.max_children = 5/pm.max_children = 50/g' /usr/local/etc/php-fpm.d/www.conf && \
     sed -i 's/;pm.max_requests = 500/pm.max_requests = 200/g' /usr/local/etc/php-fpm.d/www.conf && \
     sed -i 's/;catch_workers_output = yes/catch_workers_output = yes/g' /usr/local/etc/php-fpm.d/www.conf && \
