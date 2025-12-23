@@ -6,6 +6,7 @@
     "require": {
         "php": "^8.2",
         "darkaonline/l5-swagger": "^8.5",
+        "fakerphp/faker": "^1.9.1",
         "guzzlehttp/guzzle": "^7.2",
         "keeleinstituut/tv-common-laravel-amqp": "^0.0.72",
         "keeleinstituut/tv-common-laravel-security": "^0.0.20",
@@ -19,7 +20,6 @@
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^2.13",
-        "fakerphp/faker": "^1.9.1",
         "laravel/pint": "^1.0",
         "laravel/sail": "^1.18",
         "mockery/mockery": "^1.4.4",
