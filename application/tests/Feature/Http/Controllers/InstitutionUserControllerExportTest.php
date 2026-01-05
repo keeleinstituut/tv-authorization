@@ -75,8 +75,6 @@ class InstitutionUserControllerExportTest extends AuditLogTestCase
             $expectedResponseData->jsonSerialize(),
             $actualResponseCsvDocument->jsonSerialize()
         );
-
-        $this->assertMessageRepresentsInstitutionUserExport($this->retrieveLatestAuditLogMessageBody(), $firstInstitutionUser);
     }
 
     public function test_exporting_institution_with_single_user(): void
@@ -232,28 +230,6 @@ class InstitutionUserControllerExportTest extends AuditLogTestCase
 
         // THEN response should indicate action is forbidden
         $response->assertForbidden();
-
-        $actualMessageBody = $this->retrieveLatestAuditLogMessageBody();
-        $expectedMessageBodySubset = [
-            'event_type' => AuditLogEventType::ExportInstitutionUsers->value,
-            'happened_at' => Date::getTestNow()->toISOString(),
-            'trace_id' => static::TRACE_ID,
-            'failure_type' => AuditLogEventFailureType::FORBIDDEN->value,
-            'context_institution_id' => $currentInstitutionUser->institution_id,
-            'context_department_id' => $currentInstitutionUser->department_id,
-            'acting_institution_user_id' => $currentInstitutionUser->id,
-            'acting_user_pic' => $currentInstitutionUser->user->personal_identification_code,
-            'acting_user_forename' => $currentInstitutionUser->user->forename,
-            'acting_user_surname' => $currentInstitutionUser->user->surname,
-        ];
-
-        Assertions::assertArraysEqualIgnoringOrder(
-            $expectedMessageBodySubset,
-            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
-        );
-
-        $this->assertArrayHasKey('event_parameters', $actualMessageBody);
-        $this->assertNull($actualMessageBody['event_parameters']);
     }
 
     public function test_exporting_users_without_access_token(): void

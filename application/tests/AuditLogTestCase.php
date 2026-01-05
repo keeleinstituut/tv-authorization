@@ -39,17 +39,6 @@ class AuditLogTestCase extends TestCase
         $channel->queue_purge(env('AUDIT_LOG_EVENTS_QUEUE'));
     }
 
-    protected function assertMessageIsReceived(array $expectedBody, bool $checkIsSubset = false): void
-    {
-        $actualBody = $this->retrieveLatestAuditLogMessageBody();
-
-        if ($checkIsSubset) {
-            Assertions::assertArrayHasSubsetIgnoringOrder($expectedBody, $actualBody);
-        } else {
-            Assertions::assertArraysEqualIgnoringOrder($expectedBody, $actualBody);
-        }
-    }
-
     protected function retrieveLatestAuditLogMessageBody(): ?array
     {
         /** @var AMQPChannel $channel */

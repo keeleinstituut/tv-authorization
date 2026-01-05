@@ -126,6 +126,6 @@ class WorktimeValidationUtil
             return false;
         }
 
-        return ! Date::parse($end, tz: $timezone)->isAfter(Date::parse($start, tz: $timezone));
+        return ! Date::parse($end, timezone: $timezone)->isAfter(Date::parse($start, timezone: $timezone));
     }
 }

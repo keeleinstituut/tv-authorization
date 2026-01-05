@@ -259,6 +259,10 @@ class JwtClaimsTest extends TestCase
                 'id' => $expectedInstitutionUser->institution->id,
                 'name' => $expectedInstitutionUser->institution->name,
             ],
+            'department' => [
+                'id' => $expectedInstitutionUser->department?->id,
+                'name' => $expectedInstitutionUser->department?->name,
+            ],
             'privileges' => collect($expectedPrivileges)
                 ->map(fn (PrivilegeKey $privilege) => $privilege->value)
                 ->unique()
