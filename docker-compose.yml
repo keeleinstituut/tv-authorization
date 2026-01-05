@@ -1,22 +1,15 @@
 version: "3.8"
 
 services:
-  app:
-    depends_on:
-      - postgres
-      - rabbitmq
-
   postgres:
     image: postgres:latest
     command: ["postgres", "-c", "log_statement=all"]
     ports:
       - ${DB_PORT}:5432
     environment:
-      - POSTGRES_DB=tv-authorization
+      - POSTGRES_DB=app
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=pass
-    volumes:
-      - ./dev-db-init.sql:/docker-entrypoint-initdb.d/init.sql
 
   rabbitmq:
     image: rabbitmq:latest
