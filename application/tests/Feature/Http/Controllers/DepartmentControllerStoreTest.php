@@ -251,8 +251,8 @@ class DepartmentControllerStoreTest extends DepartmentControllerTestCase
      * }
      *
      * @throws Throwable */
-    public function setUpFixture(Closure $modifyAnyState = null,
-        Closure $modifyActingInstitutionUser = null): array
+    public function setUpFixture(?Closure $modifyAnyState = null,
+        ?Closure $modifyActingInstitutionUser = null): array
     {
         $institution = Institution::factory()->create();
         $actingInstitutionUser = InstitutionUser::factory()

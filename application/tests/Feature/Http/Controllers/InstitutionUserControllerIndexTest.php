@@ -77,7 +77,7 @@ class InstitutionUserControllerIndexTest extends TestCase
             ))
             ->create();
         $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
-
+        /** @var InstitutionUser $searchingInstitutionUser */
         $searchingInstitutionUser = $institutionUsers->first();
         $response = $this->queryInstitutionUsers($accessToken, [
             'fullname' => implode(' ', [
@@ -560,7 +560,7 @@ class InstitutionUserControllerIndexTest extends TestCase
         $this->sendIndexRequestWithExpectedHeaders($queryParams, $actingUser)->assertOk();
     }
 
-    private function queryInstitutionUsers(string $accessToken = null, array $queryParams = null): TestResponse
+    private function queryInstitutionUsers(?string $accessToken = null, ?array $queryParams = null): TestResponse
     {
         if (! empty($accessToken)) {
             $this->withHeaders([

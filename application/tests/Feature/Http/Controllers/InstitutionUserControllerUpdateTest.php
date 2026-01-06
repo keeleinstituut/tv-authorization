@@ -885,9 +885,9 @@ class InstitutionUserControllerUpdateTest extends AuditLogTestCase
      * @throws Throwable
      */
     private function createInstitutionTargetUserAndPrivilegedActingUser(
-        Closure $modifyStateUsingInstitution = null,
-        Closure $modifyStateUsingActingUser = null,
-        Closure $modifyStateUsingTargetUser = null,
+        ?Closure $modifyStateUsingInstitution = null,
+        ?Closure $modifyStateUsingActingUser = null,
+        ?Closure $modifyStateUsingTargetUser = null,
     ): array {
         [
             'institution' => $institution,

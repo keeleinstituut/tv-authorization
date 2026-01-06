@@ -98,7 +98,7 @@ class InstitutionSyncControllerTest extends TestCase
         ];
     }
 
-    private function queryInstitutionsForSync(string $token = null): TestResponse
+    private function queryInstitutionsForSync(?string $token = null): TestResponse
     {
         if (filled($token)) {
             $this->withHeaders([
@@ -109,7 +109,7 @@ class InstitutionSyncControllerTest extends TestCase
         return $this->getJson(action([InstitutionSyncController::class, 'index']));
     }
 
-    private function queryInstitutionForSync(string $id, string $token = null): TestResponse
+    private function queryInstitutionForSync(string $id, ?string $token = null): TestResponse
     {
         if (filled($token)) {
             $this->withHeaders([
@@ -120,7 +120,7 @@ class InstitutionSyncControllerTest extends TestCase
         return $this->getJson(action([InstitutionSyncController::class, 'show'], ['id' => $id]));
     }
 
-    public function generateServiceAccountAccessToken(string $role = null): string
+    public function generateServiceAccountAccessToken(?string $role = null): string
     {
         $azp = explode(',', config('keycloak.service_accounts_accepted_authorized_parties'))[0];
 

@@ -503,15 +503,18 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
      *
      * @throws Throwable
      */
-    public function createInstitutionAndPrivilegedActingUser(Closure $modifyInstitution = null,
-        Closure $modifyActingInstitutionUser = null): array
+    public function createInstitutionAndPrivilegedActingUser(?Closure $modifyInstitution = null,
+        ?Closure $modifyActingInstitutionUser = null): array
     {
         return $this->createInstitutionAndActingUser(
             $modifyInstitution,
             function (InstitutionUser $institutionUser) use ($modifyActingInstitutionUser) {
                 $institutionUser->roles()->attach(
                     Role::factory()
-                        ->hasAttached(Privilege::firstWhere('key', PrivilegeKey::EditInstitution->value))
+                        ->hasAttached(Privilege::whereIn('key', [
+                            PrivilegeKey::EditInstitution->value,
+                            PrivilegeKey::EditInstitutionWorktime->value,
+                        ])->get())
                         ->create()
                 );
 

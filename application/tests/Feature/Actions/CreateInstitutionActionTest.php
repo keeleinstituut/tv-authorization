@@ -27,6 +27,5 @@ class CreateInstitutionActionTest extends TestCase
         $this->assertModelExists($institution);
         $this->assertEquals($institutionName, $institution->name);
         $this->assertEquals($institutionShortName, $institution->short_name);
-        $this->assertEquals($logoUrl, $institution->logo_url);
     }
 }

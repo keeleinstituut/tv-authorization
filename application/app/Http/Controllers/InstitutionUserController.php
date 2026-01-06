@@ -429,9 +429,11 @@ class InstitutionUserController extends Controller
         }
         if (Arr::has($validatedInput, 'roles')) {
             $institutionUser->roles()->sync($validatedInput['roles']);
+            $institutionUser->load('roles');
         }
         if (Arr::has($validatedInput, 'department_id')) {
             $institutionUser->department()->associate($validatedInput['department_id']);
+            $institutionUser->load('department');
         }
     }
 }

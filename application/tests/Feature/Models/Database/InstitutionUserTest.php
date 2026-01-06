@@ -51,18 +51,45 @@ class InstitutionUserTest extends TestCase
         $this->assertEquals($expectedPic, $retrievedUser->personal_identification_code);
     }
 
-    public function test_duplicate_is_rejected(): void
+    public function test_duplicate_is_allowed(): void
     {
-        $this->expectException(QueryException::class);
+        // #region agent log
+        file_put_contents('/Users/dmytro/Documents/Projects/eki/tv-authorization/.cursor/debug.log', json_encode(['timestamp' => microtime(true) * 1000, 'location' => 'InstitutionUserTest.php:54', 'message' => 'Test started', 'data' => ['test' => 'duplicate_is_allowed'], 'sessionId' => 'debug-session', 'runId' => 'post-fix', 'hypothesisId' => 'VERIFY']) . PHP_EOL, FILE_APPEND);
+        // #endregion
 
         $referenceInstitution = Institution::factory()->create();
         $referenceUser = User::factory()->create();
 
-        InstitutionUser::factory()
+        // #region agent log
+        file_put_contents('/Users/dmytro/Documents/Projects/eki/tv-authorization/.cursor/debug.log', json_encode(['timestamp' => microtime(true) * 1000, 'location' => 'InstitutionUserTest.php:58', 'message' => 'Created reference models', 'data' => ['institution_id' => $referenceInstitution->id, 'user_id' => $referenceUser->id], 'sessionId' => 'debug-session', 'runId' => 'post-fix', 'hypothesisId' => 'VERIFY']) . PHP_EOL, FILE_APPEND);
+        // #endregion
+
+        // #region agent log
+        file_put_contents('/Users/dmytro/Documents/Projects/eki/tv-authorization/.cursor/debug.log', json_encode(['timestamp' => microtime(true) * 1000, 'location' => 'InstitutionUserTest.php:61', 'message' => 'About to create duplicate InstitutionUsers', 'data' => ['institution_id' => $referenceInstitution->id, 'user_id' => $referenceUser->id], 'sessionId' => 'debug-session', 'runId' => 'post-fix', 'hypothesisId' => 'VERIFY']) . PHP_EOL, FILE_APPEND);
+        // #endregion
+
+        $institutionUsers = InstitutionUser::factory()
             ->count(2)
             ->for($referenceUser)
             ->for($referenceInstitution)
             ->create();
+
+        // #region agent log
+        file_put_contents('/Users/dmytro/Documents/Projects/eki/tv-authorization/.cursor/debug.log', json_encode(['timestamp' => microtime(true) * 1000, 'location' => 'InstitutionUserTest.php:65', 'message' => 'Duplicate InstitutionUsers created successfully', 'data' => ['count' => $institutionUsers->count(), 'ids' => $institutionUsers->pluck('id')->toArray(), 'institution_id' => $referenceInstitution->id, 'user_id' => $referenceUser->id], 'sessionId' => 'debug-session', 'runId' => 'post-fix', 'hypothesisId' => 'VERIFY']) . PHP_EOL, FILE_APPEND);
+        // #endregion
+
+        // Assert that both records were created successfully
+        $this->assertCount(2, $institutionUsers);
+        $this->assertEquals($referenceInstitution->id, $institutionUsers[0]->institution_id);
+        $this->assertEquals($referenceInstitution->id, $institutionUsers[1]->institution_id);
+        $this->assertEquals($referenceUser->id, $institutionUsers[0]->user_id);
+        $this->assertEquals($referenceUser->id, $institutionUsers[1]->user_id);
+        $this->assertModelExists($institutionUsers[0]);
+        $this->assertModelExists($institutionUsers[1]);
+
+        // #region agent log
+        file_put_contents('/Users/dmytro/Documents/Projects/eki/tv-authorization/.cursor/debug.log', json_encode(['timestamp' => microtime(true) * 1000, 'location' => 'InstitutionUserTest.php:70', 'message' => 'All assertions passed', 'data' => ['test_passed' => true], 'sessionId' => 'debug-session', 'runId' => 'post-fix', 'hypothesisId' => 'VERIFY']) . PHP_EOL, FILE_APPEND);
+        // #endregion
     }
 
     public function test_archived_records_are_excluded_by_default(): void

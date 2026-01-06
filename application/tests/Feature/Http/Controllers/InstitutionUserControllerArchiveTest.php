@@ -405,8 +405,8 @@ class InstitutionUserControllerArchiveTest extends AuditLogTestCase
      *
      * @throws Throwable
      */
-    public function createStandardSuccessCaseInstitutionUsersAndRoles(Closure $modifyTargetUser = null,
-        Closure $modifyActingUser = null): array
+    public function createStandardSuccessCaseInstitutionUsersAndRoles(?Closure $modifyTargetUser = null,
+        ?Closure $modifyActingUser = null): array
     {
         [
             $targetInstitutionUser,

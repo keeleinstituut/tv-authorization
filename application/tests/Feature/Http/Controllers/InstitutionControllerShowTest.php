@@ -20,7 +20,8 @@ class InstitutionControllerShowTest extends InstitutionControllerTestCase
     /** @return array<array{
      *     ?Closure(Institution):void,
      *     ?Closure(InstitutionUser):void,
-     *     int
+     *     int,
+     *     bool
      * }> */
     public static function provideInstitutionModifiersExpectedResponseStatus(): array
     {
@@ -29,26 +30,31 @@ class InstitutionControllerShowTest extends InstitutionControllerTestCase
                 null,
                 null,
                 Response::HTTP_OK,
+                false, // isPublicRepresentation
             ],
             'Institution with short name' => [
                 fn (Institution $institution) => $institution->fill(['short_name' => 'ÜKS']),
                 null,
                 Response::HTTP_OK,
+                false,
             ],
             'Institution with departments' => [
                 fn (Institution $institution) => Department::factory(3)->for($institution)->create(),
                 null,
                 Response::HTTP_OK,
+                false,
             ],
             'Soft-deleted institution' => [
                 fn (Institution $institution) => $institution->deleteOrFail(),
                 null,
                 Response::HTTP_NOT_FOUND,
+                false,
             ],
             'Acting user belongs to another institution' => [
                 null,
                 fn (InstitutionUser $institutionUser) => $institutionUser->institution()->associate(Institution::factory()->create()),
-                Response::HTTP_NOT_FOUND,
+                Response::HTTP_OK,
+                true, // isPublicRepresentation
             ],
         ];
     }
@@ -62,7 +68,8 @@ class InstitutionControllerShowTest extends InstitutionControllerTestCase
     public function test_expected_response_returned_for_institution(
         ?Closure $modifyInstitution,
         ?Closure $modifyActingInstitutionUser,
-        int $expectedResponseStatus): void
+        int $expectedResponseStatus,
+        bool $isPublicRepresentation): void
     {
         [
             'institution' => $institution,
@@ -72,9 +79,22 @@ class InstitutionControllerShowTest extends InstitutionControllerTestCase
         $response = $this->sendShowRequestWithExpectedHeaders($institution->id, $actingInstitutionUser);
 
         if ($expectedResponseStatus === Response::HTTP_OK) {
-            $response->assertOk()->assertJson([
-                'data' => RepresentationHelpers::createInstitutionFlatRepresentation($institution),
-            ]);
+            if ($isPublicRepresentation) {
+                $response->assertOk()->assertJson([
+                    'data' => [
+                        'id' => $institution->id,
+                        'name' => $institution->name,
+                    ],
+                ]);
+                // Ensure only public fields are present
+                $response->assertJsonMissing(['short_name']);
+                $response->assertJsonMissing(['phone']);
+                $response->assertJsonMissing(['email']);
+            } else {
+                $response->assertOk()->assertJson([
+                    'data' => RepresentationHelpers::createInstitutionFlatRepresentation($institution),
+                ]);
+            }
         } else {
             $response->assertStatus($expectedResponseStatus);
         }
