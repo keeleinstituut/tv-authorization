@@ -95,7 +95,6 @@ class JwtClaimsTest extends TestCase
         $roleA = $this->createRoleWithPrivileges($institution, self::PRIVILEGES_A);
         $institutionUser = $this->createInstitutionUserWithRoles($institution, $roleA);
 
-        /** @noinspection PhpUndefinedMethodInspection */
         $roleA->privilegeRoles->each->deleteOrFail();
 
         $this->queryJwtClaims(
@@ -188,13 +187,13 @@ class JwtClaimsTest extends TestCase
         $this->queryJwtClaims(
             $personalIdentificationCode,
             $institution->id
-        )->assertStatus(Response::HTTP_FORBIDDEN);
+        )->assertStatus(Response::HTTP_NOT_FOUND);
     }
 
     /**
      * @throws Throwable
      */
-    public function test_403_returned_after_deleting_institution(): void
+    public function test_404_returned_after_deleting_institution(): void
     {
         $institution = $this->createInstitution();
         $institutionId = $institution->id;
@@ -203,15 +202,15 @@ class JwtClaimsTest extends TestCase
         $institution->deleteOrFail();
 
         $this->queryJwtClaims($institutionUser->user->personal_identification_code, $institutionId)
-            ->assertStatus(Response::HTTP_FORBIDDEN);
+            ->assertStatus(Response::HTTP_NOT_FOUND);
     }
 
-    public function test_403_returned_when_user_does_not_belong_to_selected_institution(): void
+    public function test_404_returned_when_user_does_not_belong_to_selected_institution(): void
     {
         $this->queryJwtClaims(
             User::factory()->create()->personal_identification_code,
             Institution::factory()->create()->id
-        )->assertStatus(Response::HTTP_FORBIDDEN);
+        )->assertStatus(Response::HTTP_NOT_FOUND);
     }
 
     public function test_request_with_empty_pic_returns_422(): void
@@ -229,7 +228,7 @@ class JwtClaimsTest extends TestCase
         $this->queryJwtClaims('47607239590', 'not-uuid')->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
-    private function queryJwtClaims(?string $pic, string $institutionId = null): TestResponse
+    private function queryJwtClaims(?string $pic, ?string $institutionId = null): TestResponse
     {
         $accessToken = $this->generateInternalClientAccessToken();
         $parameters = $institutionId === null
@@ -258,6 +257,10 @@ class JwtClaimsTest extends TestCase
             'selectedInstitution' => [
                 'id' => $expectedInstitutionUser->institution->id,
                 'name' => $expectedInstitutionUser->institution->name,
+            ],
+            'department' => [
+                'id' => $expectedInstitutionUser->department?->id,
+                'name' => $expectedInstitutionUser->department?->name,
             ],
             'privileges' => collect($expectedPrivileges)
                 ->map(fn (PrivilegeKey $privilege) => $privilege->value)

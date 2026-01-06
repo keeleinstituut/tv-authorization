@@ -19,12 +19,12 @@ use App\Models\Scopes\ExcludeArchivedInstitutionUsersScope;
 use App\Models\Scopes\ExcludeDeactivatedInstitutionUsersScope;
 use App\Policies\InstitutionUserPolicy;
 use App\Util\DateUtil;
-use Arr;
 use AuditLogClient\Services\AuditLogMessageBuilder;
 use AuditLogClient\Services\AuditLogPublisher;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -429,9 +429,11 @@ class InstitutionUserController extends Controller
         }
         if (Arr::has($validatedInput, 'roles')) {
             $institutionUser->roles()->sync($validatedInput['roles']);
+            $institutionUser->load('roles');
         }
         if (Arr::has($validatedInput, 'department_id')) {
             $institutionUser->department()->associate($validatedInput['department_id']);
+            $institutionUser->load('department');
         }
     }
 }

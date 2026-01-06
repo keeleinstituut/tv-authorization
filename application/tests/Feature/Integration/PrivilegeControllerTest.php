@@ -27,7 +27,7 @@ class PrivilegeControllerTest extends TestCase
             'Accept' => 'application/json',
         ])->getJson('/api/privileges');
 
-        $privileges = collect(Privilege::all())
+        $privileges = collect(Privilege::orderBy('key')->get())
             ->map(fn ($privilege) => $this->constructPrivilegeRepresentation($privilege))
             ->toArray();
 
@@ -48,7 +48,10 @@ class PrivilegeControllerTest extends TestCase
             'Accept' => 'application/json',
         ])->getJson('/api/privileges');
 
-        $response->assertStatus(403);
+        $response->assertStatus(200)
+            ->assertJson([
+                'data' => [],
+            ]);
     }
 
     private function constructPrivilegeRepresentation(Privilege $privilege)

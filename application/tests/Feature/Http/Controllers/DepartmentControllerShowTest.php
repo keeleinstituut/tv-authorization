@@ -8,6 +8,8 @@ use App\Models\Institution;
 use App\Models\InstitutionUser;
 use Closure;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\AuthHelpers;
 use Tests\Feature\RepresentationHelpers;
@@ -41,11 +43,11 @@ class DepartmentControllerShowTest extends DepartmentControllerTestCase
         ];
     }
 
-    /** @dataProvider provideDepartmentModifiersExpectedResponseStatus
-     * @param  ?Closure(Department):void  $modifyDepartment
+    /** @param  ?Closure(Department):void  $modifyDepartment
      *
      * @throws Throwable
      */
+    #[DataProvider('provideDepartmentModifiersExpectedResponseStatus')]
     public function test_expected_response_returned_for_target_department(?Closure $modifyDepartment, int $expectedResponseStatus): void
     {
         [
@@ -64,10 +66,10 @@ class DepartmentControllerShowTest extends DepartmentControllerTestCase
         }
     }
 
-    /** @dataProvider \Tests\Feature\DataProviders::provideInvalidHeaderCreators
-     * @param  Closure():array  $createHeader
+    /** @param  Closure():array  $createHeader
      *
      * @throws Throwable */
+    #[DataProviderExternal('Tests\Feature\DataProviders', 'provideInvalidHeaderCreators')]
     public function test_401_when_not_authenticated(Closure $createHeader): void
     {
         [

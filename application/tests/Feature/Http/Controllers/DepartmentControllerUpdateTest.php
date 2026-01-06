@@ -14,6 +14,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\AuthHelpers;
 use Tests\Feature\RepresentationHelpers;
@@ -21,6 +23,13 @@ use Throwable;
 
 class DepartmentControllerUpdateTest extends DepartmentControllerTestCase
 {
+
+    public function setUp(): void
+    {
+        parent::setUp();
+        $this->markTestSkipped('Skipping all tests. Update endpoint is deprecated');
+    }
+
     /** @return array<array{
      *     modifyTargetDepartment: Closure(Department):void,
      *     nameToSet: string,
@@ -96,12 +105,12 @@ class DepartmentControllerUpdateTest extends DepartmentControllerTestCase
         ];
     }
 
-    /** @dataProvider provideExistingStateModifiersAndCorrespondingValidNewNames
-     * @param  Closure(Department):void  $modifyTargetDepartment
+    /** @param  Closure(Department):void  $modifyTargetDepartment
      * @param  Closure(Institution):void  $createAdditionalDepartments
      *
      * @throws Throwable
      */
+    #[DataProvider('provideExistingStateModifiersAndCorrespondingValidNewNames')]
     public function test_targeted_department_is_updated_when_no_conflict_with_existing_state(Closure $modifyTargetDepartment,
         Closure $createAdditionalDepartments,
         string $nameToSet): void
@@ -174,9 +183,9 @@ class DepartmentControllerUpdateTest extends DepartmentControllerTestCase
         ];
     }
 
-    /** @dataProvider provideExistingStateModifiersAndCorrespondingInvalidNewNames
-     * @throws Throwable
+    /** @throws Throwable
      */
+    #[DataProvider('provideExistingStateModifiersAndCorrespondingInvalidNewNames')]
     public function test_nothing_is_changed_when_existing_state_conflicts_with_request(Closure $modifyTargetDepartment,
         Closure $createAdditionalDepartments,
         string $nameToSet): void
@@ -225,8 +234,8 @@ class DepartmentControllerUpdateTest extends DepartmentControllerTestCase
         ];
     }
 
-    /** @dataProvider provideActingUserInvalidatorsAndExpectedResponseStatus
-     * @throws Throwable */
+    /** @throws Throwable */
+    #[DataProvider('provideActingUserInvalidatorsAndExpectedResponseStatus')]
     public function test_nothing_is_changed_when_acting_user_forbidden(Closure $modifyActingInstitutionUser, int $expectedResponseStatus): void
     {
         [
@@ -265,10 +274,10 @@ class DepartmentControllerUpdateTest extends DepartmentControllerTestCase
         ];
     }
 
-    /** @dataProvider provideRequestPayloadInvalidators
-     * @param  Closure():array  $createInvalidPayload
+    /** @param  Closure():array  $createInvalidPayload
      *
      * @throws Throwable */
+    #[DataProvider('provideRequestPayloadInvalidators')]
     public function test_nothing_is_changed_when_payload_invalid(Closure $createInvalidPayload): void
     {
         [
@@ -291,10 +300,10 @@ class DepartmentControllerUpdateTest extends DepartmentControllerTestCase
         );
     }
 
-    /** @dataProvider \Tests\Feature\DataProviders::provideInvalidHeaderCreators
-     * @param  Closure():array  $createHeader
+    /** @param  Closure():array  $createHeader
      *
      * @throws Throwable */
+    #[DataProviderExternal('Tests\Feature\DataProviders', 'provideInvalidHeaderCreators')]
     public function test_nothing_is_changed_when_authentication_impossible(Closure $createHeader): void
     {
         [
@@ -355,9 +364,9 @@ class DepartmentControllerUpdateTest extends DepartmentControllerTestCase
      *
      * @throws Throwable
      */
-    public function setUpFixture(Closure $modifyTargetDepartment = null,
-        Closure $modifyAnyState = null,
-        Closure $modifyActingInstitutionUser = null): array
+    public function setUpFixture(?Closure $modifyTargetDepartment = null,
+        ?Closure $modifyAnyState = null,
+        ?Closure $modifyActingInstitutionUser = null): array
     {
         [
             'actingInstitutionUser' => $actingInstitutionUser,
@@ -384,6 +393,7 @@ class DepartmentControllerUpdateTest extends DepartmentControllerTestCase
             $modifyAnyState($institution);
         }
 
+        /** @var Department $targetDepartment */
         $targetDepartment = $createdDepartments->first();
 
         $otherDepartments = $institution->departments

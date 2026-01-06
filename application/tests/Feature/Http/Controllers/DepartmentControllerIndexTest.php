@@ -9,6 +9,8 @@ use App\Models\InstitutionUser;
 use Closure;
 use Illuminate\Support\Collection;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
 use Tests\AuthHelpers;
 use Tests\Feature\RepresentationHelpers;
 use Throwable;
@@ -50,11 +52,11 @@ class DepartmentControllerIndexTest extends DepartmentControllerTestCase
     }
 
     /**
-     * @dataProvider provideDepartmentModifiersWithExpectedResponseIds
      *
      * @param  iterable<?Closure(Department):void>  $departmentModifiers
      *
      * @throws Throwable */
+    #[DataProvider('provideDepartmentModifiersWithExpectedResponseIds')]
     public function test_expected_departments_listed(iterable $departmentModifiers, ?int $expectedExcludedDepartmentIndex): void
     {
         [
@@ -74,10 +76,10 @@ class DepartmentControllerIndexTest extends DepartmentControllerTestCase
         $response->assertOk();
     }
 
-    /** @dataProvider \Tests\Feature\DataProviders::provideInvalidHeaderCreators
-     * @param  Closure():array  $createHeader
+    /** @param  Closure():array  $createHeader
      *
      * @throws Throwable */
+    #[DataProviderExternal('Tests\Feature\DataProviders', 'provideInvalidHeaderCreators')]
     public function test_401_when_not_authenticated(Closure $createHeader): void
     {
         $this->createDepartmentsAndActingUserInSameInstitution(null, null);

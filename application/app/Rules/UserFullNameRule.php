@@ -23,4 +23,9 @@ class UserFullNameRule implements ValidationRule
             $fail('The :attribute is too long. Max available length is '.self::MAX_LENGTH);
         }
     }
+
+    public static function rule(): UserFullNameRule
+    {
+        return new UserFullNameRule();
+    }
 }

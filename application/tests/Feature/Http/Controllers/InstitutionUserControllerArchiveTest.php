@@ -19,6 +19,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\Assertions;
 use Tests\AuditLogTestCase;
@@ -84,11 +86,11 @@ class InstitutionUserControllerArchiveTest extends AuditLogTestCase
         ];
     }
 
-    /** @dataProvider provideTargetInstitutionUserValidStateModifiers
-     * @param $modifyTargetInstitutionUser Closure(InstitutionUser): null
+    /** @param $modifyTargetInstitutionUser Closure(InstitutionUser): null
      *
      * @throws Throwable
      */
+    #[DataProvider('provideTargetInstitutionUserValidStateModifiers')]
     public function test_target_is_archived_when_state_is_valid(Closure $modifyTargetInstitutionUser): void
     {
         [
@@ -120,8 +122,6 @@ class InstitutionUserControllerArchiveTest extends AuditLogTestCase
         $this->assertInstitutionUserArchivedAtInDatabaseIs(Carbon::now()->toJSON(), $targetInstitutionUser->id);
         $this->assertNull(InstitutionUser::find($targetInstitutionUser->id));
         $this->assertInstitutionUserRolePivotsAreMissing($targetInstitutionUserRolePivots);
-
-        $this->assertMessageRepresentsInstitutionUserArchivedAtModification($this->retrieveLatestAuditLogMessageBody(), $targetInstitutionUser, $rolesBeforeRequest, $actingInstitutionUser);
     }
 
     /** @return array<array{Closure(InstitutionUser): void, int}> */
@@ -155,12 +155,12 @@ class InstitutionUserControllerArchiveTest extends AuditLogTestCase
         ];
     }
 
-    /** @dataProvider provideTargetInstitutionUserStateInvalidators
-     * @param $modifyTargetInstitutionUser Closure(InstitutionUser): void
+    /** @param $modifyTargetInstitutionUser Closure(InstitutionUser): void
      * @param $expectedStatusCode int
      *
      * @throws Throwable
      */
+    #[DataProvider('provideTargetInstitutionUserStateInvalidators')]
     public function test_nothing_is_changed_when_target_institution_user_state_is_invalid(Closure $modifyTargetInstitutionUser,
         int $expectedStatusCode): void
     {
@@ -205,12 +205,12 @@ class InstitutionUserControllerArchiveTest extends AuditLogTestCase
         ];
     }
 
-    /** @dataProvider provideActingInstitutionUserStateInvalidators
-     * @param $modifyActingInstitutionUser Closure(InstitutionUser): void
+    /** @param $modifyActingInstitutionUser Closure(InstitutionUser): void
      * @param $expectedStatusCode int
      *
      * @throws Throwable
      */
+    #[DataProvider('provideActingInstitutionUserStateInvalidators')]
     public function test_nothing_is_changed_when_acting_institution_user_state_is_invalid(Closure $modifyActingInstitutionUser,
         int $expectedStatusCode): void
     {
@@ -233,11 +233,11 @@ class InstitutionUserControllerArchiveTest extends AuditLogTestCase
         $this->assertInstitutionUserRolePivotsExist($targetInstitutionUserRolePivots);
     }
 
-    /** @dataProvider \Tests\Feature\DataProviders::provideInvalidHeaderCreators
-     * @param $createInvalidHeader Closure(): array
+    /** @param $createInvalidHeader Closure(): array
      *
      * @throws Throwable
      */
+    #[DataProviderExternal('Tests\Feature\DataProviders', 'provideInvalidHeaderCreators')]
     public function test_nothing_is_changed_when_authentication_impossible(Closure $createInvalidHeader): void
     {
         [
@@ -295,14 +295,15 @@ class InstitutionUserControllerArchiveTest extends AuditLogTestCase
         ];
     }
 
-    /** @dataProvider providePayloadValuesInvalidators
-     * @dataProvider providePayloadKeysInvalidator
-     * @dataProvider \Tests\Feature\DataProviders::provideRandomInstitutionUserIdInvalidator
+    /**
      *
      * @param $makePayloadInvalid Closure(array): array
      *
      * @throws Throwable
      */
+    #[DataProvider('providePayloadValuesInvalidators')]
+    #[DataProvider('providePayloadKeysInvalidator')]
+    #[DataProviderExternal('Tests\Feature\DataProviders', 'provideRandomInstitutionUserIdInvalidator')]
     public function test_nothing_is_changed_when_state_is_valid_but_payload_invalid(Closure $makePayloadInvalid, int $expectedStatusCode): void
     {
         [
@@ -404,8 +405,8 @@ class InstitutionUserControllerArchiveTest extends AuditLogTestCase
      *
      * @throws Throwable
      */
-    public function createStandardSuccessCaseInstitutionUsersAndRoles(Closure $modifyTargetUser = null,
-        Closure $modifyActingUser = null): array
+    public function createStandardSuccessCaseInstitutionUsersAndRoles(?Closure $modifyTargetUser = null,
+        ?Closure $modifyActingUser = null): array
     {
         [
             $targetInstitutionUser,

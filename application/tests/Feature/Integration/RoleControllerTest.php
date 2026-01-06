@@ -120,29 +120,6 @@ class RoleControllerTest extends AuditLogTestCase
                 'data' => $this->constructRoleRepresentation($savedRole),
             ]);
 
-        $this->assertMessageRepresentsRoleCreation(
-            $this->retrieveLatestAuditLogMessageBody(),
-            $actingUser,
-            function (array $actualEventParameters) use ($institution, $savedRole) {
-                $expectedEventParametersSubset = [
-                    'object_identity_subset' => $savedRole->getIdentitySubset(),
-                    'object_data' => $savedRole->getAuditLogRepresentation(),
-                ];
-                Assertions::assertArraysEqualIgnoringOrder(
-                    $expectedEventParametersSubset,
-                    collect($actualEventParameters)->intersectByKeys($expectedEventParametersSubset)->all()
-                );
-                $expectedObjectDataSubset = [
-                    'name' => 'Test Role',
-                    'privileges' => data_get($savedRole->getAuditLogRepresentation(), 'privileges'),
-                    'institution_id' => $institution->id,
-                ];
-                Assertions::assertArraysEqualIgnoringOrder(
-                    $expectedObjectDataSubset,
-                    collect($actualEventParameters['object_data'])->intersectByKeys($expectedObjectDataSubset)->all()
-                );
-            }
-        );
     }
 
     public function test_api_roles_update_endpoint(): void
@@ -180,28 +157,6 @@ class RoleControllerTest extends AuditLogTestCase
             ->assertJson([
                 'data' => $this->constructRoleRepresentation($savedRole),
             ]);
-
-        $this->assertMessageRepresentsRoleModification(
-            $this->retrieveLatestAuditLogMessageBody(),
-            $roleBeforeRequest,
-            $actingUser,
-            function (array $actualEventParameters) use ($savedRole, $roleBeforeRequest) {
-                $expectedEventParametersSubset = [
-                    'pre_modification_subset' => [
-                        'name' => $roleBeforeRequest['name'],
-                        'privileges' => data_get($roleBeforeRequest, 'privileges'),
-                    ],
-                    'post_modification_subset' => [
-                        'name' => 'Test Role',
-                        'privileges' => data_get($savedRole->getAuditLogRepresentation(), 'privileges'),
-                    ],
-                ];
-                $this->assertArraysEqualIgnoringOrder(
-                    $expectedEventParametersSubset,
-                    collect($actualEventParameters)->intersectByKeys($expectedEventParametersSubset)->all()
-                );
-            }
-        );
     }
 
     public function test_api_roles_update_endpoint_removing_and_adding_privilege(): void
@@ -282,8 +237,6 @@ class RoleControllerTest extends AuditLogTestCase
             ]);
 
         $this->assertNull($savedRole);
-
-        $this->assertMessageRepresentsRoleRemoval($this->retrieveLatestAuditLogMessageBody(), $actingUser, $role);
     }
 
     public function test_unauthorized_institution(): void

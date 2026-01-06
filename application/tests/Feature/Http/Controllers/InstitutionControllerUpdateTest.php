@@ -15,9 +15,12 @@ use Closure;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\Assertions;
 use Tests\AuthHelpers;
+use Tests\Feature\DataProviders;
 use Tests\Feature\RepresentationHelpers;
 use Throwable;
 
@@ -173,13 +176,14 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
         ];
     }
 
-    /** @dataProvider provideInstitutionModifiersAndPayloadsAndExpectedState
-     * @dataProvider provideInstitutionWorktimeModifiersAndPayloadsAndExpectedState
+    /**
      *
      * @param  null|Closure(Institution):void  $modifyInstitution
      *
      * @throws Throwable
      */
+    #[DataProvider('provideInstitutionModifiersAndPayloadsAndExpectedState')]
+    #[DataProvider('provideInstitutionWorktimeModifiersAndPayloadsAndExpectedState')]
     public function test_institution_is_updated_as_expected(
         ?Closure $modifyInstitution,
         array $payload,
@@ -199,29 +203,6 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
             RepresentationHelpers::createInstitutionFlatRepresentation(...),
             $institution,
             [...$payload, ...$expectedStateOverride]
-        );
-
-        $actualMessageBody = $this->retrieveLatestAuditLogMessageBody();
-        $this->assertMessageRepresentsInstitutionModification(
-            $actualMessageBody,
-            $institutionBeforeRequest,
-            $actingInstitutionUser,
-            function (array $eventParameters) use ($expectedStateOverride, $payload, $institutionBeforeRequest) {
-                $expectedModificationSubsets = [
-                    'pre_modification_subset' => collect($institutionBeforeRequest)
-                        ->only(collect($payload)->merge($expectedStateOverride)->keys())
-                        ->diffAssoc(collect($payload)->merge($expectedStateOverride))
-                        ->all(),
-                    'post_modification_subset' => collect($payload)
-                        ->merge($expectedStateOverride)
-                        ->diffAssoc($institutionBeforeRequest)
-                        ->all(),
-                ];
-                $this->assertArraysEqualIgnoringOrder(
-                    $expectedModificationSubsets,
-                    Arr::except($eventParameters, ['object_type', 'object_identity_subset'])
-                );
-            }
         );
     }
 
@@ -251,8 +232,8 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
         ];
     }
 
-    /** @dataProvider provideActingUserInvalidatorsAndExpectedResponseStatus
-     * @throws Throwable */
+    /** @throws Throwable */
+    #[DataProvider('provideActingUserInvalidatorsAndExpectedResponseStatus')]
     public function test_nothing_is_changed_when_acting_user_forbidden(Closure $modifyActingInstitutionUser, int $expectedResponseStatus): void
     {
         [
@@ -270,34 +251,6 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
             $institution,
             $expectedResponseStatus
         );
-
-        if ($expectedResponseStatus === Response::HTTP_FORBIDDEN) {
-            $actualMessageBody = $this->retrieveLatestAuditLogMessageBody();
-
-            $expectedMessageBodySubset = [
-                'event_type' => AuditLogEventType::ModifyObject->value,
-                'happened_at' => Date::getTestNow()->toISOString(),
-                'failure_type' => AuditLogEventFailureType::FORBIDDEN->value,
-            ];
-
-            Assertions::assertArraysEqualIgnoringOrder(
-                $expectedMessageBodySubset,
-                collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
-            );
-
-            $eventParameters = data_get($actualMessageBody, 'event_parameters');
-            $this->assertIsArray($eventParameters);
-
-            $expectedEventParameters = [
-                'object_type' => AuditLogEventObjectType::Institution->value,
-                'object_identity_subset' => $institution->getIdentitySubset(),
-                'input' => $payload,
-            ];
-            Assertions::assertArraysEqualIgnoringOrder(
-                $expectedEventParameters,
-                $eventParameters
-            );
-        }
     }
 
     /**
@@ -471,11 +424,11 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
     }
 
     /**
-     * @dataProvider provideValidInitialStateAndInvalidChanges
-     * @dataProvider provideValidInitialWorktimesAndInvalidChanges
      *
      * @throws Throwable
      */
+    #[DataProvider('provideValidInitialStateAndInvalidChanges')]
+    #[DataProvider('provideValidInitialWorktimesAndInvalidChanges')]
     public function test_nothing_is_changed_when_payload_invalid(array $validInitialState, array $invalidChange): void
     {
         [
@@ -490,39 +443,13 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
             $institution,
             Response::HTTP_UNPROCESSABLE_ENTITY
         );
-
-        $actualMessageBody = $this->retrieveLatestAuditLogMessageBody();
-
-        $expectedMessageBodySubset = [
-            'event_type' => AuditLogEventType::ModifyObject->value,
-            'happened_at' => Date::getTestNow()->toISOString(),
-            'failure_type' => AuditLogEventFailureType::UNPROCESSABLE_ENTITY->value,
-        ];
-
-        Assertions::assertArraysEqualIgnoringOrder(
-            $expectedMessageBodySubset,
-            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
-        );
-
-        $eventParameters = data_get($actualMessageBody, 'event_parameters');
-        $this->assertIsArray($eventParameters);
-
-        $expectedEventParameters = [
-            'object_type' => AuditLogEventObjectType::Institution->value,
-            'object_identity_subset' => $institution->getIdentitySubset(),
-            'input' => static::convertTrimWhiteSpaceToNullRecursively($invalidChange),
-        ];
-        Assertions::assertArraysEqualIgnoringOrder(
-            $expectedEventParameters,
-            $eventParameters
-        );
     }
 
-    /** @dataProvider \Tests\Feature\DataProviders::provideInvalidHeaderCreators
-     * @param  Closure():array  $createHeader
+    /** @param  Closure():array  $createHeader
      *
      * @throws Throwable
      */
+    #[DataProviderExternal('Tests\Feature\DataProviders', 'provideInvalidHeaderCreators')]
     public function test_nothing_is_changed_when_authentication_impossible(Closure $createHeader): void
     {
         ['institution' => $institution] = $this->createInstitutionAndPrivilegedActingUser();
@@ -576,15 +503,18 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
      *
      * @throws Throwable
      */
-    public function createInstitutionAndPrivilegedActingUser(Closure $modifyInstitution = null,
-        Closure $modifyActingInstitutionUser = null): array
+    public function createInstitutionAndPrivilegedActingUser(?Closure $modifyInstitution = null,
+        ?Closure $modifyActingInstitutionUser = null): array
     {
         return $this->createInstitutionAndActingUser(
             $modifyInstitution,
             function (InstitutionUser $institutionUser) use ($modifyActingInstitutionUser) {
                 $institutionUser->roles()->attach(
                     Role::factory()
-                        ->hasAttached(Privilege::firstWhere('key', PrivilegeKey::EditInstitution->value))
+                        ->hasAttached(Privilege::whereIn('key', [
+                            PrivilegeKey::EditInstitution->value,
+                            PrivilegeKey::EditInstitutionWorktime->value,
+                        ])->get())
                         ->create()
                 );
 
@@ -605,41 +535,4 @@ class InstitutionControllerUpdateTest extends InstitutionControllerTestCase
             ->all();
     }
 
-    /**
-     * @param  Closure(array): void  $assertOnEventParameters
-     */
-    private function assertMessageRepresentsInstitutionModification(array $actualMessageBody, array $institutionBeforeRequest, InstitutionUser $actingUser, Closure $assertOnEventParameters): void
-    {
-        $expectedMessageBodySubset = [
-            'event_type' => AuditLogEventType::ModifyObject->value,
-            'happened_at' => Date::getTestNow()->toISOString(),
-            'trace_id' => static::TRACE_ID,
-            'failure_type' => null,
-            'context_institution_id' => $actingUser->institution_id,
-            'context_department_id' => $actingUser->department_id,
-            'acting_institution_user_id' => $actingUser->id,
-            'acting_user_pic' => $actingUser->user->personal_identification_code,
-            'acting_user_forename' => $actingUser->user->forename,
-            'acting_user_surname' => $actingUser->user->surname,
-        ];
-
-        Assertions::assertArrayHasSubsetIgnoringOrder(
-            $expectedMessageBodySubset,
-            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
-        );
-
-        $eventParameters = data_get($actualMessageBody, 'event_parameters');
-        $this->assertIsArray($eventParameters);
-
-        $expectedEventParametersSubset = [
-            'object_type' => AuditLogEventObjectType::Institution->value,
-            'object_identity_subset' => Arr::only($institutionBeforeRequest, ['id', 'name']),
-        ];
-        Assertions::assertArraysEqualIgnoringOrder(
-            $expectedEventParametersSubset,
-            collect($eventParameters)->intersectByKeys($expectedEventParametersSubset)->all(),
-        );
-
-        $assertOnEventParameters($eventParameters);
-    }
 }

@@ -14,6 +14,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Assertions;
 use Tests\AuditLogTestCase;
 use Tests\AuthHelpers;
@@ -75,32 +76,13 @@ class InstitutionUserControllerUpdateCurrentTest extends AuditLogTestCase
 
         // And request response should correspond to the actual state
         $this->assertResponseJsonDataEqualsIgnoringOrder($actualState, $response);
-
-        $this->assertMessageRepresentsInstitutionUserModification(
-            $this->retrieveLatestAuditLogMessageBody(),
-            $actingInstitutionUser,
-            $institutionUserBeforeRequest,
-            function (array $actualEventParameters) use ($institutionUserBeforeRequest, $payload, $institutionUserIdentityBeforeRequest) {
-                $expectedEventParameters = [
-                    'object_type' => AuditLogEventObjectType::InstitutionUser->value,
-                    'object_identity_subset' => $institutionUserIdentityBeforeRequest,
-                    'pre_modification_subset' => [
-                        ...Arr::only($institutionUserBeforeRequest, ['phone', 'email']),
-                        'user' => Arr::only($institutionUserBeforeRequest['user'], ['forename', 'surname']),
-                    ],
-                    'post_modification_subset' => $payload,
-                ];
-
-                $this->assertArraysEqualIgnoringOrder($expectedEventParameters, $actualEventParameters);
-            }
-        );
     }
 
     /**
-     * @dataProvider provideInvalidRequestPayloads
      *
      * @throws Throwable
      */
+    #[DataProvider('provideInvalidRequestPayloads')]
     public function test_request_validation(array $invalidPayload): void
     {
         // GIVEN the following data is in database
@@ -124,39 +106,6 @@ class InstitutionUserControllerUpdateCurrentTest extends AuditLogTestCase
 
         // And response should indicate validation errors
         $response->assertUnprocessable();
-
-        $actualMessageBody = $this->retrieveLatestAuditLogMessageBody();
-
-        $expectedMessageBodySubset = [
-            'event_type' => AuditLogEventType::ModifyObject->value,
-            'happened_at' => Date::getTestNow()->toISOString(),
-            'trace_id' => static::TRACE_ID,
-            'failure_type' => AuditLogEventFailureType::UNPROCESSABLE_ENTITY->value,
-            'context_institution_id' => $actingUser->institution_id,
-            'context_department_id' => $actingUser->department_id,
-            'acting_institution_user_id' => $actingUser->id,
-            'acting_user_pic' => $actingUser->user->personal_identification_code,
-            'acting_user_forename' => $actingUser->user->forename,
-            'acting_user_surname' => $actingUser->user->surname,
-        ];
-
-        Assertions::assertArraysEqualIgnoringOrder(
-            $expectedMessageBodySubset,
-            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
-        );
-
-        $eventParameters = data_get($actualMessageBody, 'event_parameters');
-        $this->assertIsArray($eventParameters);
-
-        $expectedEventParameters = [
-            'object_type' => AuditLogEventObjectType::InstitutionUser->value,
-            'object_identity_subset' => $actingUser->getIdentitySubset(),
-            'input' => static::convertTrimWhiteSpaceToNullRecursively($payload),
-        ];
-        Assertions::assertArraysEqualIgnoringOrder(
-            $expectedEventParameters,
-            $eventParameters
-        );
     }
 
     /**

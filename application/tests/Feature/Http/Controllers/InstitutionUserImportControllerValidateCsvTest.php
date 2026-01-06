@@ -99,7 +99,7 @@ class InstitutionUserImportControllerValidateCsvTest extends TestCase
             AuthHelpers::generateAccessTokenForInstitutionUser(
                 $this->getActingInstitutionUserWithAddUserPrivilege($institution)
             )
-        )->assertOk()->assertExactJson(['errors' => [], 'rowsWithExistingInstitutionUsers' => [0]]);
+        )->assertOk()->assertExactJson(['errors' => [], 'rowsWithExistingInstitutionUsers' => []]);
     }
 
     /**

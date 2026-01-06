@@ -39,17 +39,6 @@ class AuditLogTestCase extends TestCase
         $channel->queue_purge(env('AUDIT_LOG_EVENTS_QUEUE'));
     }
 
-    protected function assertMessageIsReceived(array $expectedBody, bool $checkIsSubset = false): void
-    {
-        $actualBody = $this->retrieveLatestAuditLogMessageBody();
-
-        if ($checkIsSubset) {
-            Assertions::assertArrayHasSubsetIgnoringOrder($expectedBody, $actualBody);
-        } else {
-            Assertions::assertArraysEqualIgnoringOrder($expectedBody, $actualBody);
-        }
-    }
-
     protected function retrieveLatestAuditLogMessageBody(): ?array
     {
         /** @var AMQPChannel $channel */
@@ -69,9 +58,9 @@ class AuditLogTestCase extends TestCase
         AuditLogEventType $eventType,
         CarbonInterface $happenedAt,
         InstitutionUser $institutionUser,
-        array $eventParameters = null,
-        AuditLogEventFailureType $failureType = null,
-        string $traceId = null,
+        ?array $eventParameters = null,
+        ?AuditLogEventFailureType $failureType = null,
+        ?string $traceId = null,
     ): array {
         return static::createExpectedMessageBody(
             $eventType,
@@ -91,15 +80,15 @@ class AuditLogTestCase extends TestCase
     public static function createExpectedMessageBody(
         AuditLogEventType $eventType,
         CarbonInterface $happenedAt,
-        string $actingUserPic = null,
-        string $actingUserForename = null,
-        string $actingUserSurname = null,
-        string $actingInstitutionUserId = null,
-        string $contextInstitutionId = null,
-        string $contextDepartmentId = null,
-        array $eventParameters = null,
-        AuditLogEventFailureType $failureType = null,
-        string $traceId = null,
+        ?string $actingUserPic = null,
+        ?string $actingUserForename = null,
+        ?string $actingUserSurname = null,
+        ?string $actingInstitutionUserId = null,
+        ?string $contextInstitutionId = null,
+        ?string $contextDepartmentId = null,
+        ?array $eventParameters = null,
+        ?AuditLogEventFailureType $failureType = null,
+        ?string $traceId = null,
     ): array {
         return [
             'happened_at' => $happenedAt->toISOString(),
