@@ -28,6 +28,9 @@ RUN chown -R root:root ${APP_ROOT} && \
     find ${APP_ROOT} -type d -exec chmod 755 {} \; && \
     chmod -R 775 ${APP_ROOT}/storage ${APP_ROOT}/bootstrap/cache
 
+RUN rm -rf ${WEB_ROOT} && \
+        ln -s ${APP_ROOT}/public ${WEB_ROOT}
+
 RUN apk add --no-cache nginx supervisor curl
 
 RUN sed -i 's/^\(\[supervisord\]\)$/\1\nnodaemon=true\nuser=root/' /etc/supervisord.conf && \
