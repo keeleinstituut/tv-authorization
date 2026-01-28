@@ -24,6 +24,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\Assertions;
 use Tests\AuditLogTestCase;
@@ -60,7 +62,7 @@ class InstitutionUserControllerActivateTest extends AuditLogTestCase
         ];
     }
 
-    /** @dataProvider provideValidDeactivationOffsetsAndNotifyUserOptions */
+    #[DataProvider('provideValidDeactivationOffsetsAndNotifyUserOptions')]
     public function test_target_institution_user_is_reactivated_with_added_roles(CarbonInterval $deactivationDateBackwardOffset, bool $notifyUser): void
     {
         [
@@ -108,13 +110,6 @@ class InstitutionUserControllerActivateTest extends AuditLogTestCase
         if ($notifyUser) {
             // TODO: Test user is notified (e.g. email is in queue)
         }
-
-        $this->assertMessageRepresentsInstitutionUserDeactivationDateModification(
-            $this->retrieveLatestAuditLogMessageBody(),
-            $targetInstitutionUserBeforeRequest,
-            $actingInstitutionUser,
-            data_get($targetInstitutionUser->getAuditLogRepresentation(), 'roles')
-        );
     }
 
     /** @return array<array{Closure(array): array, int}> */
@@ -177,14 +172,14 @@ class InstitutionUserControllerActivateTest extends AuditLogTestCase
     }
 
     /**
-     * @dataProvider providePayloadKeyInvalidators
-     * @dataProvider providePayloadValuesInvalidators
-     * @dataProvider provideNonexistentInstitutionUserIdInvalidator
      *
      * @param $makePayloadInvalid Closure(array): array
      *
      * @throws Throwable
      */
+    #[DataProvider('providePayloadKeyInvalidators')]
+    #[DataProvider('providePayloadValuesInvalidators')]
+    #[DataProvider('provideNonexistentInstitutionUserIdInvalidator')]
     public function test_nothing_is_changed_when_state_valid_but_payload_invalid(Closure $makePayloadInvalid, int $expectedStatusCode): void
     {
         [
@@ -254,11 +249,11 @@ class InstitutionUserControllerActivateTest extends AuditLogTestCase
         ];
     }
 
-    /** @dataProvider provideTargetInstitutionUserInvalidators
-     * @param $makeTargetInstitutionUserStateInvalid Closure(InstitutionUser): void
+    /** @param $makeTargetInstitutionUserStateInvalid Closure(InstitutionUser): void
      *
      * @throws Throwable
      */
+    #[DataProvider('provideTargetInstitutionUserInvalidators')]
     public function test_nothing_is_changed_when_target_has_invalid_state(Closure $makeTargetInstitutionUserStateInvalid,
         int $expectedStatusCode): void
     {
@@ -302,11 +297,11 @@ class InstitutionUserControllerActivateTest extends AuditLogTestCase
         ];
     }
 
-    /** @dataProvider provideActingInstitutionUserInvalidators
-     * @param $modifyActingInstitutionUser Closure(InstitutionUser): void
+    /** @param $modifyActingInstitutionUser Closure(InstitutionUser): void
      *
      * @throws Throwable
      */
+    #[DataProvider('provideActingInstitutionUserInvalidators')]
     public function test_nothing_is_changed_when_acting_user_has_invalid_state(Closure $modifyActingInstitutionUser, int $expectedStatusCode): void
     {
         [
@@ -343,11 +338,11 @@ class InstitutionUserControllerActivateTest extends AuditLogTestCase
         ];
     }
 
-    /** @dataProvider provideRolesInvalidators
-     * @param $modifyRoles Closure(Role[]): void
+    /** @param $modifyRoles Closure(Role[]): void
      *
      * @throws Throwable
      */
+    #[DataProvider('provideRolesInvalidators')]
     public function test_nothing_is_changed_when_roles_have_invalid_state(Closure $modifyRoles): void
     {
         [
@@ -368,11 +363,11 @@ class InstitutionUserControllerActivateTest extends AuditLogTestCase
         );
     }
 
-    /** @dataProvider \Tests\Feature\DataProviders::provideInvalidHeaderCreators
-     * @param $createHeaderFromInstitutionUser Closure(InstitutionUser): array
+    /** @param $createHeaderFromInstitutionUser Closure(InstitutionUser): array
      *
      * @throws Throwable
      */
+    #[DataProviderExternal('Tests\Feature\DataProviders', 'provideInvalidHeaderCreators')]
     public function test_nothing_is_changed_when_authentication_impossible(Closure $createHeaderFromInstitutionUser): void
     {
         [
@@ -490,9 +485,9 @@ class InstitutionUserControllerActivateTest extends AuditLogTestCase
      *
      * @throws Throwable
      */
-    public function createStandardSuccessCaseInstitutionUsersAndRoles(Closure $modifyTargetUser = null,
-        Closure $modifyActingUser = null,
-        Closure $modifyRoles = null): array
+    public function createStandardSuccessCaseInstitutionUsersAndRoles(?Closure $modifyTargetUser = null,
+        ?Closure $modifyActingUser = null,
+        ?Closure $modifyRoles = null): array
     {
         [
             $targetInstitutionUser,

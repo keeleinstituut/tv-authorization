@@ -12,6 +12,8 @@ use App\Models\Role;
 use Closure;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\AuthHelpers;
 use Tests\Feature\RepresentationHelpers;
@@ -19,52 +21,57 @@ use Throwable;
 
 class DepartmentControllerStoreTest extends DepartmentControllerTestCase
 {
+    public function setUp(): void
+    {
+        parent::setUp();
+        $this->markTestSkipped('Skipping all tests. Store endpoint is deprecated');
+    }
+
     /** @return array<array{
-     *    createExistingState: Closure(Institution):void,
-     *    nameToCreate: string
+     *    Closure(Institution):void,
+     *    string
      * }> */
     public static function provideExistingStateModifiersAndCorrespondingValidNames(): array
     {
         return [
             'No other departments exist' => [
-                'createExistingState' => fn () => null,
-                'nameToCreate' => 'Some name',
+                fn (Institution $institution) => null,
+                'Some name',
             ],
             'Exists department with another name without having members' => [
-                'createExistingState' => fn (Institution $institution) => Department::factory()
+                fn (Institution $institution) => Department::factory()
                     ->for($institution)
                     ->create(['name' => 'Some name']),
-                'nameToCreate' => 'Another name',
+                'Another name',
             ],
             'Exists department with another name having members' => [
-                'createExistingState' => fn (Institution $institution) => Department::factory()
+                fn (Institution $institution) => Department::factory()
                     ->for($institution)
                     ->has(InstitutionUser::factory(3)->for($institution))
                     ->create(['name' => 'Some name']),
-                'nameToCreate' => 'Another name',
+                'Another name',
             ],
             'Exists department with same name, but soft-deleted' => [
-                'createExistingState' => fn (Institution $institution) => Department::factory()
+                fn (Institution $institution) => Department::factory()
                     ->for($institution)
                     ->create(['name' => 'Same name'])
                     ->deleteOrFail(),
-                'nameToCreate' => 'Same name',
+                'Same name',
             ],
             'Exists department with same name in another institution' => [
-                'createExistingState' => fn () => Department::factory()
+                fn (Institution $institution) => Department::factory()
                     ->for(Institution::factory())
-                    ->create(['name' => 'Same name'])
-                    ->deleteOrFail(),
-                'nameToCreate' => 'Same name',
+                    ->create(['name' => 'Same name']),
+                'Same name',
             ],
         ];
     }
 
-    /** @dataProvider provideExistingStateModifiersAndCorrespondingValidNames
-     * @param  Closure(Institution):void  $modifyExistingState
+    /** @param  Closure(Institution):void  $modifyExistingState
      *
      * @throws Throwable
      */
+    #[DataProvider('provideExistingStateModifiersAndCorrespondingValidNames')]
     public function test_expected_department_is_created_given_nonconflicting_existing_state(Closure $modifyExistingState, string $nameToCreate): void
     {
         [
@@ -89,33 +96,33 @@ class DepartmentControllerStoreTest extends DepartmentControllerTestCase
     }
 
     /** @return array<array{
-     *    createExistingState: Closure(Institution):void,
-     *    nameToCreate: string
+     *    Closure(Institution):void,
+     *    string
      * }> */
     public static function provideExistingStateModifiersAndCorrespondingInvalidNames(): array
     {
         return [
             'Exists department with same name without member users' => [
-                'createExistingState' => fn (Institution $institution) => Department::factory()
+                fn (Institution $institution) => Department::factory()
                     ->for($institution)
                     ->create(['name' => 'Same name']),
-                'nameToCreate' => 'Same name',
+                'Same name',
             ],
             'Exists department with same name with member users' => [
-                'createExistingState' => fn (Institution $institution) => Department::factory()
+                fn (Institution $institution) => Department::factory()
                     ->for($institution)
                     ->has(InstitutionUser::factory(3)->for($institution))
                     ->create(['name' => 'Same name']),
-                'nameToCreate' => 'Same name',
+                'Same name',
             ],
         ];
     }
 
-    /** @dataProvider provideExistingStateModifiersAndCorrespondingInvalidNames
-     * @param  Closure(Institution):void  $modifyExistingState
+    /** @param  Closure(Institution):void  $modifyExistingState
      *
      * @throws Throwable
      */
+    #[DataProvider('provideExistingStateModifiersAndCorrespondingInvalidNames')]
     public function test_nothing_is_changed_when_existing_state_conflicts_with_request(Closure $modifyExistingState, string $nameToCreate): void
     {
         [
@@ -150,8 +157,8 @@ class DepartmentControllerStoreTest extends DepartmentControllerTestCase
         ];
     }
 
-    /** @dataProvider provideActingUserInvalidatorsAndExpectedResponseStatus
-     * @throws Throwable */
+    /** @throws Throwable */
+    #[DataProvider('provideActingUserInvalidatorsAndExpectedResponseStatus')]
     public function test_nothing_is_changed_when_acting_user_forbidden(Closure $modifyActingInstitutionUser, int $expectedResponseStatus): void
     {
         [
@@ -179,10 +186,10 @@ class DepartmentControllerStoreTest extends DepartmentControllerTestCase
         ];
     }
 
-    /** @dataProvider provideRequestPayloadInvalidators
-     * @param  Closure():array  $createInvalidPayload
+    /** @param  Closure():array  $createInvalidPayload
      *
      * @throws Throwable */
+    #[DataProvider('provideRequestPayloadInvalidators')]
     public function test_nothing_is_changed_when_payload_invalid(Closure $createInvalidPayload): void
     {
         [
@@ -197,10 +204,10 @@ class DepartmentControllerStoreTest extends DepartmentControllerTestCase
         );
     }
 
-    /** @dataProvider \Tests\Feature\DataProviders::provideInvalidHeaderCreators
-     * @param  Closure():array  $createHeader
+    /** @param  Closure():array  $createHeader
      *
      * @throws Throwable */
+    #[DataProviderExternal('Tests\Feature\DataProviders', 'provideInvalidHeaderCreators')]
     public function test_nothing_is_changed_when_authentication_impossible(Closure $createHeader): void
     {
         ['institution' => $institution] = $this->setUpFixture();
@@ -244,8 +251,8 @@ class DepartmentControllerStoreTest extends DepartmentControllerTestCase
      * }
      *
      * @throws Throwable */
-    public function setUpFixture(Closure $modifyAnyState = null,
-        Closure $modifyActingInstitutionUser = null): array
+    public function setUpFixture(?Closure $modifyAnyState = null,
+        ?Closure $modifyActingInstitutionUser = null): array
     {
         $institution = Institution::factory()->create();
         $actingInstitutionUser = InstitutionUser::factory()

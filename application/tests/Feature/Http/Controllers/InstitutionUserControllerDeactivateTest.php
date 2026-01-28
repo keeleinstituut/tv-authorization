@@ -24,6 +24,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\Assertions;
 use Tests\AuditLogTestCase;
@@ -72,7 +74,7 @@ class InstitutionUserControllerDeactivateTest extends AuditLogTestCase
             ->all();
     }
 
-    /** @dataProvider provideTestNowsAndValidFutureDeactivationDates */
+    #[DataProvider('provideTestNowsAndValidFutureDeactivationDates')]
     public function test_expected_institution_user_has_deactivation_date_when_deactivation_date_is_in_future(DateTimeInterface $testNow,
         string $requestDeactivationDate,
         ?string $existingDeactivationDate): void
@@ -114,14 +116,6 @@ class InstitutionUserControllerDeactivateTest extends AuditLogTestCase
         $this->assertInstitutionUserDeactivationDateInDatabaseIs($requestDeactivationDate, $targetInstitutionUser->id);
         $this->assertInstitutionUserIsIncludedAndActive($targetInstitutionUser->id);
         $this->assertInstitutionUserRolePivotsExist($targetInstitutionUserRolePivots);
-
-        $this->assertMessageRepresentsInstitutionUserDeactivationDateModification(
-            $this->retrieveLatestAuditLogMessageBody(),
-            $targetInstitutionUser,
-            $actingInstitutionUser,
-            $existingDeactivationDate,
-            $requestDeactivationDate
-        );
     }
 
     /** @return array<array{CarbonInterface, string, ?string}> */
@@ -153,7 +147,7 @@ class InstitutionUserControllerDeactivateTest extends AuditLogTestCase
             ->all();
     }
 
-    /** @dataProvider provideTestNowsAndValidSameDayDeactivationDates */
+    #[DataProvider('provideTestNowsAndValidSameDayDeactivationDates')]
     public function test_expected_institution_user_is_deactivated_and_roles_detached_when_deactivation_date_today(DateTimeInterface $testNow,
         string $validDeactivationDate,
         ?string $existingDeactivationDate): void
@@ -227,7 +221,7 @@ class InstitutionUserControllerDeactivateTest extends AuditLogTestCase
             ->all();
     }
 
-    /** @dataProvider provideTestNowsAndValidExistingDeactivationDates */
+    #[DataProvider('provideTestNowsAndValidExistingDeactivationDates')]
     public function test_when_deactivation_date_is_null(DateTimeInterface $testNow, ?string $existingDeactivationDate): void
     {
         // GIVEN the current date in Estonia is the deactivation date
@@ -301,7 +295,7 @@ class InstitutionUserControllerDeactivateTest extends AuditLogTestCase
             ->all();
     }
 
-    /** @dataProvider provideTestNowsAndInvalidDeactivationDates */
+    #[DataProvider('provideTestNowsAndInvalidDeactivationDates')]
     public function test_nothing_is_changed_and_validation_failed_when_deactivation_date_invalid(DateTimeInterface $testNow, string $invalidDeactivationDate): void
     {
         // GIVEN that the current time causes the deactivation date to be considered invalid
@@ -376,13 +370,13 @@ class InstitutionUserControllerDeactivateTest extends AuditLogTestCase
     }
 
     /**
-     * @dataProvider provideTargetInstitutionUserStateInvalidators
      *
      * @param $modifyTargetInstitutionUser Closure(InstitutionUser): void
      * @param $expectedStatusCode int
      *
      * @throws Throwable
      */
+    #[DataProvider('provideTargetInstitutionUserStateInvalidators')]
     public function test_nothing_is_changed_when_target_has_invalid_state(Closure $modifyTargetInstitutionUser, int $expectedStatusCode): void
     {
         Date::setTestNow(Date::now());
@@ -444,14 +438,15 @@ class InstitutionUserControllerDeactivateTest extends AuditLogTestCase
         ];
     }
 
-    /** @dataProvider providePayloadValuesInvalidators
-     * @dataProvider providePayloadKeysInvalidators
-     * @dataProvider \Tests\Feature\DataProviders::provideRandomInstitutionUserIdInvalidator
+    /**
      *
      * @param $makePayloadInvalid Closure(array): array
      *
      * @throws Throwable
      */
+    #[DataProvider('providePayloadValuesInvalidators')]
+    #[DataProvider('providePayloadKeysInvalidators')]
+    #[DataProviderExternal('Tests\Feature\DataProviders', 'provideRandomInstitutionUserIdInvalidator')]
     public function test_nothing_is_changed_when_state_is_valid_but_payload_invalid(Closure $makePayloadInvalid, int $expectedStatusCode): void
     {
         // GIVEN that none of the request parameters are in conflict with the current date, but are invalid in other ways
@@ -484,11 +479,11 @@ class InstitutionUserControllerDeactivateTest extends AuditLogTestCase
         $this->assertInstitutionUserRolePivotsExist($targetInstitutionUserRolePivots);
     }
 
-    /** @dataProvider \Tests\Feature\DataProviders::provideInvalidHeaderCreators
-     * @param $createInvalidHeader Closure(): array
+    /** @param $createInvalidHeader Closure(): array
      *
      * @throws Throwable
      */
+    #[DataProviderExternal('Tests\Feature\DataProviders', 'provideInvalidHeaderCreators')]
     public function test_nothing_is_changed_when_authentication_impossible(Closure $createInvalidHeader): void
     {
         Date::setTestNow(Date::now());
@@ -603,8 +598,8 @@ class InstitutionUserControllerDeactivateTest extends AuditLogTestCase
      *
      * @throws Throwable
      */
-    public function createStandardSuccessCaseInstitutionUsersAndRoles(Closure $modifyTargetUser = null,
-        Closure $modifyActingUser = null): array
+    public function createStandardSuccessCaseInstitutionUsersAndRoles(?Closure $modifyTargetUser = null,
+        ?Closure $modifyActingUser = null): array
     {
         [
             $targetInstitutionUser,

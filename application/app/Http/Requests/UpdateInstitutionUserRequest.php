@@ -216,12 +216,16 @@ class UpdateInstitutionUserRequest extends FormRequest
                     return;
                 }
 
-                $userFullName = join(' ', [
-                    $this->validated('user.forename'),
-                    $this->validated('user.surname'),
-                ]);
+                $forename = $this->validated('user.forename');
+                $surname = $this->validated('user.surname');
 
-                (new UserFullNameRule())->validate(
+                if (empty($forename) || empty($surname)) {
+                    return;
+                }
+
+                $userFullName = join(' ', [$forename, $surname]);
+
+                UserFullNameRule::rule()->validate(
                     'user.forename',
                     $userFullName,
                     fn (string $message) => $validator->errors()->add('user.forename', $message)

@@ -14,6 +14,17 @@ class RepresentationHelpers
 {
     public static function createInstitutionUserNestedRepresentation(InstitutionUser $institutionUser): array
     {
+        // Load vacations relationships if not already loaded (matching controller behavior)
+        if (! $institutionUser->relationLoaded('activeInstitutionUserVacations')) {
+            $institutionUser->load('activeInstitutionUserVacations');
+        }
+        if (! $institutionUser->relationLoaded('activeInstitutionVacations')) {
+            $institutionUser->load('activeInstitutionVacations');
+        }
+        if (! $institutionUser->relationLoaded('activeInstitutionVacationExclusions')) {
+            $institutionUser->load('activeInstitutionVacationExclusions');
+        }
+
         return [
             ...self::createInstitutionUserFlatRepresentation($institutionUser),
             'user' => self::createUserFlatRepresentation($institutionUser->user),
@@ -24,6 +35,7 @@ class RepresentationHelpers
             'roles' => $institutionUser->roles
                 ->map(self::createRoleNestedRepresentation(...))
                 ->all(),
+            'vacations' => self::createInstitutionUserVacationsRepresentation($institutionUser),
         ];
     }
 
@@ -93,17 +105,15 @@ class RepresentationHelpers
 
     public static function createInstitutionFlatRepresentation(Institution $institution): array
     {
-        return Arr::only($institution->toArray(), [
+        $representation = Arr::only($institution->toArray(), [
             'id',
             'name',
-            'logo_url',
             'updated_at',
             'created_at',
             'short_name',
             'phone',
             'email',
             'worktime_timezone',
-
             'monday_worktime_start',
             'monday_worktime_end',
             'tuesday_worktime_start',
@@ -119,5 +129,46 @@ class RepresentationHelpers
             'sunday_worktime_start',
             'sunday_worktime_end',
         ]);
+
+        // Match InstitutionResource behavior: logo_url is a route, not from database
+        $representation['logo_url'] = route('authorization.institutions.logo', ['institution_id' => $institution->id]);
+
+        return $representation;
+    }
+
+    public static function createInstitutionUserVacationsRepresentation(InstitutionUser $institutionUser): array
+    {
+        // Match InstitutionUserVacationsResource structure
+        // The resource uses whenLoaded, which returns the relation if loaded, or empty collection if not
+        $institutionUserVacations = $institutionUser->relationLoaded('activeInstitutionUserVacations')
+            ? $institutionUser->activeInstitutionUserVacations
+            : collect();
+
+        $institutionVacations = $institutionUser->getActiveInstitutionVacationsWithExclusions();
+
+        return [
+            'institution_user_vacations' => $institutionUserVacations
+                ->map(fn ($vacation) => Arr::only($vacation->toArray(), [
+                    'id',
+                    'institution_user_id',
+                    'start_date',
+                    'end_date',
+                    'created_at',
+                    'updated_at',
+                ]))
+                ->values()
+                ->all(),
+            'institution_vacations' => $institutionVacations
+                ->map(fn ($vacation) => Arr::only($vacation->toArray(), [
+                    'id',
+                    'institution_id',
+                    'start_date',
+                    'end_date',
+                    'created_at',
+                    'updated_at',
+                ]))
+                ->values()
+                ->all(),
+        ];
     }
 }

@@ -1,12 +1,10 @@
-version: "3.8"
-
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - 8000:80
+      - 8002:80
     environment:
       - APP_NAME=tv-authorization-service
       - APP_ENV=local
@@ -36,3 +34,7 @@ services:
       - L5_SWAGGER_GENERATE_ALWAYS=true
       - AUDIT_LOG_EVENTS_EXCHANGE=tv-audit-log.events
       - EMAIL_NOTIFICATION_EXCHANGE=tv-notification.email
+      - KEYCLOAK_BASE_URL=http://host.docker.internal:8180
+      - KEYCLOAK_REALM=tolkevarav-dev
+      - SSO_INTERNAL_CLIENT_ID=tv-authorization-mapper
+      - ACCEPTED_AUTHORIZED_PARTIES=web
