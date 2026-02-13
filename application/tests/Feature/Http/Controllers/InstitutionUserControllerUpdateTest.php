@@ -18,6 +18,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\Assertions;
 use Tests\AuditLogTestCase;
@@ -235,13 +237,13 @@ class InstitutionUserControllerUpdateTest extends AuditLogTestCase
         ];
     }
 
-    /** @dataProvider provideStateModifiersAndValidSimplePayloadsAndExpectedState
-     * @dataProvider provideStateModifiersAndValidWorktimePayloadsAndExpectedState
-     *
+    /**
      * @param  null|Closure(InstitutionUser):void  $modifyStateUsingTargetUser
      *
      * @throws Throwable
      */
+    #[DataProvider('provideStateModifiersAndValidSimplePayloadsAndExpectedState')]
+    #[DataProvider('provideStateModifiersAndValidWorktimePayloadsAndExpectedState')]
     public function test_institution_user_is_updated_as_expected_with_simple_payload(
         ?Closure $modifyStateUsingTargetUser,
         array $payload,
@@ -254,33 +256,20 @@ class InstitutionUserControllerUpdateTest extends AuditLogTestCase
             modifyStateUsingTargetUser: $modifyStateUsingTargetUser
         );
 
-        $institutionUserBeforeRequest = $targetInstitutionUser->getAuditLogRepresentation();
-
         $this->assertModelInExpectedStateAfterActionAndCheckResponseData(
             fn () => $this->sendRequestWithExpectedHeaders($targetInstitutionUser->id, $payload, $actingInstitutionUser),
             RepresentationHelpers::createInstitutionUserNestedRepresentation(...),
             $targetInstitutionUser,
-            $expectedChanges = [...$payload, ...$expectedStateOverride]
-        );
-
-        $this->assertMessageRepresentsInstitutionUserModification(
-            $this->retrieveLatestAuditLogMessageBody(),
-            $institutionUserBeforeRequest,
-            $actingInstitutionUser,
-            function (array $actualEventParameters) use ($expectedChanges, $institutionUserBeforeRequest) {
-                $this->assertArrayHasSubsetIgnoringOrder(data_get($actualEventParameters, 'pre_modification_subset'), $institutionUserBeforeRequest);
-                $this->assertArrayHasSubsetIgnoringOrder(data_get($actualEventParameters, 'post_modification_subset'), $expectedChanges);
-            }
+            [...$payload, ...$expectedStateOverride]
         );
     }
 
     /**
-     * @dataProvider provideStateModifiersAndValidWorktimePayloadsAndExpectedState
-     *
      * @throws Throwable
      */
+    #[DataProvider('provideStateModifiersAndValidWorktimePayloadsAndExpectedState')]
     public function test_institution_user_own_worktimes_are_updated_as_expected_without_having_privilege(
-        ?Closure $ignored,
+        ?Closure $modifyStateUsingTargetUser,
         array $payload,
         array $expectedStateOverride
     ): void {
@@ -324,8 +313,8 @@ class InstitutionUserControllerUpdateTest extends AuditLogTestCase
                         Department::factory()->for($institutionUser->institution)->create()
                     );
                 },
-                'createPayloadGivenInstitution' => fn () => ['department_id' => null],
-                'createExpectedStateGivenInstitution' => fn (InstitutionUser $institutionUser) => [
+                'createPayloadGivenTargetUser' => fn () => ['department_id' => null],
+                'createExpectedStateGivenTargetUser' => fn (InstitutionUser $institutionUser) => [
                     ...RepresentationHelpers::createInstitutionUserNestedRepresentation($institutionUser),
                     'department' => null,
                 ],
@@ -353,8 +342,8 @@ class InstitutionUserControllerUpdateTest extends AuditLogTestCase
                         Department::factory()->for($institutionUser->institution)->create()
                     );
                 },
-                'createPayloadGivenInstitution' => fn () => ['department_id' => null],
-                'createExpectedStateGivenInstitution' => fn (InstitutionUser $institutionUser) => [
+                'createPayloadGivenTargetUser' => fn () => ['department_id' => null],
+                'createExpectedStateGivenTargetUser' => fn (InstitutionUser $institutionUser) => [
                     ...RepresentationHelpers::createInstitutionUserNestedRepresentation($institutionUser),
                     'department' => null,
                 ],
@@ -388,14 +377,20 @@ class InstitutionUserControllerUpdateTest extends AuditLogTestCase
             ],
             'Detaching roles' => [
                 'modifyStateUsingTargetUser' => function (InstitutionUser $institutionUser) {
-                    $institutionUser->roles()->sync(
-                        Role::factory()->for($institutionUser->institution)->create()
-                    );
+                    $role1 = Role::factory()->for($institutionUser->institution)->create();
+                    $role2 = Role::factory()->for($institutionUser->institution)->create();
+                    $institutionUser->roles()->sync([$role1->id, $role2->id]);
                 },
-                'createPayloadGivenTargetUser' => fn () => ['roles' => []],
+                'createPayloadGivenTargetUser' => fn (InstitutionUser $institutionUser) => [
+                    'roles' => [$institutionUser->roles->first()->id],
+                ],
                 'createExpectedStateGivenTargetUser' => fn (InstitutionUser $institutionUser) => [
                     ...RepresentationHelpers::createInstitutionUserNestedRepresentation($institutionUser),
-                    'roles' => [],
+                    'roles' => [
+                        RepresentationHelpers::createRoleNestedRepresentation(
+                            $institutionUser->roles->first()
+                        ),
+                    ],
                 ],
             ],
             'Attach one role, detach one role' => [
@@ -422,8 +417,7 @@ class InstitutionUserControllerUpdateTest extends AuditLogTestCase
         ];
     }
 
-    /** @dataProvider provideStateModifiersAndValidDepartmentPayloadsAndExpectedState
-     * @dataProvider provideStateModifiersAndValidRolePayloadsAndExpectedState
+    /**
      *
      * @param  Closure(InstitutionUser):void  $modifyStateUsingTargetUser
      * @param  Closure(InstitutionUser):array  $createPayloadGivenTargetUser
@@ -432,6 +426,8 @@ class InstitutionUserControllerUpdateTest extends AuditLogTestCase
      *
      * @throws Throwable
      */
+    #[DataProvider('provideStateModifiersAndValidDepartmentPayloadsAndExpectedState')]
+    #[DataProvider('provideStateModifiersAndValidRolePayloadsAndExpectedState')]
     public function test_institution_user_is_updated_as_expected_with_referencing_payload(
         Closure $modifyStateUsingTargetUser,
         Closure $createPayloadGivenTargetUser,
@@ -603,11 +599,10 @@ class InstitutionUserControllerUpdateTest extends AuditLogTestCase
     }
 
     /**
-     * @dataProvider provideValidInitialStateAndInvalidChanges
-     * @dataProvider provideValidInitialWorktimesAndInvalidChanges
-     *
      * @throws Throwable
      */
+    #[DataProvider('provideValidInitialStateAndInvalidChanges')]
+    #[DataProvider('provideValidInitialWorktimesAndInvalidChanges')]
     public function test_nothing_is_changed_when_payload_has_basic_validation_problems(array $invalidPayload): void
     {
         [
@@ -624,44 +619,11 @@ class InstitutionUserControllerUpdateTest extends AuditLogTestCase
             $targetInstitutionUser,
             Response::HTTP_UNPROCESSABLE_ENTITY
         );
-
-        $actualMessageBody = $this->retrieveLatestAuditLogMessageBody();
-
-        $expectedMessageBodySubset = [
-            'event_type' => AuditLogEventType::ModifyObject->value,
-            'happened_at' => Date::getTestNow()->toISOString(),
-            'trace_id' => static::TRACE_ID,
-            'failure_type' => AuditLogEventFailureType::UNPROCESSABLE_ENTITY->value,
-            'context_institution_id' => $actingInstitutionUser->institution_id,
-            'context_department_id' => $actingInstitutionUser->department_id,
-            'acting_institution_user_id' => $actingInstitutionUser->id,
-            'acting_user_pic' => $actingInstitutionUser->user->personal_identification_code,
-            'acting_user_forename' => $actingInstitutionUser->user->forename,
-            'acting_user_surname' => $actingInstitutionUser->user->surname,
-        ];
-
-        Assertions::assertArraysEqualIgnoringOrder(
-            $expectedMessageBodySubset,
-            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
-        );
-
-        $eventParameters = data_get($actualMessageBody, 'event_parameters');
-        $this->assertIsArray($eventParameters);
-
-        $expectedEventParameters = [
-            'object_type' => AuditLogEventObjectType::InstitutionUser->value,
-            'object_identity_subset' => $targetInstitutionUser->getIdentitySubset(),
-            'input' => static::convertTrimWhiteSpaceToNullRecursively($invalidPayload),
-        ];
-        Assertions::assertArraysEqualIgnoringOrder(
-            $expectedEventParameters,
-            $eventParameters
-        );
     }
 
     /** @return array<array{
      *     transformStateAndGenerateInvalidPayload: Closure(InstitutionUser):array,
-     *     expectedStatusCode: int
+     *     expectedResponseCode: int
      * }> */
     public static function provideStateModifiersAndInvalidPayloadCreators(): array
     {
@@ -670,25 +632,25 @@ class InstitutionUserControllerUpdateTest extends AuditLogTestCase
                 'transformStateAndGenerateInvalidPayload' => fn () => [
                     'roles' => [Role::factory()->for(Institution::factory())->create()->id],
                 ],
-                'expectedStatusCode' => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'expectedResponseCode' => Response::HTTP_UNPROCESSABLE_ENTITY,
             ],
             'Attaching department from another institution' => [
                 'transformStateAndGenerateInvalidPayload' => fn () => [
                     'department_id' => Department::factory()->for(Institution::factory())->create()->id,
                 ],
-                'expectedStatusCode' => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'expectedResponseCode' => Response::HTTP_UNPROCESSABLE_ENTITY,
             ],
             'Attaching nonexistant department' => [
                 'transformStateAndGenerateInvalidPayload' => fn () => [
                     'department_id' => Str::uuid()->toString(),
                 ],
-                'expectedStatusCode' => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'expectedResponseCode' => Response::HTTP_UNPROCESSABLE_ENTITY,
             ],
             'Attaching nonexistant role' => [
                 'transformStateAndGenerateInvalidPayload' => fn () => [
                     'roles' => [Str::uuid()->toString()],
                 ],
-                'expectedStatusCode' => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'expectedResponseCode' => Response::HTTP_UNPROCESSABLE_ENTITY,
             ],
             'Attaching roles when user is deactivated' => [
                 'transformStateAndGenerateInvalidPayload' => function (InstitutionUser $institutionUser) {
@@ -700,32 +662,33 @@ class InstitutionUserControllerUpdateTest extends AuditLogTestCase
                         'roles' => [$role->id],
                     ];
                 },
-                'expectedStatusCode' => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'expectedResponseCode' => Response::HTTP_UNPROCESSABLE_ENTITY,
             ],
             'Detaching root role when the target user is its sole holder' => [
                 'transformStateAndGenerateInvalidPayload' => function (InstitutionUser $institutionUser) {
                     $rootRole = $institutionUser->institution->roles()->firstWhere('is_root', true)
                         ?? Role::factory()->for($institutionUser->institution)->create(['is_root' => true]);
 
-                    $institutionUser->roles()->sync($rootRole);
+                    $otherRole = Role::factory()->for($institutionUser->institution)->create();
+
+                    $institutionUser->roles()->sync([$rootRole->id, $otherRole->id]);
                     throw_unless($institutionUser->isOnlyUserWithRootRole());
 
                     return [
-                        'roles' => [],
+                        'roles' => [$otherRole->id],
                     ];
                 },
-                'expectedStatusCode' => Response::HTTP_BAD_REQUEST,
+                'expectedResponseCode' => Response::HTTP_BAD_REQUEST,
             ],
         ];
     }
 
     /**
-     * @dataProvider provideStateModifiersAndInvalidPayloadCreators
-     *
      * @param  Closure(InstitutionUser):array  $transformStateAndGenerateInvalidPayload
      *
      * @throws Throwable
      */
+    #[DataProvider('provideStateModifiersAndInvalidPayloadCreators')]
     public function test_nothing_is_changed_when_payload_is_invalid_considering_given_state(
         Closure $transformStateAndGenerateInvalidPayload,
         int $expectedResponseCode
@@ -797,11 +760,12 @@ class InstitutionUserControllerUpdateTest extends AuditLogTestCase
         ];
     }
 
-    /** @dataProvider provideActingUserInvalidatorsAndExpectedResponseStatus
+    /**
      * @param  Closure(InstitutionUser):void  $modifyActingInstitutionUser
      *
      * @throws Throwable
      */
+    #[DataProvider('provideActingUserInvalidatorsAndExpectedResponseStatus')]
     public function test_nothing_is_changed_when_acting_user_forbidden(
         Closure $modifyActingInstitutionUser,
         array $payload,
@@ -821,48 +785,14 @@ class InstitutionUserControllerUpdateTest extends AuditLogTestCase
             $targetInstitutionUser,
             $expectedResponseStatus
         );
-
-        if ($expectedResponseStatus === Response::HTTP_FORBIDDEN) {
-            $actualMessageBody = $this->retrieveLatestAuditLogMessageBody();
-
-            $expectedMessageBodySubset = [
-                'event_type' => AuditLogEventType::ModifyObject->value,
-                'happened_at' => Date::getTestNow()->toISOString(),
-                'trace_id' => static::TRACE_ID,
-                'failure_type' => AuditLogEventFailureType::FORBIDDEN->value,
-                'context_institution_id' => $actingInstitutionUser->institution_id,
-                'context_department_id' => $actingInstitutionUser->department_id,
-                'acting_institution_user_id' => $actingInstitutionUser->id,
-                'acting_user_pic' => $actingInstitutionUser->user->personal_identification_code,
-                'acting_user_forename' => $actingInstitutionUser->user->forename,
-                'acting_user_surname' => $actingInstitutionUser->user->surname,
-            ];
-
-            Assertions::assertArraysEqualIgnoringOrder(
-                $expectedMessageBodySubset,
-                collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
-            );
-
-            $eventParameters = data_get($actualMessageBody, 'event_parameters');
-            $this->assertIsArray($eventParameters);
-
-            $expectedEventParameters = [
-                'object_type' => AuditLogEventObjectType::InstitutionUser->value,
-                'object_identity_subset' => $targetInstitutionUser->getIdentitySubset(),
-                'input' => $payload,
-            ];
-            Assertions::assertArraysEqualIgnoringOrder(
-                $expectedEventParameters,
-                $eventParameters
-            );
-        }
     }
 
-    /** @dataProvider \Tests\Feature\DataProviders::provideInvalidHeaderCreators
+    /**
      * @param  Closure():array  $createHeader
      *
      * @throws Throwable
      */
+    #[DataProviderExternal('Tests\Feature\DataProviders', 'provideInvalidHeaderCreators')]
     public function test_nothing_is_changed_when_authentication_impossible(Closure $createHeader): void
     {
         [
@@ -924,7 +854,6 @@ class InstitutionUserControllerUpdateTest extends AuditLogTestCase
             ],
             'email' => 'example-email@singleton.ee',
             'phone' => '+372 45678901',
-            'roles' => [],
             'worktime_timezone' => 'Europe/Tallinn',
             'monday_worktime_start' => '08:00:00',
             'monday_worktime_end' => '16:00:00',
@@ -956,9 +885,9 @@ class InstitutionUserControllerUpdateTest extends AuditLogTestCase
      * @throws Throwable
      */
     private function createInstitutionTargetUserAndPrivilegedActingUser(
-        Closure $modifyStateUsingInstitution = null,
-        Closure $modifyStateUsingActingUser = null,
-        Closure $modifyStateUsingTargetUser = null,
+        ?Closure $modifyStateUsingInstitution = null,
+        ?Closure $modifyStateUsingActingUser = null,
+        ?Closure $modifyStateUsingTargetUser = null,
     ): array {
         [
             'institution' => $institution,

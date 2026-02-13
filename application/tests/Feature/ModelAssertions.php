@@ -5,9 +5,9 @@ namespace Tests\Feature;
 use App\Enums\InstitutionUserStatus;
 use App\Models\InstitutionUser;
 use App\Models\InstitutionUserRole;
-use Arr;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -124,7 +124,10 @@ trait ModelAssertions
     {
         $expectedStateAfterAction = collect($modelsWithExpectedChanges)
             ->mapSpread(fn (Model $model, array $expectedChange) => [
-                ...Arr::dot($convertModelToArray($model->refresh())),
+                ...Arr::dot($this->excludeArrayFieldsBeingReplaced(
+                    $convertModelToArray($model->refresh()),
+                    $expectedChange
+                )),
                 ...Arr::dot($expectedChange),
             ])
             ->map(Arr::undot(...))
@@ -143,5 +146,23 @@ trait ModelAssertions
         $response->assertStatus($expectedStatus);
 
         return $response;
+    }
+
+    /**
+     * Exclude array fields from current state that are being completely replaced in expected changes.
+     * This prevents Arr::dot merge from keeping old array elements when the array size is reduced.
+     * Only applies to sequential arrays (lists), not associative arrays (nested objects).
+     */
+    private function excludeArrayFieldsBeingReplaced(array $currentState, array $expectedChanges): array
+    {
+        foreach ($expectedChanges as $key => $value) {
+            if (is_array($value) && isset($currentState[$key]) && is_array($currentState[$key])) {
+                // Only exclude if it's a list (sequential numeric keys), not a nested object (associative keys)
+                if (array_is_list($value)) {
+                    unset($currentState[$key]);
+                }
+            }
+        }
+        return $currentState;
     }
 }

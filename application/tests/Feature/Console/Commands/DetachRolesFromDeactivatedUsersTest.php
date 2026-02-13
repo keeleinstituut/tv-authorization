@@ -22,7 +22,7 @@ class DetachRolesFromDeactivatedUsersTest extends TestCase
     public function test_deactivated_institution_users_have_no_roles_and_pivots_are_deleted(): void
     {
         // GIVEN the current Estonian time is 2000-01-01T00:00:00
-        Date::setTestNow(Date::create(2000, tz: 'Europe/Tallinn'));
+        Date::setTestNow(Date::create(2000, timezone: 'Europe/Tallinn'));
 
         // And there are deactivated as well as active institution users in database, all having at least one role
         $deactivatedInstitutionUsers = InstitutionUser::factory()

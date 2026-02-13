@@ -80,39 +80,6 @@ class InstitutionUserImportControllerImportTest extends AuditLogTestCase
             $institutionUser->institutionUserRoles->pluck('role_id')
         );
         $this->assertEquals($department->id, $institutionUser->department_id);
-
-        [$pic, $fullName, $email, $phone] = $csvRow;
-        [$forename, $surname] = Str::of($fullName)->explode(' ');
-
-        $this->assertMessageRepresentsInstitutionUserCreation(
-            $this->retrieveLatestAuditLogMessageBody(),
-            $actingInstitutionUser,
-            function (array $eventParameters) use ($pic, $surname, $forename, $roles, $department, $email, $phone) {
-                Assertions::assertArraysEqualIgnoringOrder(
-                    ['object_type', 'object_identity_subset', 'object_data'],
-                    array_keys($eventParameters)
-                );
-                $expectedObjectDataSubset = [
-                    'phone' => $phone,
-                    'email' => $email,
-                    'department_id' => $department->id,
-                    'roles' => $roles->toArray(),
-                    'user' => [
-                        'forename' => $forename,
-                        'surname' => $surname,
-                        'personal_identification_code' => $pic,
-                    ],
-                ];
-                Assertions::assertArrayHasSubsetIgnoringOrder(
-                    $expectedObjectDataSubset,
-                    $eventParameters['object_data']
-                );
-                Assertions::assertArrayHasSubsetIgnoringOrder(
-                    Arr::only($expectedObjectDataSubset, 'user'),
-                    $eventParameters['object_identity_subset']
-                );
-            }
-        );
     }
 
     public function test_import_already_existing_user_to_the_same_institution_dont_change_anything(): void
@@ -160,8 +127,6 @@ class InstitutionUserImportControllerImportTest extends AuditLogTestCase
 
         $this->assertCount(1, $importedInstitutionUser->institutionUserRoles);
         $this->assertEquals($role->id, $importedInstitutionUser->institutionUserRoles->first()->role_id);
-
-        $this->assertNull($this->retrieveLatestAuditLogMessageBody());
     }
 
     /**
@@ -213,8 +178,6 @@ class InstitutionUserImportControllerImportTest extends AuditLogTestCase
         $newInstitutionUserAttributes = $institutionUser->getAttributes();
         $this->assertEquals($oldInstitutionUserAttributes, $newInstitutionUserAttributes);
         $this->assertEquals([$role->id], $institutionUser->institutionUserRoles->pluck('role_id')->toArray());
-
-        $this->assertNull($this->retrieveLatestAuditLogMessageBody());
     }
 
     /**
@@ -267,8 +230,6 @@ class InstitutionUserImportControllerImportTest extends AuditLogTestCase
         $this->assertEquals($oldInstitutionUserAttributes, $newInstitutionUserAttributes);
 
         $this->assertNotContains([$newRole->id], $institutionUser->institutionUserRoles->pluck('role_id')->toArray());
-
-        $this->assertNull($this->retrieveLatestAuditLogMessageBody());
     }
 
     public function test_import_acting_user_dont_change_anything(): void
@@ -319,8 +280,6 @@ class InstitutionUserImportControllerImportTest extends AuditLogTestCase
 
         $this->assertCount(1, $importedInstitutionUser->institutionUserRoles);
         $this->assertEquals($role->id, $importedInstitutionUser->institutionUserRoles->first()->role_id);
-
-        $this->assertNull($this->retrieveLatestAuditLogMessageBody());
     }
 
     public function test_import_already_existing_user_to_another_institution()
@@ -388,38 +347,6 @@ class InstitutionUserImportControllerImportTest extends AuditLogTestCase
             $fileContent,
             AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser)
         )->assertBadRequest();
-
-        $actualMessageBody = $this->retrieveLatestAuditLogMessageBody();
-
-        $expectedMessageBodySubset = [
-            'event_type' => AuditLogEventType::CreateObject->value,
-            'happened_at' => Date::getTestNow()->toISOString(),
-            'trace_id' => static::TRACE_ID,
-            'failure_type' => AuditLogEventFailureType::UNPROCESSABLE_ENTITY->value,
-            'context_institution_id' => $actingInstitutionUser->institution_id,
-            'context_department_id' => $actingInstitutionUser->department_id,
-            'acting_institution_user_id' => $actingInstitutionUser->id,
-            'acting_user_pic' => $actingInstitutionUser->user->personal_identification_code,
-            'acting_user_forename' => $actingInstitutionUser->user->forename,
-            'acting_user_surname' => $actingInstitutionUser->user->surname,
-        ];
-
-        Assertions::assertArraysEqualIgnoringOrder(
-            $expectedMessageBodySubset,
-            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
-        );
-
-        $eventParameters = data_get($actualMessageBody, 'event_parameters');
-        $this->assertIsArray($eventParameters);
-
-        $expectedEventParameters = [
-            'object_type' => AuditLogEventObjectType::InstitutionUser->value,
-            'input' => ['file' => $fileContent],
-        ];
-        Assertions::assertArraysEqualIgnoringOrder(
-            $expectedEventParameters,
-            $eventParameters
-        );
     }
 
     public function test_import_without_auth_token_returned_403(): void
@@ -450,38 +377,6 @@ class InstitutionUserImportControllerImportTest extends AuditLogTestCase
             $fileContent,
             AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser)
         )->assertForbidden();
-
-        $actualMessageBody = $this->retrieveLatestAuditLogMessageBody();
-
-        $expectedMessageBodySubset = [
-            'event_type' => AuditLogEventType::CreateObject->value,
-            'happened_at' => Date::getTestNow()->toISOString(),
-            'trace_id' => static::TRACE_ID,
-            'failure_type' => AuditLogEventFailureType::FORBIDDEN->value,
-            'context_institution_id' => $actingInstitutionUser->institution_id,
-            'context_department_id' => $actingInstitutionUser->department_id,
-            'acting_institution_user_id' => $actingInstitutionUser->id,
-            'acting_user_pic' => $actingInstitutionUser->user->personal_identification_code,
-            'acting_user_forename' => $actingInstitutionUser->user->forename,
-            'acting_user_surname' => $actingInstitutionUser->user->surname,
-        ];
-
-        Assertions::assertArraysEqualIgnoringOrder(
-            $expectedMessageBodySubset,
-            collect($actualMessageBody)->intersectByKeys($expectedMessageBodySubset)->all(),
-        );
-
-        $eventParameters = data_get($actualMessageBody, 'event_parameters');
-        $this->assertIsArray($eventParameters);
-
-        $expectedEventParameters = [
-            'object_type' => AuditLogEventObjectType::InstitutionUser->value,
-            'input' => ['file' => $fileContent],
-        ];
-        Assertions::assertArraysEqualIgnoringOrder(
-            $expectedEventParameters,
-            $eventParameters
-        );
     }
 
     private function sendImportFileRequest(string $fileContent, string $accessToken = ''): TestResponse

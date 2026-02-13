@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
 use Illuminate\Testing\AssertableJsonString;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\AuthHelpers;
 use Tests\EntityHelpers;
@@ -76,7 +77,7 @@ class InstitutionUserControllerIndexTest extends TestCase
             ))
             ->create();
         $accessToken = AuthHelpers::generateAccessTokenForInstitutionUser($actingInstitutionUser);
-
+        /** @var InstitutionUser $searchingInstitutionUser */
         $searchingInstitutionUser = $institutionUsers->first();
         $response = $this->queryInstitutionUsers($accessToken, [
             'fullname' => implode(' ', [
@@ -285,10 +286,10 @@ class InstitutionUserControllerIndexTest extends TestCase
         ];
     }
 
-    /** @dataProvider provideQueryParamsAndExpectedResponseDataBuildDefinitions
-     * @param  array<string, string|array<string>>  $queryParamsBuildDefinition
+    /** @param  array<string, string|array<string>>  $queryParamsBuildDefinition
      * @param  array<string>  $expectedResponseDataBuildDefinition
      */
+    #[DataProvider('provideQueryParamsAndExpectedResponseDataBuildDefinitions')]
     public function test_filtering_institution_users(
         array $queryParamsBuildDefinition,
         array $expectedResponseDataBuildDefinition): void
@@ -527,10 +528,10 @@ class InstitutionUserControllerIndexTest extends TestCase
     }
 
     /**
-     * @dataProvider provideQueryParamInvalidators
      *
      * @param  Closure(array): array  $invalidateQueryParameters
      */
+    #[DataProvider('provideQueryParamInvalidators')]
     public function test_invalid_parameters_causes_422(Closure $invalidateQueryParameters): void
     {
         [
@@ -559,7 +560,7 @@ class InstitutionUserControllerIndexTest extends TestCase
         $this->sendIndexRequestWithExpectedHeaders($queryParams, $actingUser)->assertOk();
     }
 
-    private function queryInstitutionUsers(string $accessToken = null, array $queryParams = null): TestResponse
+    private function queryInstitutionUsers(?string $accessToken = null, ?array $queryParams = null): TestResponse
     {
         if (! empty($accessToken)) {
             $this->withHeaders([

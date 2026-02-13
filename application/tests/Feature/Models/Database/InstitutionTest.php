@@ -5,6 +5,7 @@ namespace Tests\Feature\Models\Database;
 use App\Models\Institution;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class InstitutionTest extends TestCase
@@ -22,7 +23,7 @@ class InstitutionTest extends TestCase
 
     /**
      * @return array<array{
-     *     validInitialState: array<string, string>,
+     *     validInitialWorktimes: array<string, string>,
      *     invalidatingChange: array<string, string>
      * }>
      */
@@ -31,41 +32,41 @@ class InstitutionTest extends TestCase
         return collect(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])
             ->flatMap(fn (string $day) => [
                 "[$day] Setting start and end without worktime_timezone being set" => [
-                    'validInitialState' => [],
+                    'validInitialWorktimes' => [],
                     'invalidatingChange' => ["{$day}_worktime_start" => '08:00:00', "{$day}_worktime_start" => '16:00:00'],
                 ],
                 "[$day] Setting worktime_timezone to a non-IANA value: gibberish" => [
-                    'validInitialState' => [],
+                    'validInitialWorktimes' => [],
                     'invalidatingChange' => ['worktime_timezone' => 'Westeros/Winterfell'],
                 ],
                 "[$day] Setting worktime_timezone to a non-IANA value: timezone abbreviation" => [
-                    'validInitialState' => [],
+                    'validInitialWorktimes' => [],
                     'invalidatingChange' => ['worktime_timezone' => 'PST'],
                 ],
                 "[$day] Setting worktime_timezone to a non-IANA value: numerical offset (+2)" => [
-                    'validInitialState' => [],
+                    'validInitialWorktimes' => [],
                     'invalidatingChange' => ['worktime_timezone' => '+2'],
                 ],
                 "[$day] Setting worktime_timezone to a non-IANA value: numerical offset (+3:00)" => [
-                    'validInitialState' => [],
+                    'validInitialWorktimes' => [],
                     'invalidatingChange' => ['worktime_timezone' => '+3:00'],
                 ],
                 "[$day] Initially without worktime, setting start without end" => [
-                    'validInitialState' => [],
+                    'validInitialWorktimes' => [],
                     'invalidatingChange' => [
                         'worktime_timezone' => 'Europe/Tallinn',
                         "{$day}_worktime_start" => '08:00:00',
                     ],
                 ],
                 "[$day] Initially without worktime, setting end without start" => [
-                    'validInitialState' => [],
+                    'validInitialWorktimes' => [],
                     'invalidatingChange' => [
                         'worktime_timezone' => 'Europe/Tallinn',
                         "{$day}_worktime_end" => '16:00:00',
                     ],
                 ],
                 "[$day] Initially without worktime, setting start and end, such that end < start" => [
-                    'validInitialState' => [],
+                    'validInitialWorktimes' => [],
                     'invalidatingChange' => [
                         'worktime_timezone' => 'Europe/Tallinn',
                         "{$day}_worktime_start" => '16:00:00',
@@ -73,7 +74,7 @@ class InstitutionTest extends TestCase
                     ],
                 ],
                 "[$day] Initially without worktime, setting start and end, such that end = start" => [
-                    'validInitialState' => [],
+                    'validInitialWorktimes' => [],
                     'invalidatingChange' => [
                         'worktime_timezone' => 'Europe/Tallinn',
                         "{$day}_worktime_start" => '08:00:00',
@@ -81,7 +82,7 @@ class InstitutionTest extends TestCase
                     ],
                 ],
                 "[$day] Initially with worktime, changing worktime_timezone to null" => [
-                    'validInitialState' => [
+                    'validInitialWorktimes' => [
                         'worktime_timezone' => 'Europe/Tallinn',
                         "{$day}_worktime_start" => '08:00:00',
                         "{$day}_worktime_end" => '16:00:00',
@@ -89,7 +90,7 @@ class InstitutionTest extends TestCase
                     'invalidatingChange' => ['worktime_timezone' => null],
                 ],
                 "[$day] Initially with worktime, changing start to null" => [
-                    'validInitialState' => [
+                    'validInitialWorktimes' => [
                         'worktime_timezone' => 'Europe/Tallinn',
                         "{$day}_worktime_start" => '08:00:00',
                         "{$day}_worktime_end" => '16:00:00',
@@ -97,7 +98,7 @@ class InstitutionTest extends TestCase
                     'invalidatingChange' => ["{$day}_worktime_start" => null],
                 ],
                 "[$day] Initially with worktime, changing end to null" => [
-                    'validInitialState' => [
+                    'validInitialWorktimes' => [
                         'worktime_timezone' => 'Europe/Tallinn',
                         "{$day}_worktime_start" => '08:00:00',
                         "{$day}_worktime_end" => '16:00:00',
@@ -105,7 +106,7 @@ class InstitutionTest extends TestCase
                     'invalidatingChange' => ["{$day}_worktime_end" => null],
                 ],
                 "[$day] Initially with worktime, changing end, such that end < start" => [
-                    'validInitialState' => [
+                    'validInitialWorktimes' => [
                         'worktime_timezone' => 'Europe/Tallinn',
                         "{$day}_worktime_start" => '08:00:00',
                         "{$day}_worktime_end" => '16:00:00',
@@ -113,7 +114,7 @@ class InstitutionTest extends TestCase
                     'invalidatingChange' => ["{$day}_worktime_end" => '02:00:00'],
                 ],
                 "[$day] Initially with worktime, changing end, such that end = start" => [
-                    'validInitialState' => [
+                    'validInitialWorktimes' => [
                         'worktime_timezone' => 'Europe/Tallinn',
                         "{$day}_worktime_start" => '08:00:00',
                         "{$day}_worktime_end" => '16:00:00',
@@ -124,7 +125,7 @@ class InstitutionTest extends TestCase
             ->all();
     }
 
-    /** @dataProvider provideValidInitialWorktimesAndInvalidatingChanges */
+    #[DataProvider('provideValidInitialWorktimesAndInvalidatingChanges')]
     public function test_saving_invalid_working_times_result_in_database_error(array $validInitialWorktimes, array $invalidatingChange): void
     {
         $institution = Institution::factory()->create($validInitialWorktimes)->refresh();

@@ -31,8 +31,8 @@ abstract class TestCase extends BaseTestCase
      * @throws Throwable
      */
     public static function createInstitutionAndActingUser(
-        Closure $modifyInstitution = null,
-        Closure $modifyActingInstitutionUser = null
+        ?Closure $modifyInstitution = null,
+        ?Closure $modifyActingInstitutionUser = null
     ): array {
         $institution = Institution::factory()->create();
         $actingInstitutionUser = InstitutionUser::factory()->for($institution)->create();

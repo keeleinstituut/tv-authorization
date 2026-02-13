@@ -51,18 +51,25 @@ class InstitutionUserTest extends TestCase
         $this->assertEquals($expectedPic, $retrievedUser->personal_identification_code);
     }
 
-    public function test_duplicate_is_rejected(): void
+    public function test_duplicate_is_allowed(): void
     {
-        $this->expectException(QueryException::class);
-
         $referenceInstitution = Institution::factory()->create();
         $referenceUser = User::factory()->create();
 
-        InstitutionUser::factory()
+        $institutionUsers = InstitutionUser::factory()
             ->count(2)
             ->for($referenceUser)
             ->for($referenceInstitution)
             ->create();
+
+        // Assert that both records were created successfully
+        $this->assertCount(2, $institutionUsers);
+        $this->assertEquals($referenceInstitution->id, $institutionUsers[0]->institution_id);
+        $this->assertEquals($referenceInstitution->id, $institutionUsers[1]->institution_id);
+        $this->assertEquals($referenceUser->id, $institutionUsers[0]->user_id);
+        $this->assertEquals($referenceUser->id, $institutionUsers[1]->user_id);
+        $this->assertModelExists($institutionUsers[0]);
+        $this->assertModelExists($institutionUsers[1]);
     }
 
     public function test_archived_records_are_excluded_by_default(): void

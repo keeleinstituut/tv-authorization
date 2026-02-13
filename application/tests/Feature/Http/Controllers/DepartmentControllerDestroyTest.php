@@ -12,6 +12,8 @@ use App\Models\Role;
 use Closure;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\AuthHelpers;
 use Tests\Feature\RepresentationHelpers;
@@ -19,6 +21,12 @@ use Throwable;
 
 class DepartmentControllerDestroyTest extends DepartmentControllerTestCase
 {
+    public function setUp(): void
+    {
+        parent::setUp();
+        $this->markTestSkipped('Skipping all tests. Destroy endpoint is deprecated');
+    }
+
     /** @return array<array{ Closure(Department):void }> */
     public static function provideValidDepartmentModifiers(): array
     {
@@ -35,10 +43,10 @@ class DepartmentControllerDestroyTest extends DepartmentControllerTestCase
         ];
     }
 
-    /** @dataProvider provideValidDepartmentModifiers
-     * @param  Closure(Department):void  $modifyTargetDepartment
+    /** @param  Closure(Department):void  $modifyTargetDepartment
      *
      * @throws Throwable */
+    #[DataProvider('provideValidDepartmentModifiers')]
     public function test_targeted_department_is_softdeleted_and_members_detached(Closure $modifyTargetDepartment): void
     {
         Date::setTestNow(Date::now());
@@ -89,9 +97,9 @@ class DepartmentControllerDestroyTest extends DepartmentControllerTestCase
         ];
     }
 
-    /** @dataProvider provideActingUserInvalidatorsAndExpectedResponseStatus
-     * @throws Throwable
+    /** @throws Throwable
      */
+    #[DataProvider('provideActingUserInvalidatorsAndExpectedResponseStatus')]
     public function test_nothing_is_changed_when_acting_user_forbidden(Closure $modifyActingInstitutionUser, int $expectedResponseStatus): void
     {
         [
@@ -110,10 +118,10 @@ class DepartmentControllerDestroyTest extends DepartmentControllerTestCase
         );
     }
 
-    /** @dataProvider \Tests\Feature\DataProviders::provideInvalidHeaderCreators
-     * @param  Closure():array  $createHeader
+    /** @param  Closure():array  $createHeader
      *
      * @throws Throwable */
+    #[DataProviderExternal('Tests\Feature\DataProviders', 'provideInvalidHeaderCreators')]
     public function test_nothing_is_changed_when_authentication_impossible(Closure $createHeader): void
     {
         [
@@ -178,9 +186,9 @@ class DepartmentControllerDestroyTest extends DepartmentControllerTestCase
      * }
      *
      * @throws Throwable */
-    public function createDefaultSuccessCaseModels(Closure $modifyTargetDepartment = null,
-        Closure $modifyUntargetedDepartment = null,
-        Closure $modifyActingInstitutionUser = null): array
+    public function createDefaultSuccessCaseModels(?Closure $modifyTargetDepartment = null,
+        ?Closure $modifyUntargetedDepartment = null,
+        ?Closure $modifyActingInstitutionUser = null): array
     {
         [
             'actingInstitutionUser' => $actingInstitutionUser,
