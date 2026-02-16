@@ -101,6 +101,7 @@ command=php /app/artisan queue:work
 autostart=true
 autorestart=true
 user=www-data
+environment=HOME="/home/www-data"
 numprocs=1
 stdout_logfile=/dev/stdout
 stdout_logfile_maxbytes = 0
@@ -113,6 +114,7 @@ command=php /app/artisan schedule:work
 autostart=true
 autorestart=true
 user=www-data
+environment=HOME="/home/www-data"
 numprocs=1
 stdout_logfile=/dev/stdout
 stdout_logfile_maxbytes = 0
