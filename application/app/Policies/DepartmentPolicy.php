@@ -3,37 +3,37 @@
 namespace App\Policies;
 
 use App\Enums\PrivilegeKey;
+use App\Models\AuthUser;
 use App\Models\Department;
 use App\Policies\Scope\DepartmentScope;
 use BadMethodCallException;
-use Illuminate\Support\Facades\Auth;
-use KeycloakAuthGuard\Models\JwtPayloadUser;
 
 class DepartmentPolicy
 {
-    /** @noinspection PhpUnusedParameterInspection */
-    public function view(JwtPayloadUser $ignored, Department $department): bool
+    public function view(AuthUser $user, Department $department): bool
     {
-        return $this->isInSameInstitutionAsCurrentUser($department);
+        return ! $user->isTranslationAgency()
+            && $this->isInSameInstitutionAsCurrentUser($user, $department);
     }
 
-    public function create(): bool
+    public function create(AuthUser $user): bool
     {
-        return Auth::hasPrivilege(PrivilegeKey::AddDepartment->value);
+        return ! $user->isTranslationAgency()
+            && $user->hasPrivilege(PrivilegeKey::AddDepartment);
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function update(JwtPayloadUser $ignored, Department $department): bool
+    public function update(AuthUser $user, Department $department): bool
     {
-        return $this->isInSameInstitutionAsCurrentUser($department)
-            && Auth::hasPrivilege(PrivilegeKey::EditDepartment->value);
+        return ! $user->isTranslationAgency()
+            && $this->isInSameInstitutionAsCurrentUser($user, $department)
+            && $user->hasPrivilege(PrivilegeKey::EditDepartment);
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
-    public function delete(JwtPayloadUser $ignored, Department $department): bool
+    public function delete(AuthUser $user, Department $department): bool
     {
-        return $this->isInSameInstitutionAsCurrentUser($department)
-            && Auth::hasPrivilege(PrivilegeKey::DeleteDepartment->value);
+        return ! $user->isTranslationAgency()
+            && $this->isInSameInstitutionAsCurrentUser($user, $department)
+            && $user->hasPrivilege(PrivilegeKey::DeleteDepartment);
     }
 
     public function restore(): bool
@@ -47,18 +47,19 @@ class DepartmentPolicy
         throw new BadMethodCallException();
     }
 
-    public function bulkUpdate(JwtPayloadUser $user): bool
+    public function bulkUpdate(AuthUser $user): bool
     {
-        return Auth::hasPrivilege(PrivilegeKey::AddDepartment->value) &&
-                Auth::hasPrivilege(PrivilegeKey::EditDepartment->value) &&
-                Auth::hasPrivilege(PrivilegeKey::DeleteDepartment->value);
+        return ! $user->isTranslationAgency()
+            && $user->hasPrivilege(PrivilegeKey::AddDepartment)
+            && $user->hasPrivilege(PrivilegeKey::EditDepartment)
+            && $user->hasPrivilege(PrivilegeKey::DeleteDepartment);
     }
 
     /** @noinspection PhpUnused */
-    public function isInSameInstitutionAsCurrentUser(Department $department): bool
+    public function isInSameInstitutionAsCurrentUser(AuthUser $user, Department $department): bool
     {
-        return filled($currentInstitutionId = Auth::user()?->institutionId)
-            && $currentInstitutionId === $department->institution_id;
+        return filled($user->institutionId)
+            && $user->institutionId === $department->institution_id;
     }
 
     public static function scope(): DepartmentScope
@@ -71,6 +72,7 @@ class DepartmentPolicy
 
 namespace App\Policies\Scope;
 
+use App\Models\AuthUser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope as IScope;
@@ -83,8 +85,11 @@ class DepartmentScope implements IScope
      */
     public function apply(Builder $builder, Model $model): void
     {
-        $authenticatedInstitutionId = Auth::user()->institutionId;
+        /** @var AuthUser|null $user */
+        $user = Auth::user();
+        $authenticatedInstitutionId = $user?->institutionId;
         abort_if(empty($authenticatedInstitutionId), 401);
+        abort_if($user->isTranslationAgency(), 403);
         $builder->where('institution_id', $authenticatedInstitutionId);
     }
 }
