@@ -5,10 +5,12 @@ namespace App\Console\Commands;
 use App\Actions\CreateInstitutionWithMainUserAction;
 use App\DataTransferObjects\InstitutionData;
 use App\DataTransferObjects\UserData;
+use App\Enums\InstitutionType;
 use App\Rules\PersonalIdCodeRule;
 use App\Rules\PhoneNumberRule;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Enum;
 use Throwable;
 
 class CreateInstitutionWithMainUser extends Command
@@ -24,7 +26,8 @@ class CreateInstitutionWithMainUser extends Command
                             {phone? : The phone number of the user}
                             {iname? : The name of the institution}
                             {isname? : The short name of the institution}
-                            {logo? : The logo of the institution}';
+                            {logo? : The logo of the institution}
+                            {itype? : The type of the institution (INSTITUTION|TRANSLATION_AGENCY)}';
 
     /**
      * @var string
@@ -45,6 +48,7 @@ class CreateInstitutionWithMainUser extends Command
             'iname' => fn () => $this->argument('iname') ?: $this->ask('What is the name of the institution?'),
             'isname' => fn () => $this->argument('isname') ?: $this->ask('What is the short name of the institution?'),
             'logo' => fn () => $this->argument('logo') ?: $this->ask('What is the logo of the institution?'),
+            'itype' => fn () => $this->argument('itype') ?: ($this->ask('What is the type of the institution? (INSTITUTION|TRANSLATION_AGENCY)', InstitutionType::Institution->value)),
         ];
 
         $arguments = $argumentsDefinition;
@@ -63,6 +67,7 @@ class CreateInstitutionWithMainUser extends Command
                 'phone' => ['required', new PhoneNumberRule],
                 'logo' => ['nullable', 'url'],
                 'pic' => ['required', new PersonalIdCodeRule],
+                'itype' => ['required', new Enum(InstitutionType::class)],
             ]);
 
             $arguments = [];
@@ -79,7 +84,8 @@ class CreateInstitutionWithMainUser extends Command
                 new InstitutionData(
                     $values['iname'],
                     $values['isname'],
-                    $values['logo']
+                    $values['logo'],
+                    InstitutionType::from($values['itype'])
                 ),
                 new UserData(
                     $values['pic'],

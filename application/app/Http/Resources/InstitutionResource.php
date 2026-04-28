@@ -116,10 +116,11 @@ class InstitutionResource extends JsonResource
 
     private function toPublicArray(Request $request): array
     {
-        return [
-            'id' => $this->id,
-            'name' => $this->name,
-        ];
+        return $this->only([
+            'id',
+            'name',
+            'institution_type'
+        ]);
     }
 
     private function toPrivateArray(Request $request): array
@@ -134,7 +135,7 @@ class InstitutionResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'worktime_timezone' => $this->worktime_timezone,
-
+            'institution_type' => $this->institution_type,
             'monday_worktime_start' => $this->monday_worktime_start,
             'monday_worktime_end' => $this->monday_worktime_end,
             'tuesday_worktime_start' => $this->tuesday_worktime_start,
