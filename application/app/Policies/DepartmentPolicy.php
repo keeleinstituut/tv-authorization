@@ -12,26 +12,26 @@ class DepartmentPolicy
 {
     public function view(AuthUser $user, Department $department): bool
     {
-        return ! $user->isTranslationAgency()
+        return ! $user->belongsToTranslationAgency()
             && $this->isInSameInstitutionAsCurrentUser($user, $department);
     }
 
     public function create(AuthUser $user): bool
     {
-        return ! $user->isTranslationAgency()
+        return ! $user->belongsToTranslationAgency()
             && $user->hasPrivilege(PrivilegeKey::AddDepartment);
     }
 
     public function update(AuthUser $user, Department $department): bool
     {
-        return ! $user->isTranslationAgency()
+        return ! $user->belongsToTranslationAgency()
             && $this->isInSameInstitutionAsCurrentUser($user, $department)
             && $user->hasPrivilege(PrivilegeKey::EditDepartment);
     }
 
     public function delete(AuthUser $user, Department $department): bool
     {
-        return ! $user->isTranslationAgency()
+        return ! $user->belongsToTranslationAgency()
             && $this->isInSameInstitutionAsCurrentUser($user, $department)
             && $user->hasPrivilege(PrivilegeKey::DeleteDepartment);
     }
@@ -49,7 +49,7 @@ class DepartmentPolicy
 
     public function bulkUpdate(AuthUser $user): bool
     {
-        return ! $user->isTranslationAgency()
+        return ! $user->belongsToTranslationAgency()
             && $user->hasPrivilege(PrivilegeKey::AddDepartment)
             && $user->hasPrivilege(PrivilegeKey::EditDepartment)
             && $user->hasPrivilege(PrivilegeKey::DeleteDepartment);
@@ -89,7 +89,7 @@ class DepartmentScope implements IScope
         $user = Auth::user();
         $authenticatedInstitutionId = $user?->institutionId;
         abort_if(empty($authenticatedInstitutionId), 401);
-        abort_if($user->isTranslationAgency(), 403);
+        abort_if($user->belongsToTranslationAgency(), 403);
         $builder->where('institution_id', $authenticatedInstitutionId);
     }
 }

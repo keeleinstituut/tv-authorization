@@ -20,7 +20,7 @@ class AuthUser extends JwtPayloadUser
         return $this->institution;
     }
 
-    public function isTranslationAgency(): bool
+    public function belongsToTranslationAgency(): bool
     {
         return $this->institution()?->institution_type === InstitutionType::TranslationAgency;
     }
