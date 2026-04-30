@@ -23,7 +23,7 @@ class InstitutionFactory extends Factory
             'short_name' => null,
             'phone' => null,
             'email' => $this->faker->companyEmail(),
-            'institution_type' => InstitutionType::Institution,
+            'type' => InstitutionType::Institution,
             //'logo_url' => $this->faker->url(),
         ];
     }

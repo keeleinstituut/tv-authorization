@@ -15,7 +15,7 @@ class CreateInstitutionAction
             $institution->fill([
                 'name' => $institutionData->name,
                 'short_name' => $institutionData->shortName,
-                'institution_type' => $institutionData->institutionType,
+                'type' => $institutionData->institutionType,
             ]);
             $institution->save();
 

@@ -62,6 +62,7 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'saturday_worktime_end', type: 'string', format: 'time', example: '16:00:00', nullable: true),
         new OA\Property(property: 'sunday_worktime_start', type: 'string', format: 'time', example: '08:00:00', nullable: true),
         new OA\Property(property: 'sunday_worktime_end', type: 'string', format: 'time', example: '16:00:00', nullable: true),
+        new OA\Property(property: 'type', type: 'string', enum: ['INSTITUTION', 'TRANSLATION_AGENCY']),
     ],
     type: 'object'
 )]
@@ -119,7 +120,7 @@ class InstitutionResource extends JsonResource
         return $this->only([
             'id',
             'name',
-            'institution_type'
+            'type'
         ]);
     }
 
@@ -135,7 +136,7 @@ class InstitutionResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'worktime_timezone' => $this->worktime_timezone,
-            'institution_type' => $this->institution_type,
+            'type' => $this->type,
             'monday_worktime_start' => $this->monday_worktime_start,
             'monday_worktime_end' => $this->monday_worktime_end,
             'tuesday_worktime_start' => $this->tuesday_worktime_start,

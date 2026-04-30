@@ -45,7 +45,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string|null saturday_worktime_end
  * @property string|null sunday_worktime_start
  * @property string|null sunday_worktime_end
- * @property InstitutionType $institution_type
+ * @property InstitutionType $type
  * @property-read Collection<int, InstitutionUser> $institutionUsers
  * @property-read int|null $institution_users_count
  * @property-read Collection<int, Role> $roles
@@ -116,11 +116,11 @@ class Institution extends Model implements AuditLoggable, HasMedia
         'saturday_worktime_end',
         'sunday_worktime_start',
         'sunday_worktime_end',
-        'institution_type',
+        'type',
     ];
 
     protected $casts = [
-        'institution_type' => InstitutionType::class,
+        'type' => InstitutionType::class,
     ];
 
     public function registerMediaCollections(): void

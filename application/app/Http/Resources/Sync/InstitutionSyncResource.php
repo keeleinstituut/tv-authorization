@@ -20,7 +20,7 @@ class InstitutionSyncResource extends JsonResource
      *     email: string,
      *     short_name: string,
      *     logo_url: string,
-     *     institution_type: string,
+     *     type: string,
      *     deleted_at: Carbon,
      * }
      */
@@ -34,7 +34,7 @@ class InstitutionSyncResource extends JsonResource
                 'phone',
                 'email',
                 'logo_url',
-                'institution_type',
+                'type',
                 'deleted_at',
                 'deactivation_date',
                 'worktime_timezone',
