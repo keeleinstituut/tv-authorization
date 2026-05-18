@@ -30,6 +30,7 @@ use UnexpectedValueException;
                     properties: [
                         new OA\Property(property: 'id', type: 'string', format: 'uuid'),
                         new OA\Property(property: 'name', type: 'string'),
+                        new OA\Property(property: 'type', type: 'string'),
                     ],
                     type: 'object'
                 ),
@@ -69,6 +70,7 @@ class JwtClaims extends JsonResource
                 'selectedInstitution' => [
                     'id' => $this->institution_id,
                     'name' => $this->institution->name,
+                    'type' => $this->institution->type,
                 ],
                 'department' => [
                     'id' => $this->department?->id,

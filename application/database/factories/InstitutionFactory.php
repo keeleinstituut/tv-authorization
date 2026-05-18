@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\InstitutionType;
 use App\Models\Institution;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -22,6 +23,7 @@ class InstitutionFactory extends Factory
             'short_name' => null,
             'phone' => null,
             'email' => $this->faker->companyEmail(),
+            'type' => InstitutionType::Institution,
             //'logo_url' => $this->faker->url(),
         ];
     }

@@ -31,6 +31,8 @@ enum PrivilegeKey: string
     case EditInstitutionWorktime = 'EDIT_INSTITUTION_WORKTIME';
     case EditInstitutionPriceRate = 'EDIT_INSTITUTION_PRICE_RATE';
     case ViewInstitutionPriceRate = 'VIEW_INSTITUTION_PRICE_RATE';
+    case ViewInstitutionPricelist = 'VIEW_INSTITUTION_PRICELIST';
+    case EditInstitutionPricelist = 'EDIT_INSTITUTION_PRICELIST';
     case CreateProject = 'CREATE_PROJECT';
     case ManageProject = 'MANAGE_PROJECT';
     case ReceiveProject = 'RECEIVE_PROJECT';
@@ -54,4 +56,9 @@ enum PrivilegeKey: string
     case EditMachineTranslationSettings = 'EDIT_MACHINE_TRANSLATION_SETTINGS';
     case UseMachineTranslationETranslation = 'USE_MACHINE_TRANSLATION_ETRANSLATION';
     case UseMachineTranslationAzureOpenAI = 'USE_MACHINE_TRANSLATION_AZURE_OPENAI';
+    case ViewExternalPartner = 'VIEW_EXTERNAL_PARTNER';
+    case ManageExternalPartner = 'MANAGE_EXTERNAL_PARTNER';
+    case ViewExternalTranslationRequest = 'VIEW_EXTERNAL_TRANSLATION_REQUEST';
+    case RespondExternalTranslationRequest = 'RESPOND_EXTERNAL_TRANSLATION_REQUEST';
+    case ManageExternalTranslationRequest = 'MANAGE_EXTERNAL_TRANSLATION_REQUEST';
 }
