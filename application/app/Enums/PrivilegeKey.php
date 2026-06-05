@@ -58,7 +58,7 @@ enum PrivilegeKey: string
     case UseMachineTranslationAzureOpenAI = 'USE_MACHINE_TRANSLATION_AZURE_OPENAI';
     case ViewExternalPartner = 'VIEW_EXTERNAL_PARTNER';
     case ManageExternalPartner = 'MANAGE_EXTERNAL_PARTNER';
-    case ViewExternalTranslationRequest = 'VIEW_EXTERNAL_TRANSLATION_REQUEST';
-    case RespondExternalTranslationRequest = 'RESPOND_EXTERNAL_TRANSLATION_REQUEST';
-    case ManageExternalTranslationRequest = 'MANAGE_EXTERNAL_TRANSLATION_REQUEST';
+    case ViewOutsourceRequest = 'VIEW_OUTSOURCE_REQUEST';
+    case RespondOutsourceRequest = 'RESPOND_OUTSOURCE_REQUEST';
+    case ManageOutsourceRequest = 'MANAGE_OUTSOURCE_REQUEST';
 }
