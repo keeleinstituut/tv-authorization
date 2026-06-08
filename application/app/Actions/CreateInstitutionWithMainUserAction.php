@@ -23,12 +23,12 @@ readonly class CreateInstitutionWithMainUserAction
     public function execute(InstitutionData $institutionData, UserData $userData): void
     {
         $institution = $this->createInstitutionAction->execute($institutionData);
-
+        $defaultRole = $institutionData->belongsToTranslationAgency() ? DefaultRole::TranslationAgencyAdmin : DefaultRole::InstitutionAdmin;
         $role = $this->createRoleAction->execute(
             new InstitutionRoleData(
-                DefaultRole::InstitutionAdmin->value,
+                $defaultRole->value,
                 $institution->id,
-                DefaultRole::privileges(DefaultRole::InstitutionAdmin)
+                DefaultRole::privileges($defaultRole)
             )
         );
 

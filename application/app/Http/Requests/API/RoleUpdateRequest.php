@@ -68,6 +68,13 @@ class RoleUpdateRequest extends FormRequest
             ]);
 
             $afterValidator->validate();
+
+            if ($this->user()?->belongsToTranslationAgency()) {
+                $allowedValues = array_column(PrivilegeKey::TRANSLATION_AGENCY_ALLOWED_PRIVILEGES, 'value');
+                if (array_diff($this->input('privileges', []), $allowedValues)) {
+                    $validator->errors()->add('privileges', 'Tõlkebüroo institutsioonile ei ole see õigus lubatud.');
+                }
+            }
         });
     }
 }

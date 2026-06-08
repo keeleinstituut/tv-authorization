@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\InstitutionType;
+use App\Enums\PrivilegeKey;
 use App\Models\InstitutionUser;
 use App\Models\InstitutionUserRole;
 use App\Models\PrivilegeRole;
@@ -81,7 +83,13 @@ class JwtClaims extends JsonResource
                     ->filter()
                     ->map(fn (PrivilegeRole $privilegeRole) => $privilegeRole->privilege?->key)
                     ->filter()
-                    ->unique(),
+                    ->unique()
+                    ->when(
+                        $this->institution->type === InstitutionType::TranslationAgency,
+                        fn ($privileges) => $privileges->filter(
+                            fn (PrivilegeKey $key) => in_array($key, PrivilegeKey::TRANSLATION_AGENCY_ALLOWED_PRIVILEGES, true)
+                        )
+                    )->values(),
             ],
             $this->resource instanceof User => [
                 'personalIdentificationCode' => $this->personal_identification_code,

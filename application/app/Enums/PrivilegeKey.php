@@ -58,7 +58,55 @@ enum PrivilegeKey: string
     case UseMachineTranslationAzureOpenAI = 'USE_MACHINE_TRANSLATION_AZURE_OPENAI';
     case ViewExternalPartner = 'VIEW_EXTERNAL_PARTNER';
     case ManageExternalPartner = 'MANAGE_EXTERNAL_PARTNER';
-    case ViewExternalTranslationRequest = 'VIEW_EXTERNAL_TRANSLATION_REQUEST';
-    case RespondExternalTranslationRequest = 'RESPOND_EXTERNAL_TRANSLATION_REQUEST';
-    case ManageExternalTranslationRequest = 'MANAGE_EXTERNAL_TRANSLATION_REQUEST';
+    case ViewOutsourceRequest = 'VIEW_OUTSOURCE_REQUEST';
+    case RespondOutsourceRequest = 'RESPOND_OUTSOURCE_REQUEST';
+    case ManageOutsourceRequest = 'MANAGE_OUTSOURCE_REQUEST';
+
+    const array TRANSLATION_AGENCY_ALLOWED_PRIVILEGES = [
+        self::AddRole,
+        self::ViewRole,
+        self::EditRole,
+        self::DeleteRole,
+        self::AddUser,
+        self::EditUser,
+        self::ViewUser,
+        self::ExportUser,
+        self::ActivateUser,
+        self::DeactivateUser,
+        self::ArchiveUser,
+        self::EditUserWorktime,
+        self::EditUserVacation,
+        self::AddTag,
+        self::EditTag,
+        self::DeleteTag,
+        self::ViewVendorDatabase,
+        self::EditVendorDatabase,
+        self::ViewGeneralPricelist,
+        self::ViewVendorTask,
+        self::EditInstitution,
+        self::EditInstitutionWorktime,
+        self::EditInstitutionPriceRate,
+        self::ViewInstitutionPriceRate,
+        self::ViewInstitutionPricelist,
+        self::EditInstitutionPricelist,
+        self::ManageProject,
+        self::ReceiveProject,
+        self::ViewPersonalProject,
+        self::ViewInstitutionProjectList,
+        self::ViewInstitutionProjectDetail,
+        self::ViewInstitutionUnclaimedProjectDetail,
+        self::ImportTranslationMemory,
+        self::CreateTranslationMemory,
+        self::ExportTranslationMemory,
+        self::EditTranslationMemory,
+        self::ViewTranslationMemory,
+        self::ViewAuditLog,
+        self::ExportAuditLog,
+        self::ExportInstitutionGeneralReport,
+        self::EditMachineTranslationSettings,
+        self::UseMachineTranslationETranslation,
+        self::UseMachineTranslationAzureOpenAI,
+        self::ViewOutsourceRequest,
+        self::RespondOutsourceRequest,
+    ];
 }

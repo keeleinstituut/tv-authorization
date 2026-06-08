@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Enums\PrivilegeKey;
 use App\Http\Controllers\Controller;
 use App\Http\OpenApiHelpers as OAH;
 use App\Http\Requests\API\PrivilegeListRequest;
 use App\Http\Resources\API\PrivilegeResource;
+use App\Models\AuthUser;
 use App\Models\Privilege;
 use App\Policies\PrivilegePolicy;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -29,12 +31,17 @@ class PrivilegeController extends Controller
         } catch (AuthorizationException) {
             return PrivilegeResource::collection([]);
         }
+        /** @var AuthUser|null $user */
+        $user = $request->user();
 
-        $data = $this->getBaseQuery()
-            ->orderBy('key')
-            ->get();
+        $query = $this->getBaseQuery()
+            ->orderBy('key');
 
-        return PrivilegeResource::collection($data);
+        if ($user?->belongsToTranslationAgency()) {
+            $query->whereIn('key', PrivilegeKey::TRANSLATION_AGENCY_ALLOWED_PRIVILEGES);
+        }
+
+        return PrivilegeResource::collection($query->get());
     }
 
     public function getBaseQuery()
