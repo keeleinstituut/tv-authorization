@@ -13,4 +13,9 @@ readonly class InstitutionData
         public InstitutionType $institutionType = InstitutionType::Institution,
     ) {
     }
+
+    public function belongsToTranslationAgency(): bool
+    {
+        return $this->institutionType === InstitutionType::TranslationAgency;
+    }
 }
