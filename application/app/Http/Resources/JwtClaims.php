@@ -89,7 +89,7 @@ class JwtClaims extends JsonResource
                         fn ($privileges) => $privileges->filter(
                             fn (PrivilegeKey $key) => in_array($key, PrivilegeKey::TRANSLATION_AGENCY_ALLOWED_PRIVILEGES, true)
                         )
-                    ),
+                    )->values(),
             ],
             $this->resource instanceof User => [
                 'personalIdentificationCode' => $this->personal_identification_code,
