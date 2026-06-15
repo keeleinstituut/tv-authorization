@@ -89,7 +89,6 @@ class DepartmentScope implements IScope
         $user = Auth::user();
         $authenticatedInstitutionId = $user?->institutionId;
         abort_if(empty($authenticatedInstitutionId), 401);
-        abort_if($user->belongsToTranslationAgency(), 403);
         $builder->where('institution_id', $authenticatedInstitutionId);
     }
 }
