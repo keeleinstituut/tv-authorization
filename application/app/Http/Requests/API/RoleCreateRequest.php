@@ -4,9 +4,11 @@ namespace App\Http\Requests\API;
 
 use App\Enums\PrivilegeKey;
 use App\Http\Requests\Helpers\MaxLengthValue;
+use App\Http\Requests\Traits\NormalizesPrivilegeKeysInput;
 use App\Models\Institution;
 use App\Models\Privilege;
 use App\Models\Role;
+use App\Rules\TranslationAgencyAllowedPrivilegesRule;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Validator;
@@ -32,6 +34,8 @@ use OpenApi\Attributes as OA;
 )]
 class RoleCreateRequest extends FormRequest
 {
+    use NormalizesPrivilegeKeysInput;
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -45,8 +49,8 @@ class RoleCreateRequest extends FormRequest
                 'uuid',
                 Rule::exists(app(Institution::class)->getTable(), 'id'),
             ],
-            'privileges' => 'required|array|min:1',
-            'privileges.*' => Rule::exists(app(Privilege::class)->getTable(), 'key'),
+            'privileges' => ['required', 'array', 'min:1', new TranslationAgencyAllowedPrivilegesRule],
+            'privileges.*' => ['string', Rule::exists(app(Privilege::class)->getTable(), 'key')],
             'name' => ['required', 'max:'.MaxLengthValue::NAME],
         ];
     }
@@ -72,13 +76,6 @@ class RoleCreateRequest extends FormRequest
             ]);
 
             $afterValidator->validate();
-
-            if ($this->user()?->belongsToTranslationAgency()) {
-                $allowedValues = array_column(PrivilegeKey::TRANSLATION_AGENCY_ALLOWED_PRIVILEGES, 'value');
-                if (array_diff($this->input('privileges', []), $allowedValues)) {
-                    $validator->errors()->add('privileges', 'Tõlkebüroo institutsioonile ei ole see õigus lubatud.');
-                }
-            }
         });
     }
 }
