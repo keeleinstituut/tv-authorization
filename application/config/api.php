@@ -4,13 +4,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | SSO Internal Client ID
+    | JWT Claims Allowed Clients
     |--------------------------------------------------------------------------
     |
-    | ID of the client used for authenticating requests sent FROM our SSO provider.
-    | This value is used for authorizing actions that may only be taken by our SSO.
+    | Comma separated list of client IDs used for authenticated requests to
+    | JWT Claims endpoints. Used to whitelist clients that need to access user
+    | data and permissions.
     |
     */
 
-    'sso_internal_client_id' => env('SSO_INTERNAL_CLIENT_ID'),
+    'jwt_claims_allowed_clients' => array_filter(explode(',', env('JWT_CLAIMS_ALLOWED_CLIENTS', ""))),
 ];

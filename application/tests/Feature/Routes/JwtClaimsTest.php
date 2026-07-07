@@ -115,7 +115,7 @@ class JwtClaimsTest extends TestCase
         $normallyAcceptedAzp = Str::of(config('keycloak.accepted_authorized_parties'))
             ->explode(',')
             ->firstOrFail();
-        $this->assertNotEquals($normallyAcceptedAzp, config('api.sso_internal_client_id'));
+        $this->assertNotEquals($normallyAcceptedAzp, config('api.jwt_claims_allowed_clients'));
 
         $accessToken = AuthHelpers::generateAccessToken(azp: $normallyAcceptedAzp);
 
@@ -281,6 +281,6 @@ class JwtClaimsTest extends TestCase
 
     public function generateInternalClientAccessToken(): string
     {
-        return AuthHelpers::generateAccessToken(azp: config('api.sso_internal_client_id'));
+        return AuthHelpers::generateAccessToken(azp: config('api.jwt_claims_allowed_clients'));
     }
 }

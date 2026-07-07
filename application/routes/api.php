@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::withoutMiddleware(['auth:api', 'throttle:api'])->get('/jwt-claims', [JwtClaimsController::class, 'show'])->name('authorization.jwt-claims');
+Route::withoutMiddleware(['auth:api', 'throttle:api'])->get('/user-privileges', [JwtClaimsController::class, 'userPrivileges'])->name('authorization.user-privileges');
 
 Route::get('/privileges', [PrivilegeController::class, 'index'])->name('authorization.privileges.index');
 

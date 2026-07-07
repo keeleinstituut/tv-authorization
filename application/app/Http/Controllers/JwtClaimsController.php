@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\OpenApiHelpers as OAH;
 use App\Http\Requests\GetJwtClaimsRequest;
 use App\Http\Resources\JwtClaims;
+use App\Models\InstitutionUser;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
@@ -12,6 +13,7 @@ use KeycloakAuthGuard\Services\Decoders\RequestBasedJwtTokenDecoder;
 use OpenApi\Attributes as OA;
 use stdClass;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Http\Request;
 
 class JwtClaimsController extends Controller
 {
@@ -43,14 +45,16 @@ class JwtClaimsController extends Controller
     {
         Gate::allowIf($this->isAuthorized());
 
-        $user = User::wherePersonalIdentificationCode($request->validated('personal_identification_code'))
+        $params = collect($request->validated());
+
+        $user = User::wherePersonalIdentificationCode($params->get('personal_identification_code'))
             ->firstOrFail();
 
-        if ($request->has('institution_id')) {
+        if ($params->has('institution_id')) {
             $institutionUser = $user->institutionUsers()->whereRelation(
                 'institution',
                 'id',
-                $request->validated('institution_id')
+                $params->get('institution_id')
             )->first();
 
             abort_if(empty($institutionUser), 404);
@@ -59,6 +63,38 @@ class JwtClaimsController extends Controller
         }
 
         return new JwtClaims($user);
+    }
+
+    public function userPrivileges(Request $request)
+    {
+        Gate::allowIf($this->isAuthorized());
+
+        $params = collect($request->validate([
+            'personal_identification_code' => 'required|string'
+        ]));
+
+        $user = User::getModel()
+            ->where('personal_identification_code', $params->get('personal_identification_code'))
+            ->firstOrFail();
+
+        $institutionUsers = $user->institutionUsers()
+            ->with('roles')
+            ->with('roles.privileges')
+            ->get();
+
+
+        return [
+            'data' => [
+                'user' => $user,
+                'institutionPrivileges' => $institutionUsers->mapWithKeys(function ($institutionUser) {
+                    return [
+                        $institutionUser->institution_id => $institutionUser->roles->flatMap(function ($role) {
+                            return $role->privileges->pluck('key');
+                        }),
+                    ];
+                }),
+            ],
+        ];
     }
 
     private function isAuthorized(): bool
@@ -73,9 +109,11 @@ class JwtClaimsController extends Controller
 
     private function isAuthorizedPartySsoInternalClient(stdClass $decodedJwt): bool
     {
+        $tokenAuthorizedParty = $decodedJwt->azp;
+        $expectedClients = collect(config('api.jwt_claims_allowed_clients'));
+
         return property_exists($decodedJwt, 'azp')
-            && filled($tokenAuthorizedParty = $decodedJwt->azp)
-            && filled($expectedSsoInternalClientId = config('api.sso_internal_client_id'))
-            && $tokenAuthorizedParty === $expectedSsoInternalClientId;
+            && filled($tokenAuthorizedParty)
+            && $expectedClients->contains($tokenAuthorizedParty);
     }
 }
