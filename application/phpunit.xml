@@ -13,20 +13,24 @@
     <env name="APP_ENV" value="testing"/>
     <env name="BCRYPT_ROUNDS" value="4"/>
     <env name="CACHE_DRIVER" value="array"/>
+    <env name="DB_HOST" value="127.0.0.1"/>
+    <env name="DB_PORT" value="5433"/>
     <env name="DB_DATABASE" value="testing"/>
+    <env name="AMQP_HOST" value="127.0.0.1"/>
+    <env name="AMQP_PORT" value="5673"/>
     <env name="MAIL_MAILER" value="array"/>
     <env name="QUEUE_CONNECTION" value="sync"/>
     <env name="SESSION_DRIVER" value="array"/>
     <env name="TELESCOPE_ENABLED" value="false"/>
 
     <env name="REALM_PUBLIC_KEY_RETRIEVAL_MODE" value="config"/>
-    <env name="KEYCLOAK_REALM_PUBLIC_KEY" value="MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDOk1X/mSqKfI67jPLqk13xDpjznlCAbJO/DgWbabgdnkg1KI4YpImbHZk/8DckXnGAyCHjZJTnVtKJ51ljT3VwN6kwSiTGHWr8u9VKilf7UM9lj5cCIjS6tRFGxH4iOig50HfdWO9lx+m/E/Q+XmIXDJMH8WTXhxgR+WPg9V2s9wIDAQAB"/>
-    <env name="KEYCLOAK_REALM_PRIVATE_KEY" value="MIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBAM6TVf+ZKop8jruM8uqTXfEOmPOeUIBsk78OBZtpuB2eSDUojhikiZsdmT/wNyRecYDIIeNklOdW0onnWWNPdXA3qTBKJMYdavy71UqKV/tQz2WPlwIiNLq1EUbEfiI6KDnQd91Y72XH6b8T9D5eYhcMkwfxZNeHGBH5Y+D1Xaz3AgMBAAECgYAc6ehulyyqJ5b+z1Ks3KWYePeVmcIgx5HCex7zys9XbfEjZ6LD9jvAd1sc5O2C7KksYlbD8i8ZVkCvxq7vRI7mPog9LzhNiZvhvT1Y/H6vwVBgkwAg9f/5iv5czjjtN66pVpGIKTJJhZo9J2vJ14CdSahiekocFX+TOJVfhlLSKQJBAPdbSSL7NdgcvDg3jA/mhXeypTN2Yw5HHGJ2gJUYik0kv8f7JEjZq+T3hjssMWeIaIkcxILwzN74zr9y4iSziZsCQQDVyz7iBUo5YJPtfyaNNN14b3ImsSFK/hGq0wrSje+mzOp+9dK+6noCGSHxnwTATizt2zsRco1VN4zmJR/d2v3VAkEA5isccB+f59w9THZrr3QLJ+mlDbEQ1X1YLUsltRcjwkr65iSMi/l4mVO2pSMnSbbFxyhst4dIrAaLo9xMEGi8FwJBAM+OfyEc859apKKYo8vI/A41XAQ2SNUubeaC9unNRFGSdUIG06/nocWxsqOJtyofezz8bo8UwCNwR8kTV6miNnUCQA95n5pY07ahQgxPpaOp0d2rOrfTodVPZGmv+r6EeiKDgTgdTcnmNTerQ2+JZwhExU9W0oOXe2iEUdfGM2ewZgY="/>
+    <env name="KEYCLOAK_REALM_PUBLIC_KEY" value="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvSkPUwfdIfX9H9zNpPNDeG0kcRvZu1ZBLyQiMjU8d0Q97MQptZQtIdLXKmkXe47QEjEFzYdNUkKur6soQD45lRULG1KNdVeuWZga/4gOZUnQ01e4FOtYAV2o//6rTObRkYpxTJNc2xXRpjNLIjBYrafacHtoFyaB/fCc/4usmxHsTkTgMNRsP9TIaYg+a2IS7LPyCm3Vx+8UCuxVwn3xf1MzFm2L6zdEmo8Fuj1xaNR8WOT2aLUXzSY0dwWNUyD8ZgbHK1DOwuPJEGm2zK8Xth6SnC1yMOc9QABQdW+mRPJn6THKX9tnvvrtsufxE1W56+zDiSMfkd2XIRofANTsJwIDAQAB"/>
+    <env name="KEYCLOAK_REALM_PRIVATE_KEY" value="MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC9KQ9TB90h9f0f3M2k80N4bSRxG9m7VkEvJCIyNTx3RD3sxCm1lC0h0tcqaRd7jtASMQXNh01SQq6vqyhAPjmVFQsbUo11V65ZmBr/iA5lSdDTV7gU61gBXaj//qtM5tGRinFMk1zbFdGmM0siMFitp9pwe2gXJoH98Jz/i6ybEexOROAw1Gw/1MhpiD5rYhLss/IKbdXH7xQK7FXCffF/UzMWbYvrN0SajwW6PXFo1HxY5PZotRfNJjR3BY1TIPxmBscrUM7C48kQabbMrxe2HpKcLXIw5z1AAFB1b6ZE8mfpMcpf22e++u2y5/ETVbnr7MOJIx+R3ZchGh8A1OwnAgMBAAECggEALcdElqcWDLSADFh/Cjb3MqtTQO5pDK3su5BmmDkLB6AjzmuQ3olcPM3OVcy2Kqhe0bA8g8eFXm2V4hytcpK8k8hSdkvNwUK1hqhJjGLsfPXWzHbzrVhhZX85ua5z3XoU6MCU99/H/ptyr+LFAaKqq2gudL9g6w1eM0sqa6vtW1+Z2upHaapt1DVNgyFuCe3Cij1kYDdZay5GEdn/3TRSe3AgRqx9LStItXeBIoCqM8Wspx/di2seWBNyqbQq7r1bbTMWCdJviQEzuIxYNujX9CZMn8xIVP7PNk8RW/k3hZb3FrgSQnkA9U8Mt+nTT08rbdlNbTnrUAKOjVoK3ZmpIQKBgQDpXf/uj2luoRSLQW4OoM8hKcIvaH0KB2yl0R8p/kXhk4eo63Da7x7ZhQvrR5B4EkDtg00QHVtFcaXstw6pJRajDApxLXfiVW4OQrZ3kkE5yn9kGVleitZn1MoSKAKx/BiIGTlWBW9jv/HhBxNMsgHbJKjMRh26J1+jZoGGBSYihwKBgQDPgYBcVGeuk6btOpWYkCPGj5PeKKnjNDgheX/tEIVyJjsXyCUiZR+s7yRlXXIfH+jlKpDgKhL5z29q3I95uaUcmM4hFXINjJ+xI6YD8oNieeoUC/g4yLWkrhIBNYk9rfkSSA4ROWbeKlc+KMZ5mubka1UN8GYxBClyP9xHvIoxYQKBgFky/tJWqrwIgevAdKrOuJ06cujgDXs530N6LWlFsbxJQb9FTvvADpCiFC44SnY6s+qVF22javGeQQe76LSqYn6r6YndEUfH06tLwKbvllLandrK/afvdYh2g05xUKZrb40F5y6EIVGFWpTiuXPFToRO/N4nptEyn5G7aqKpcSwdAoGAdBsj9YWM1hPr7QVAuzK7sdiYhk/+bxDC74gKWl1KLcrSecYVcR9gD+VnWghlWKEEMWYV1jf0ki7NSt/Kr/N+PXgKrlxPiuFKYVVvCPpjJXDN1xWzeCJl8JUtoduQxSBZIy+KH30c3+aVFkS+eUCBPQIJf1kp9Pc9MZ4l5UXLlUECgYAx28r1TCFZu7vp2osjO/5zK6NRVjRh/MkpDLXQVVzJeCB4VAq58ASSi0Ll7UU7TFBV0kayt9sC5Kh+iE3nh9vdE9HQ49/vFX3NIpny1Y7z6oMgKpEanLfKfe4I9ykIcFjLZOCVHqzaV8INNWdWtClUUDBLQu5MYUz6KIVik958GA=="/>
     <env name="ACCEPTED_AUTHORIZED_PARTIES" value="tolkevarav-web-dev"/>
     <env name="KEYCLOAK_REALM" value="tolkevarav-dev"/>
     <env name="KEYCLOAK_BASE_URL" value="https://sso.dev.tolkevarav.eki.ee"/>
     <env name="KEYCLOAK_SERVICE_ACCOUNT_SYNC_ROLE" value="sync-user"/>
-    <env name="SSO_INTERNAL_CLIENT_ID" value="some-client-id"/>
+    <env name="JWT_CLAIMS_ALLOWED_CLIENTS" value="some-client-id"/>
     <env name="KEYCLOAK_SERVICE_ACCOUNT_CLIENT_ID" value="tv-translation-order-service" />
     <env name="KEYCLOAK_SERVICE_ACCOUNT_CLIENT_SECRET" value="oZ5oSfpWIEjEMB3SxBqt37ekmDfgmCan" />
 

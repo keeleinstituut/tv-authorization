@@ -147,7 +147,7 @@ class InstitutionUser extends Model implements AuditLoggable
 
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(Role::class, InstitutionUserRole::class)->withTimestamps();
+        return $this->belongsToMany(Role::class, InstitutionUserRole::class)->withTimestamps()->orderBy('name');
     }
 
     public function institutionVacations(): HasMany

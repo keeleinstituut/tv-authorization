@@ -17,4 +17,9 @@ class FakerServiceProvider extends ServiceProvider implements DeferrableProvider
             return $generator;
         });
     }
+
+    public function provides(): array
+    {
+        return [Generator::class];
+    }
 }
