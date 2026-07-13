@@ -113,6 +113,7 @@ class RepresentationHelpers
             'short_name',
             'phone',
             'email',
+            'type',
             'worktime_timezone',
             'monday_worktime_start',
             'monday_worktime_end',
