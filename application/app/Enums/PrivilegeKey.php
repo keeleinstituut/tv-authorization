@@ -98,4 +98,9 @@ enum PrivilegeKey: string
         self::ViewOutsourceRequest,
         self::RespondOutsourceRequest,
     ];
+
+    const array UI_HIDDEN_PRIVILEGES = [
+        self::ViewInstitutionPricelist,
+        self::EditInstitutionPricelist
+    ];
 }

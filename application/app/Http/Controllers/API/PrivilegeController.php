@@ -41,6 +41,8 @@ class PrivilegeController extends Controller
             $query->whereIn('key', PrivilegeKey::TRANSLATION_AGENCY_ALLOWED_PRIVILEGES);
         }
 
+        $query->whereNotIn('key', PrivilegeKey::UI_HIDDEN_PRIVILEGES);
+
         return PrivilegeResource::collection($query->get());
     }
 
