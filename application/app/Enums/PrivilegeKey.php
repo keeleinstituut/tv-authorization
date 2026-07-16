@@ -92,7 +92,6 @@ enum PrivilegeKey: string
         self::EditTranslationMemory,
         self::ViewAuditLog,
         self::ExportAuditLog,
-        self::ExportInstitutionGeneralReport,
         self::EditMachineTranslationSettings,
         self::UseMachineTranslationAzureOpenAI,
         self::ViewOutsourceRequest,
