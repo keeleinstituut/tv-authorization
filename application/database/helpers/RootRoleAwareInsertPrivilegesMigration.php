@@ -4,6 +4,7 @@ namespace Database\Helpers;
 
 use App\Enums\InstitutionType;
 use App\Enums\PrivilegeKey;
+use App\Models\PrivilegeRole;
 use App\Models\Role;
 use Illuminate\Support\Facades\DB;
 
@@ -28,11 +29,13 @@ abstract class RootRoleAwareInsertPrivilegesMigration extends InsertPrivilegesMi
             ->pluck('id');
         $allPrivilegeIds = $allPrivileges->pluck('id');
 
-        $rootRoles->each(function (Role $role) use ($allPrivilegeIds, $translationAgencyPrivilegeIds) {
-            $privilegeIds = $role->institution?->type === InstitutionType::TranslationAgency
-                ? $translationAgencyPrivilegeIds
-                : $allPrivilegeIds;
-            $role->privileges()->sync($privilegeIds);
+        PrivilegeRole::withoutEvents(function () use ($rootRoles, $allPrivilegeIds, $translationAgencyPrivilegeIds) {
+            $rootRoles->each(function (Role $role) use ($allPrivilegeIds, $translationAgencyPrivilegeIds) {
+                $privilegeIds = $role->institution?->type === InstitutionType::TranslationAgency
+                    ? $translationAgencyPrivilegeIds
+                    : $allPrivilegeIds;
+                $role->privileges()->sync($privilegeIds);
+            });
         });
     }
 }

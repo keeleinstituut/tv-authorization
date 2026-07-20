@@ -61,6 +61,7 @@ enum PrivilegeKey: string
     case ViewOutsourceRequest = 'VIEW_OUTSOURCE_REQUEST';
     case RespondOutsourceRequest = 'RESPOND_OUTSOURCE_REQUEST';
     case ManageOutsourceRequest = 'MANAGE_OUTSOURCE_REQUEST';
+    case ViewStatistic = 'VIEW_STATISTIC';
 
     const array TRANSLATION_AGENCY_ALLOWED_PRIVILEGES = [
         self::AddRole,
